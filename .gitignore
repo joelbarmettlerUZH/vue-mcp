@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+.env
+data/vue-docs/
+data/state/
+eval/results/
+.idea/
+*.jsonl

@@ -1,0 +1,10 @@
+[project]
+name = "vue-docs-eval"
+version = "0.1.0"
+description = "Evaluation suite for Vue docs MCP"
+requires-python = ">=3.13"
+dependencies = [
+    "vue-docs-core",
+    "vue-docs-server",
+    "httpx>=0.28",
+]

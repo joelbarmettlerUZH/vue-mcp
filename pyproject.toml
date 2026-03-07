@@ -1,0 +1,28 @@
+[project]
+name = "vue-docs-mcp"
+version = "0.1.0"
+description = "MCP server for Vue.js documentation retrieval"
+requires-python = ">=3.13"
+dependencies = [
+    "vue-docs-core",
+    "vue-docs-ingestion",
+    "vue-docs-server",
+]
+
+[tool.uv.sources]
+vue-docs-core = { workspace = true }
+vue-docs-ingestion = { workspace = true }
+vue-docs-server = { workspace = true }
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0",
+    "pytest-asyncio>=1.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
