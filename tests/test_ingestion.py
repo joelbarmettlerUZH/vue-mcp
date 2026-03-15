@@ -12,7 +12,7 @@ import pytest
 from qdrant_client.models import SparseVector
 
 from vue_docs_core.models.chunk import Chunk, ChunkMetadata, ChunkType
-from vue_docs_ingestion.embedder import embed_dense_batched
+from vue_docs_ingestion.embedder import embed_dense
 from vue_docs_ingestion.indexer import _chunk_payload, upsert_chunks_batch
 from vue_docs_ingestion.scanner import find_markdown_files, hash_file
 from vue_docs_ingestion.state import FileState, IndexState
@@ -208,7 +208,7 @@ class TestIndexState:
 
 class TestEmbedder:
     @pytest.mark.asyncio
-    async def test_embed_dense_batched_returns_correct_count(self):
+    async def test_embed_dense_returns_correct_count(self):
         from vue_docs_core.clients.jina import EmbeddingResult, JinaClient
 
         chunks = [_make_chunk(chunk_id=f"chunk#{i}") for i in range(5)]
@@ -218,39 +218,61 @@ class TestEmbedder:
         )
 
         with patch.object(
-            JinaClient, "embed_batched", new=AsyncMock(return_value=fake_result)
+            JinaClient, "embed", new=AsyncMock(return_value=fake_result)
         ):
             client = JinaClient(api_key="test")
-            vectors, tokens = await embed_dense_batched(chunks, client, batch_size=64)
+            vectors, tokens = await embed_dense(chunks, client)
 
         assert len(vectors) == 5
         assert tokens == 250
 
     @pytest.mark.asyncio
-    async def test_embed_dense_batched_empty_input(self):
+    async def test_embed_dense_empty_input(self):
         from vue_docs_core.clients.jina import JinaClient
 
         client = JinaClient(api_key="test")
-        vectors, tokens = await embed_dense_batched([], client)
+        vectors, tokens = await embed_dense([], client)
         assert vectors == []
         assert tokens == 0
 
     @pytest.mark.asyncio
-    async def test_embed_dense_batched_passes_chunk_content(self):
+    async def test_embed_dense_passes_chunk_content(self):
         from vue_docs_core.clients.jina import EmbeddingResult, JinaClient
 
         chunks = [_make_chunk(content="special content")]
         captured_texts = []
 
-        async def fake_embed_batched(texts, task, batch_size):
+        async def fake_embed(texts, task):
             captured_texts.extend(texts)
             return EmbeddingResult(embeddings=[[0.0] * 1024], total_tokens=5)
 
         client = JinaClient(api_key="test")
-        with patch.object(client, "embed_batched", side_effect=fake_embed_batched):
-            await embed_dense_batched(chunks, client)
+        with patch.object(client, "embed", side_effect=fake_embed):
+            await embed_dense(chunks, client)
 
         assert captured_texts == ["special content"]
+
+    @pytest.mark.asyncio
+    async def test_embed_dense_single_api_call(self):
+        """All chunks must be sent in a single embed() call, not batched."""
+        from vue_docs_core.clients.jina import EmbeddingResult, JinaClient
+
+        chunks = [_make_chunk(chunk_id=f"chunk#{i}") for i in range(100)]
+        call_count = 0
+
+        async def fake_embed(texts, task):
+            nonlocal call_count
+            call_count += 1
+            return EmbeddingResult(
+                embeddings=[[0.1] * 1024] * len(texts),
+                total_tokens=len(texts) * 5,
+            )
+
+        client = JinaClient(api_key="test")
+        with patch.object(client, "embed", side_effect=fake_embed):
+            await embed_dense(chunks, client)
+
+        assert call_count == 1
 
 
 # ---------------------------------------------------------------------------
@@ -364,13 +386,15 @@ class TestPipelineDryRun:
         from vue_docs_ingestion.scanner import hash_file
         from vue_docs_ingestion.state import FileState, IndexState
 
-        # Pre-populate state so file appears up-to-date
+        # Pre-populate state so file appears up-to-date (use current pipeline_version)
+        from vue_docs_core.config import settings as app_settings
+
         state = IndexState(data / "state" / "index_state.json")
         state.set(
             "test.md",
             FileState(
                 content_hash=hash_file(md_file),
-                pipeline_version="1",
+                pipeline_version=app_settings.pipeline_version,
                 chunk_ids=["test#intro"],
                 last_indexed="2026-01-01T00:00:00+00:00",
             ),
@@ -403,12 +427,14 @@ class TestPipelineDryRun:
         from vue_docs_ingestion.state import FileState, IndexState
 
         # Pre-populate state (file is "up to date")
+        from vue_docs_core.config import settings as app_settings
+
         state = IndexState(data / "state" / "index_state.json")
         state.set(
             "test.md",
             FileState(
                 content_hash=hash_file(md_file),
-                pipeline_version="1",
+                pipeline_version=app_settings.pipeline_version,
                 chunk_ids=["test#section"],
                 last_indexed="2026-01-01T00:00:00+00:00",
             ),
@@ -426,7 +452,7 @@ class TestPipelineDryRun:
         mock_qdrant.close.return_value = None
 
         mock_jina = MagicMock()
-        mock_jina.embed_batched = AsyncMock(
+        mock_jina.embed = AsyncMock(
             return_value=EmbeddingResult(embeddings=[[0.1] * 1024] * 10, total_tokens=100)
         )
         mock_jina.close = AsyncMock()
@@ -438,7 +464,7 @@ class TestPipelineDryRun:
             await run_pipeline(docs_path=docs, data_path=data, full=True)
 
         # With --full, Jina should have been called (file was re-processed)
-        mock_jina.embed_batched.assert_called()
+        mock_jina.embed.assert_called()
 
 
 # ---------------------------------------------------------------------------

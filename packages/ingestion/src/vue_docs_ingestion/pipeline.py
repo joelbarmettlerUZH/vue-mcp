@@ -21,7 +21,7 @@ from vue_docs_core.parsing.entities import (
 )
 from vue_docs_core.parsing.markdown import parse_markdown_file
 from vue_docs_core.parsing.sort_keys import compute_sort_key, parse_sidebar_config
-from vue_docs_ingestion.embedder import embed_dense_batched
+from vue_docs_ingestion.embedder import embed_dense
 from vue_docs_ingestion.indexer import upsert_chunks_batch
 from vue_docs_ingestion.scanner import find_markdown_files, hash_file
 from vue_docs_ingestion.state import FileState, IndexState
@@ -39,7 +39,6 @@ async def run_pipeline(
     *,
     full: bool = False,
     dry_run: bool = False,
-    embed_batch_size: int = 32,
 ) -> None:
     """Run the full ingestion pipeline.
 
@@ -51,8 +50,8 @@ async def run_pipeline(
       5. Extract cross-references
       6. Assign sort keys
       7. Fit BM25 on corpus
-      8. Embed with Jina (dense) + BM25 (sparse)
-      9. Upsert to Qdrant
+      8. Embed all chunks with Jina in one request (no per-batch limit)
+      9. Upsert to Qdrant in batches
      10. Persist state
 
     Args:
@@ -60,7 +59,6 @@ async def run_pipeline(
         data_path: Path to shared data directory.
         full: Force full re-index even for unchanged files.
         dry_run: Show what would be processed without making changes.
-        embed_batch_size: Chunks per Jina embedding API call.
     """
     pipeline_version = settings.pipeline_version
     state_path = data_path / "state" / "index_state.json"
@@ -241,46 +239,47 @@ async def run_pipeline(
         all_sparse_vectors = bm25_model.get_doc_sparse_vectors(texts)
     console.print(f"  BM25 sparse vectors: [green]{len(all_sparse_vectors)}[/green]")
 
-    # ---- Step 10: Dense embed + upsert --------------------------------------
+    # ---- Step 10: Dense embed (single Jina request) -------------------------
     console.print()
-    console.print("[bold]Embedding and indexing chunks...[/bold]")
+    console.print("[bold]Embedding chunks...[/bold]")
+    console.print(f"  Sending all [green]{len(all_chunks)}[/green] chunks in one Jina request")
 
-    jina_client = JinaClient()
-    total_tokens = 0
-    indexed_count = 0
-
+    # Use a long timeout: large corpora can take several minutes to embed.
+    jina_client = JinaClient(timeout=300.0)
     try:
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            BarColumn(),
-            TaskProgressColumn(),
-            console=console,
-        ) as progress:
-            embed_task = progress.add_task(
-                "Embedding + upserting...", total=len(all_chunks)
-            )
-
-            for batch_start in range(0, len(all_chunks), _UPSERT_BATCH):
-                batch_chunks = all_chunks[batch_start : batch_start + _UPSERT_BATCH]
-                batch_sparse = all_sparse_vectors[batch_start : batch_start + _UPSERT_BATCH]
-
-                dense_vectors, tokens = await embed_dense_batched(
-                    batch_chunks, jina_client, batch_size=embed_batch_size
-                )
-                total_tokens += tokens
-
-                upsert_chunks_batch(batch_chunks, dense_vectors, batch_sparse, qdrant)
-                indexed_count += len(batch_chunks)
-                progress.advance(embed_task, len(batch_chunks))
-
+        with console.status("Waiting for Jina embeddings..."):
+            all_dense_vectors, total_tokens = await embed_dense(all_chunks, jina_client)
     finally:
         await jina_client.close()
 
     console.print(
-        f"Indexed [green]{indexed_count}[/green] chunks "
-        f"(Jina tokens used: [dim]{total_tokens:,}[/dim])"
+        f"  Embeddings received — Jina tokens used: [dim]{total_tokens:,}[/dim]"
     )
+
+    # ---- Step 11: Upsert to Qdrant in batches -------------------------------
+    console.print()
+    console.print("[bold]Upserting to Qdrant...[/bold]")
+    indexed_count = 0
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        console=console,
+    ) as progress:
+        upsert_task = progress.add_task("Upserting...", total=len(all_chunks))
+
+        for batch_start in range(0, len(all_chunks), _UPSERT_BATCH):
+            batch_chunks = all_chunks[batch_start : batch_start + _UPSERT_BATCH]
+            batch_dense = all_dense_vectors[batch_start : batch_start + _UPSERT_BATCH]
+            batch_sparse = all_sparse_vectors[batch_start : batch_start + _UPSERT_BATCH]
+
+            upsert_chunks_batch(batch_chunks, batch_dense, batch_sparse, qdrant)
+            indexed_count += len(batch_chunks)
+            progress.advance(upsert_task, len(batch_chunks))
+
+    console.print(f"Indexed [green]{indexed_count}[/green] chunks")
 
     # ---- Step 11: Update state ----------------------------------------------
     now = datetime.now(timezone.utc).isoformat()

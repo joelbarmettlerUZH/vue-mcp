@@ -31,9 +31,6 @@ def run(
     dry_run: bool = typer.Option(
         False, "--dry-run", help="Show what would change without processing"
     ),
-    embed_batch_size: int = typer.Option(
-        32, "--embed-batch-size", help="Chunks per Jina embedding API call"
-    ),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable debug logging"),
 ) -> None:
     """Run the ingestion pipeline: scan → parse → embed → store."""
@@ -54,7 +51,6 @@ def run(
             data_path=data,
             full=full,
             dry_run=dry_run,
-            embed_batch_size=embed_batch_size,
         )
     )
 
