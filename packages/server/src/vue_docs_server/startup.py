@@ -8,6 +8,7 @@ from vue_docs_core.clients.bm25 import BM25Model
 from vue_docs_core.clients.qdrant import QdrantDocClient
 from vue_docs_core.config import settings
 from vue_docs_core.models.entity import ApiEntity, EntityIndex
+from vue_docs_core.retrieval.entity_matcher import EntityMatcher
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,7 @@ class ServerState:
         self.bm25: BM25Model | None = None
         self.entity_index: EntityIndex = EntityIndex()
         self.synonym_table: dict[str, list[str]] = {}
+        self.entity_matcher: EntityMatcher | None = None
 
     @property
     def is_ready(self) -> bool:
@@ -44,8 +46,10 @@ def load_entity_dictionary(data_path: Path) -> EntityIndex:
     for name, info in raw.items():
         entities[name] = ApiEntity(
             name=name,
+            entity_type=info.get("entity_type", "other"),
             page_path=info.get("page_path", ""),
             section=info.get("section", ""),
+            related=info.get("related", []),
         )
 
     logger.info("Loaded %d API entities", len(entities))
@@ -88,6 +92,17 @@ def startup() -> None:
     state.bm25 = load_bm25_model(data_path)
     state.qdrant = QdrantDocClient()
 
+    # Initialize entity matcher
+    state.entity_matcher = EntityMatcher(
+        entity_index=state.entity_index,
+        synonym_table=state.synonym_table,
+    )
+    logger.info(
+        "Entity matcher initialized with %d entities and %d synonyms",
+        len(state.entity_index.entities),
+        len(state.synonym_table),
+    )
+
     # Verify Qdrant connection
     try:
         info = state.qdrant.collection_info()
@@ -108,4 +123,5 @@ def shutdown() -> None:
     if state.qdrant:
         state.qdrant.close()
         state.qdrant = None
+    state.entity_matcher = None
     logger.info("Server shutdown complete")

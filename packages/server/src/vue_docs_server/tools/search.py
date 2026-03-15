@@ -1,6 +1,5 @@
 """vue_docs_search tool implementation."""
 
-import asyncio
 import logging
 
 from vue_docs_core.clients.jina import JinaClient, TASK_RETRIEVAL_QUERY
@@ -82,25 +81,12 @@ async def vue_docs_search(
 
 
 def _detect_entities(query: str) -> list[str]:
-    """Detect API entity names in the query using dictionary + synonym matching.
+    """Detect API entity names in the query using the EntityMatcher.
 
-    This is a lightweight, deterministic extraction — no LLM needed.
+    Uses dictionary matching, bigram matching, synonym lookup, and
+    fuzzy matching (rapidfuzz) for typo tolerance.
     """
-    detected: set[str] = set()
-    query_lower = query.lower().strip()
-
-    # Normalize: strip backticks
-    query_clean = query_lower.replace("`", "")
-
-    # Check against entity dictionary
-    for entity_name in state.entity_index.entities:
-        name_lower = entity_name.lower()
-        if name_lower in query_clean:
-            detected.add(entity_name)
-
-    # Check synonym table
-    for phrase, api_names in state.synonym_table.items():
-        if phrase.lower() in query_clean:
-            detected.update(api_names)
-
-    return list(detected)
+    if state.entity_matcher is None:
+        return []
+    match_result = state.entity_matcher.match(query)
+    return match_result.entities

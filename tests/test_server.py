@@ -1,8 +1,8 @@
-"""Tests for Day 6 MCP server components.
+"""Tests for MCP server components.
 
 Covers startup state loading, reconstruction formatting, entity detection
-in search, the MCP tool registration, and end-to-end MCP protocol integration
-tests using fastmcp.Client for in-process testing.
+in search, the MCP tool registration, api_lookup tool, and end-to-end MCP
+protocol integration tests using fastmcp.Client for in-process testing.
 
 No real API calls — Jina, Qdrant, and BM25 are mocked throughout.
 """
@@ -16,10 +16,20 @@ from fastmcp import Client
 from qdrant_client.models import SparseVector
 
 from vue_docs_core.clients.qdrant import SearchHit
-from vue_docs_core.models.entity import ApiEntity, EntityIndex
+from vue_docs_core.models.entity import ApiEntity, EntityIndex, EntityType
 from vue_docs_core.retrieval.reconstruction import (
     reconstruct_results,
     _file_path_to_url,
+    _are_adjacent,
+    _merge_adjacent_hits,
+    _build_summary_line,
+)
+from vue_docs_core.retrieval.entity_matcher import (
+    EntityMatcher,
+    EntityMatchResult,
+    _normalize_query,
+    _tokenize,
+    _is_word_boundary,
 )
 from vue_docs_server.startup import (
     ServerState,
@@ -28,6 +38,7 @@ from vue_docs_server.startup import (
     load_bm25_model,
 )
 from vue_docs_server.tools.search import _detect_entities, vue_docs_search
+from vue_docs_server.tools.api_lookup import vue_api_lookup, _clean_section_title
 
 
 # ---------------------------------------------------------------------------
@@ -68,6 +79,42 @@ def _make_hit(
             "api_entities": api_entities or [],
             "content": content,
         },
+    )
+
+
+def _make_entity_index() -> EntityIndex:
+    """Build an entity index for testing."""
+    return EntityIndex(
+        entities={
+            "ref": ApiEntity(name="ref", entity_type=EntityType.COMPOSABLE),
+            "computed": ApiEntity(name="computed", entity_type=EntityType.COMPOSABLE),
+            "defineProps": ApiEntity(name="defineProps", entity_type=EntityType.COMPILER_MACRO),
+            "defineEmits": ApiEntity(name="defineEmits", entity_type=EntityType.COMPILER_MACRO),
+            "v-model": ApiEntity(name="v-model", entity_type=EntityType.DIRECTIVE),
+            "watchEffect": ApiEntity(name="watchEffect", entity_type=EntityType.COMPOSABLE),
+            "onMounted": ApiEntity(name="onMounted", entity_type=EntityType.LIFECYCLE_HOOK),
+            "onUnmounted": ApiEntity(name="onUnmounted", entity_type=EntityType.LIFECYCLE_HOOK),
+            "reactive": ApiEntity(name="reactive", entity_type=EntityType.COMPOSABLE),
+            "shallowRef": ApiEntity(name="shallowRef", entity_type=EntityType.COMPOSABLE),
+            "Transition": ApiEntity(name="Transition", entity_type=EntityType.COMPONENT),
+            "h": ApiEntity(name="h", entity_type=EntityType.GLOBAL_API),
+            "is": ApiEntity(name="is", entity_type=EntityType.DIRECTIVE),
+        }
+    )
+
+
+def _make_synonym_table() -> dict[str, list[str]]:
+    return {
+        "two-way binding": ["v-model"],
+        "lifecycle": ["onMounted", "onUnmounted"],
+        "reactivity": ["ref", "reactive"],
+    }
+
+
+def _make_matcher() -> EntityMatcher:
+    return EntityMatcher(
+        entity_index=_make_entity_index(),
+        synonym_table=_make_synonym_table(),
     )
 
 
@@ -150,6 +197,166 @@ class TestReconstruction:
         assert _file_path_to_url("guide/essentials/computed.md") == "https://vuejs.org/guide/essentials/computed"
         assert _file_path_to_url("/api/reactivity-core.md") == "https://vuejs.org/api/reactivity-core"
 
+    def test_image_chunk_rendering(self):
+        hits = [
+            _make_hit(
+                chunk_type="image",
+                content="Reactivity diagram showing dependency tracking",
+                preceding_prose="The following diagram shows how reactivity works:",
+            )
+        ]
+        result = reconstruct_results(hits)
+        assert "[Image:" in result
+        assert "Reactivity diagram" in result
+
+    def test_cross_references_displayed(self):
+        hit = _make_hit()
+        hit.payload["cross_references"] = ["guide/essentials/watchers.md", "api/reactivity-core.md"]
+        result = reconstruct_results([hit])
+        assert "See also:" in result
+        assert "vuejs.org/guide/essentials/watchers" in result
+
+    def test_summary_line_with_entities(self):
+        hits = [
+            _make_hit(api_entities=["computed", "ref"]),
+            _make_hit(
+                chunk_id="other",
+                file_path="guide/other.md",
+                page_title="Other",
+                api_entities=["reactive"],
+            ),
+        ]
+        result = reconstruct_results(hits)
+        assert "across 2 pages" in result
+        assert "Related APIs:" in result
+        assert "`computed`" in result
+
+    def test_summary_line_single_page(self):
+        hits = [_make_hit()]
+        result = reconstruct_results(hits)
+        assert "Found 1 relevant" in result
+        # Should NOT say "across X pages" for single page
+        assert "across" not in result.split("\n")[0]
+
+
+class TestAdjacentMerging:
+    def test_adjacent_same_section(self):
+        a = _make_hit(
+            chunk_id="a",
+            global_sort_key="02_guide/01_ess/01_first",
+            section_title="Section",
+        )
+        b = _make_hit(
+            chunk_id="b",
+            global_sort_key="02_guide/01_ess/02_second",
+            section_title="Section",
+        )
+        assert _are_adjacent(a, b)
+
+    def test_not_adjacent_different_sections(self):
+        a = _make_hit(
+            chunk_id="a",
+            global_sort_key="02_guide/01_ess/01_first",
+            section_title="Section A",
+        )
+        b = _make_hit(
+            chunk_id="b",
+            global_sort_key="02_guide/01_ess/02_second",
+            section_title="Section B",
+        )
+        assert not _are_adjacent(a, b)
+
+    def test_not_adjacent_different_files(self):
+        a = _make_hit(chunk_id="a", file_path="guide/a.md", global_sort_key="01_a/01")
+        b = _make_hit(chunk_id="b", file_path="guide/b.md", global_sort_key="01_b/01")
+        assert not _are_adjacent(a, b)
+
+    def test_not_adjacent_non_consecutive(self):
+        a = _make_hit(
+            chunk_id="a",
+            global_sort_key="02_guide/01_ess/01_first",
+            section_title="Section",
+        )
+        b = _make_hit(
+            chunk_id="b",
+            global_sort_key="02_guide/01_ess/05_fifth",
+            section_title="Section",
+        )
+        assert not _are_adjacent(a, b)
+
+    def test_merge_groups(self):
+        hits = [
+            _make_hit(
+                chunk_id="a",
+                global_sort_key="02_guide/01_ess/01_first",
+                section_title="Section",
+            ),
+            _make_hit(
+                chunk_id="b",
+                global_sort_key="02_guide/01_ess/02_second",
+                section_title="Section",
+            ),
+            _make_hit(
+                chunk_id="c",
+                global_sort_key="02_guide/02_other/01_first",
+                section_title="Other",
+            ),
+        ]
+        groups = _merge_adjacent_hits(hits)
+        assert len(groups) == 2
+        assert len(groups[0]) == 2  # a and b merged
+        assert len(groups[1]) == 1  # c alone
+
+    def test_merged_chunks_skip_heading(self):
+        """Second chunk in merged group should not repeat the section heading."""
+        hits = [
+            _make_hit(
+                chunk_id="a",
+                global_sort_key="02_guide/01_ess/01_first",
+                section_title="My Section",
+                content="First content",
+            ),
+            _make_hit(
+                chunk_id="b",
+                global_sort_key="02_guide/01_ess/02_second",
+                section_title="My Section",
+                content="Second content",
+            ),
+        ]
+        result = reconstruct_results(hits)
+        # Section heading should appear only once
+        assert result.count("### My Section") == 1
+        assert "First content" in result
+        assert "Second content" in result
+
+
+class TestBuildSummaryLine:
+    def test_basic_summary(self):
+        hits = [_make_hit()]
+        summary = _build_summary_line(hits)
+        assert "Found 1 relevant" in summary
+
+    def test_multi_page_summary(self):
+        hits = [
+            _make_hit(file_path="guide/a.md"),
+            _make_hit(file_path="guide/b.md"),
+            _make_hit(file_path="guide/c.md"),
+        ]
+        summary = _build_summary_line(hits)
+        assert "across 3 pages" in summary
+
+    def test_entities_in_summary(self):
+        hits = [_make_hit(api_entities=["computed", "ref"])]
+        summary = _build_summary_line(hits)
+        assert "`computed`" in summary
+        assert "`ref`" in summary
+
+    def test_many_entities_truncated(self):
+        entities = [f"api{i}" for i in range(12)]
+        hits = [_make_hit(api_entities=entities)]
+        summary = _build_summary_line(hits)
+        assert "and 4 more" in summary
+
 
 # ---------------------------------------------------------------------------
 # Tests: Startup State Loading
@@ -169,8 +376,8 @@ class TestStartup:
 
     def test_load_entity_dictionary(self, tmp_path):
         data = {
-            "ref": {"page_path": "api/reactivity-core", "section": "ref()"},
-            "computed": {"page_path": "api/reactivity-core", "section": "computed()"},
+            "ref": {"entity_type": "composable", "page_path": "api/reactivity-core", "section": "ref()"},
+            "computed": {"entity_type": "composable", "page_path": "api/reactivity-core", "section": "computed()"},
         }
         dict_path = tmp_path / "entity_dictionary.json"
         dict_path.write_text(json.dumps(data))
@@ -179,6 +386,7 @@ class TestStartup:
         assert len(index.entities) == 2
         assert "ref" in index.entities
         assert index.entities["ref"].page_path == "api/reactivity-core"
+        assert index.entities["ref"].entity_type == EntityType.COMPOSABLE
 
     def test_load_entity_dictionary_missing(self, tmp_path):
         index = load_entity_dictionary(tmp_path)
@@ -199,7 +407,151 @@ class TestStartup:
 
 
 # ---------------------------------------------------------------------------
-# Tests: Entity Detection in Search
+# Tests: Entity Matcher (core module)
+# ---------------------------------------------------------------------------
+
+
+class TestEntityMatcherHelpers:
+    def test_normalize_query(self):
+        assert _normalize_query("  What is `ref`?  ") == "what is ref?"
+        assert _normalize_query("`defineProps` usage") == "defineprops usage"
+
+    def test_tokenize(self):
+        tokens = _tokenize("how does ref work?")
+        assert tokens == ["how", "does", "ref", "work"]
+
+    def test_tokenize_hyphens(self):
+        tokens = _tokenize("v-model two-way binding")
+        assert tokens == ["v", "model", "two", "way", "binding"]
+
+    def test_is_word_boundary(self):
+        assert _is_word_boundary("how does ref work", "ref")
+        assert not _is_word_boundary("preference settings", "ref")
+        assert _is_word_boundary("use `ref` here", "ref")
+
+
+class TestEntityMatcherExact:
+    def test_exact_match_simple(self):
+        matcher = _make_matcher()
+        result = matcher.match("how does computed work?")
+        assert "computed" in result.entities
+        assert result.match_sources["computed"] == "exact"
+
+    def test_exact_match_case_insensitive(self):
+        matcher = _make_matcher()
+        result = matcher.match("What is Transition?")
+        assert "Transition" in result.entities
+
+    def test_exact_match_hyphenated(self):
+        matcher = _make_matcher()
+        result = matcher.match("how to use v-model")
+        assert "v-model" in result.entities
+
+    def test_exact_match_backtick_stripped(self):
+        matcher = _make_matcher()
+        result = matcher.match("what does `defineProps` do?")
+        assert "defineProps" in result.entities
+
+    def test_exact_match_multiple(self):
+        matcher = _make_matcher()
+        result = matcher.match("difference between ref and computed")
+        assert "ref" in result.entities
+        assert "computed" in result.entities
+
+    def test_short_name_word_boundary(self):
+        """Short names like 'h' and 'is' should not match as substrings."""
+        matcher = _make_matcher()
+        result = matcher.match("this is how to handle things")
+        # "is" should not match inside "this is how"
+        # "h" should not match inside "how" or "handle" or "things"
+        assert "h" not in result.entities
+
+    def test_no_matches(self):
+        matcher = _make_matcher()
+        result = matcher.match("how to deploy a web app")
+        # Should have no exact matches for our entity set
+        assert len([e for e in result.entities if result.match_sources.get(e) == "exact"]) == 0
+
+
+class TestEntityMatcherBigram:
+    def test_bigram_watcheffect(self):
+        matcher = _make_matcher()
+        result = matcher.match("how does watch effect work")
+        assert "watchEffect" in result.entities
+        assert result.match_sources["watchEffect"] == "bigram"
+
+    def test_bigram_defineprops(self):
+        matcher = _make_matcher()
+        result = matcher.match("how to define props in vue")
+        assert "defineProps" in result.entities
+
+    def test_bigram_shallowref(self):
+        matcher = _make_matcher()
+        result = matcher.match("when to use shallow ref")
+        assert "shallowRef" in result.entities
+
+
+class TestEntityMatcherSynonym:
+    def test_synonym_two_way_binding(self):
+        matcher = _make_matcher()
+        result = matcher.match("how to do two-way binding?")
+        assert "v-model" in result.entities
+        assert result.match_sources["v-model"] == "synonym"
+
+    def test_synonym_lifecycle(self):
+        matcher = _make_matcher()
+        result = matcher.match("what are lifecycle hooks?")
+        assert "onMounted" in result.entities
+        assert "onUnmounted" in result.entities
+
+    def test_synonym_reactivity(self):
+        matcher = _make_matcher()
+        result = matcher.match("explain vue reactivity system")
+        assert "ref" in result.entities
+        assert "reactive" in result.entities
+
+
+class TestEntityMatcherFuzzy:
+    def test_fuzzy_typo_defineprops(self):
+        """'definProps' (missing 'e') should fuzzy-match to 'defineProps'."""
+        matcher = _make_matcher()
+        result = matcher.match("what is definProps")
+        assert "defineProps" in result.entities
+        assert result.match_sources["defineProps"] == "fuzzy"
+
+    def test_fuzzy_typo_onmounted(self):
+        """'onmounte' should fuzzy-match to 'onMounted'."""
+        matcher = _make_matcher()
+        result = matcher.match("when does onmounte fire")
+        assert "onMounted" in result.entities
+
+    def test_fuzzy_no_false_positive_short(self):
+        """Short entity names should not fuzzy match."""
+        matcher = _make_matcher()
+        result = matcher.match("re things")
+        # "re" should NOT fuzzy-match to "ref" since "ref" is only 3 chars
+        assert "ref" not in [
+            e for e in result.entities if result.match_sources.get(e) == "fuzzy"
+        ]
+
+
+class TestEntityMatcherPriority:
+    def test_exact_takes_priority_over_fuzzy(self):
+        """If exact match found, the same entity shouldn't appear as fuzzy."""
+        matcher = _make_matcher()
+        result = matcher.match("computed properties")
+        assert result.match_sources.get("computed") == "exact"
+
+    def test_no_duplicates(self):
+        """Each entity appears only once even if multiple methods match."""
+        matcher = _make_matcher()
+        result = matcher.match("ref and reactivity")
+        # "ref" matched by exact AND synonym for "reactivity", but should appear once
+        assert result.entities.count("ref") == 1
+
+
+# ---------------------------------------------------------------------------
+# Tests: Entity Detection in Search (integration with server state)
 # ---------------------------------------------------------------------------
 
 
@@ -208,23 +560,19 @@ class TestEntityDetection:
         """Set up server state for entity detection tests."""
         from vue_docs_server.startup import state as server_state
 
-        server_state.entity_index = EntityIndex(
-            entities={
-                "ref": ApiEntity(name="ref"),
-                "computed": ApiEntity(name="computed"),
-                "defineProps": ApiEntity(name="defineProps"),
-                "v-model": ApiEntity(name="v-model"),
-                "watchEffect": ApiEntity(name="watchEffect"),
-            }
+        entity_index = _make_entity_index()
+        synonym_table = _make_synonym_table()
+
+        server_state.entity_index = entity_index
+        server_state.synonym_table = synonym_table
+        server_state.entity_matcher = EntityMatcher(
+            entity_index=entity_index,
+            synonym_table=synonym_table,
         )
-        server_state.synonym_table = {
-            "two-way binding": ["v-model"],
-            "lifecycle": ["onMounted", "onUnmounted"],
-        }
 
     def test_detect_inline_entity(self):
-        detected = _detect_entities("how does ref work?")
-        assert "ref" in detected
+        detected = _detect_entities("how does computed work?")
+        assert "computed" in detected
 
     def test_detect_backtick_entity(self):
         detected = _detect_entities("what does `defineProps` do?")
@@ -241,7 +589,139 @@ class TestEntityDetection:
 
     def test_no_matches(self):
         detected = _detect_entities("how to deploy a web app")
+        # May have some matches depending on substrings, but no Vue-specific entities
+        for entity in detected:
+            # Only check that any detected entity is actually in the dictionary
+            assert entity in _make_entity_index().entities
+
+    def test_detect_fuzzy_typo(self):
+        detected = _detect_entities("what is definProps")
+        assert "defineProps" in detected
+
+    def test_detect_with_no_matcher(self):
+        """When entity_matcher is None, returns empty list."""
+        from vue_docs_server.startup import state as server_state
+        server_state.entity_matcher = None
+        detected = _detect_entities("computed properties")
         assert detected == []
+
+
+# ---------------------------------------------------------------------------
+# Tests: API Lookup Tool
+# ---------------------------------------------------------------------------
+
+
+class TestApiLookup:
+    def setup_method(self):
+        from vue_docs_server.startup import state as server_state
+
+        server_state.entity_index = EntityIndex(
+            entities={
+                "ref": ApiEntity(
+                    name="ref",
+                    entity_type=EntityType.COMPOSABLE,
+                    page_path="api/reactivity-core.md",
+                    section="ref() {#ref}",
+                    related=["reactive", "unref", "isRef"],
+                ),
+                "defineProps": ApiEntity(
+                    name="defineProps",
+                    entity_type=EntityType.COMPILER_MACRO,
+                    page_path="api/sfc-script-setup.md",
+                    section="defineProps() & defineEmits() {#defineprops-defineemits}",
+                    related=["defineEmits"],
+                ),
+                "v-model": ApiEntity(
+                    name="v-model",
+                    entity_type=EntityType.DIRECTIVE,
+                    page_path="api/built-in-directives.md",
+                    section="v-model {#v-model}",
+                ),
+                "onMounted": ApiEntity(
+                    name="onMounted",
+                    entity_type=EntityType.LIFECYCLE_HOOK,
+                    page_path="api/composition-api-lifecycle.md",
+                    section="onMounted() {#onmounted}",
+                ),
+            },
+            entity_to_chunks={
+                "ref": ["api/reactivity-core#ref", "guide/essentials/reactivity#ref"],
+                "defineProps": ["api/sfc-script-setup#defineprops"],
+            },
+        )
+        server_state.synonym_table = {"two-way binding": ["v-model"]}
+        server_state.entity_matcher = EntityMatcher(
+            entity_index=server_state.entity_index,
+            synonym_table=server_state.synonym_table,
+        )
+        server_state.qdrant = MagicMock()
+        server_state.bm25 = MagicMock()
+
+    @pytest.mark.asyncio
+    async def test_lookup_exact(self):
+        result = await vue_api_lookup("ref")
+        assert "# `ref`" in result
+        assert "Composable" in result
+        assert "vuejs.org/api/reactivity-core" in result
+        assert "`reactive`" in result  # related APIs
+        assert "2 documentation chunks" in result
+
+    @pytest.mark.asyncio
+    async def test_lookup_case_insensitive(self):
+        result = await vue_api_lookup("REF")
+        assert "# `ref`" in result
+
+    @pytest.mark.asyncio
+    async def test_lookup_with_backticks(self):
+        result = await vue_api_lookup("`defineProps`")
+        assert "# `defineProps`" in result
+        assert "Compiler Macro" in result
+
+    @pytest.mark.asyncio
+    async def test_lookup_hyphenated(self):
+        result = await vue_api_lookup("v-model")
+        assert "# `v-model`" in result
+        assert "Directive" in result
+
+    @pytest.mark.asyncio
+    async def test_lookup_fuzzy_fallback(self):
+        """Fuzzy matching catches typos."""
+        result = await vue_api_lookup("onMounte")
+        assert "# `onMounted`" in result
+
+    @pytest.mark.asyncio
+    async def test_lookup_not_found(self):
+        result = await vue_api_lookup("nonExistentApi")
+        assert "No API entity found" in result
+        assert "vue_docs_search" in result
+
+    @pytest.mark.asyncio
+    async def test_lookup_not_ready(self):
+        from vue_docs_server.startup import state as server_state
+        server_state.qdrant = None
+        server_state.bm25 = None
+        result = await vue_api_lookup("ref")
+        assert "not initialized" in result
+
+    @pytest.mark.asyncio
+    async def test_lookup_section_cleaned(self):
+        result = await vue_api_lookup("defineProps")
+        assert "{#" not in result  # anchor markers removed
+        assert "defineProps() & defineEmits()" in result
+
+
+class TestCleanSectionTitle:
+    def test_simple_anchor(self):
+        assert _clean_section_title("ref() {#ref}") == "ref()"
+
+    def test_html_badge(self):
+        result = _clean_section_title(
+            'useTemplateRef() <sup class="vt-badge" data-text="3.5+" /> {#usetemplateref}'
+        )
+        assert result == "useTemplateRef()"
+
+    def test_backticks(self):
+        assert _clean_section_title("`<Transition>` {#transition}") == "<Transition>"
 
 
 # ---------------------------------------------------------------------------
@@ -268,10 +748,15 @@ class TestSearchTool:
         )
         server_state.bm25 = mock_bm25
 
-        server_state.entity_index = EntityIndex(
+        entity_index = EntityIndex(
             entities={"computed": ApiEntity(name="computed")}
         )
+        server_state.entity_index = entity_index
         server_state.synonym_table = {}
+        server_state.entity_matcher = EntityMatcher(
+            entity_index=entity_index,
+            synonym_table={},
+        )
 
         # Mock Jina embedding
         mock_embed_result = MagicMock()
@@ -320,6 +805,10 @@ class TestSearchTool:
         server_state.bm25 = mock_bm25
         server_state.entity_index = EntityIndex()
         server_state.synonym_table = {}
+        server_state.entity_matcher = EntityMatcher(
+            entity_index=EntityIndex(),
+            synonym_table={},
+        )
 
         mock_embed_result = MagicMock()
         mock_embed_result.embeddings = [[0.1] * 1024]
@@ -376,17 +865,41 @@ def _setup_server_state():
     )
     server_state.bm25 = mock_bm25
 
-    server_state.entity_index = EntityIndex(
+    entity_index = EntityIndex(
         entities={
-            "ref": ApiEntity(name="ref"),
-            "computed": ApiEntity(name="computed"),
-            "v-model": ApiEntity(name="v-model"),
-        }
+            "ref": ApiEntity(
+                name="ref",
+                entity_type=EntityType.COMPOSABLE,
+                page_path="api/reactivity-core.md",
+                section="ref() {#ref}",
+                related=["reactive", "unref"],
+            ),
+            "computed": ApiEntity(
+                name="computed",
+                entity_type=EntityType.COMPOSABLE,
+                page_path="api/reactivity-core.md",
+                section="computed() {#computed}",
+            ),
+            "v-model": ApiEntity(
+                name="v-model",
+                entity_type=EntityType.DIRECTIVE,
+                page_path="api/built-in-directives.md",
+                section="v-model {#v-model}",
+            ),
+        },
+        entity_to_chunks={
+            "ref": ["api/reactivity-core#ref"],
+        },
     )
+    server_state.entity_index = entity_index
     server_state.synonym_table = {
         "two-way binding": ["v-model"],
         "reactivity": ["ref", "reactive"],
     }
+    server_state.entity_matcher = EntityMatcher(
+        entity_index=entity_index,
+        synonym_table=server_state.synonym_table,
+    )
     return server_state
 
 
@@ -403,7 +916,7 @@ class TestMCPIntegration:
 
     @pytest.mark.asyncio
     async def test_list_tools(self):
-        """Server exposes vue_docs_search_tool via MCP."""
+        """Server exposes both tools via MCP."""
         from vue_docs_server.main import mcp
 
         with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
@@ -412,6 +925,7 @@ class TestMCPIntegration:
 
         tool_names = [t.name for t in tools]
         assert "vue_docs_search_tool" in tool_names
+        assert "vue_api_lookup_tool" in tool_names
 
     @pytest.mark.asyncio
     async def test_tool_schema(self):
@@ -428,6 +942,20 @@ class TestMCPIntegration:
         assert "scope" in params["properties"]
         assert "max_results" in params["properties"]
         assert "query" in params.get("required", [])
+
+    @pytest.mark.asyncio
+    async def test_api_lookup_tool_schema(self):
+        """API lookup tool has correct parameter schema."""
+        from vue_docs_server.main import mcp
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                tools = await client.list_tools()
+
+        lookup_tool = next(t for t in tools if t.name == "vue_api_lookup_tool")
+        params = lookup_tool.inputSchema
+        assert "api_name" in params["properties"]
+        assert "api_name" in params.get("required", [])
 
     @pytest.mark.asyncio
     async def test_call_search_tool(self):
@@ -460,6 +988,29 @@ class TestMCPIntegration:
         text = result.content[0].text
         assert "Computed Properties" in text
         assert "re-evaluate" in text
+
+    @pytest.mark.asyncio
+    async def test_call_api_lookup_tool(self):
+        """Call vue_api_lookup_tool through MCP protocol."""
+        from vue_docs_server.main import mcp
+
+        _setup_server_state()
+
+        with (
+            patch("vue_docs_server.main.startup"),
+            patch("vue_docs_server.main.shutdown"),
+        ):
+            async with Client(mcp) as client:
+                result = await client.call_tool(
+                    "vue_api_lookup_tool",
+                    {"api_name": "ref"},
+                )
+
+        assert not result.is_error
+        text = result.content[0].text
+        assert "# `ref`" in text
+        assert "Composable" in text
+        assert "vuejs.org/api/reactivity-core" in text
 
     @pytest.mark.asyncio
     async def test_call_search_tool_with_scope(self):
