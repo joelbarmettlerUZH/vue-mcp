@@ -674,9 +674,9 @@ Write `server/tools/search.py`: the `vue_docs_search` tool — embed query via J
 
 Write `retrieval/reconstruction.py`: sort results by global_sort_key, group by page, format with breadcrumb headers and code blocks.
 
-Connect to Claude Desktop. Ask Vue documentation questions. Verify relevant results in readable format.
+Connect to Claude Code. Ask Vue documentation questions. Verify relevant results in readable format.
 
-**Exit: Working MCP server that Claude Desktop can connect to. Vue questions return relevant results.**
+**Exit: Working MCP server that Claude Code can connect to. Vue questions return relevant results.**
 
 ---
 
@@ -716,7 +716,7 @@ Run baseline evaluation. Record numbers.
 
 **Day 9 — Contextual enrichment**
 
-Write `ingestion/enrichment.py`: for each page, send full page content to Gemini Flash with prompt caching, generate context prefix per chunk. Use async to parallelize across pages. Store prefix in `chunk.contextual_prefix`, prepend before embedding, strip for display.
+Write `ingestion/enrichment.py`: for each page, send full page content to Gemini Flash (gemini-2.5-flash-lite) with prompt caching, generate context prefix per chunk. Use async to parallelize across pages. Store prefix in `chunk.contextual_prefix`, prepend before embedding, strip for display.
 
 Re-embed all enriched chunks. Re-upsert to Qdrant. Run eval. Compare to baseline.
 
@@ -726,7 +726,7 @@ Re-embed all enriched chunks. Re-upsert to Qdrant. Run eval. Compare to baseline
 
 **Day 10 — HyPE question generation + indexing**
 
-Extend enrichment with HyPE: generate 3-5 hypothetical questions per chunk via Gemini Flash. Embed each question via Jina. Store as separate points in Qdrant with `chunk_type: "hype_question"` and `parent_chunk_id`.
+Extend enrichment with HyPE: generate 3-5 hypothetical questions per chunk via Gemini Flash (gemini-2.5-flash-lite). Embed each question via Jina. Store as separate points in Qdrant with `chunk_type: "hype_question"` and `parent_chunk_id`.
 
 Update `hybrid_search()` to handle HyPE resolution: for HyPE results, swap for parent chunks, deduplicate.
 
@@ -804,7 +804,7 @@ Run eval across all intent categories.
 
 Implement `vue_list_topics`, `vue_get_related`, `vue_get_page`. Write clear tool descriptions for LLM routing. Test with multiple MCP clients.
 
-**Exit: All four MCP tools operational. Tool routing works well in Claude Desktop.**
+**Exit: All four MCP tools operational. Tool routing works well in Claude Code.**
 
 ---
 

@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 JINA_EMBEDDING_URL = "https://api.jina.ai/v1/embeddings"
 JINA_RERANKER_URL = "https://api.jina.ai/v1/rerank"
 
-# jina-embeddings-v4 task types
+# Task types for jina-embeddings-v4 and later
 TASK_RETRIEVAL_PASSAGE = "retrieval.passage"
 TASK_RETRIEVAL_QUERY = "retrieval.query"
 TASK_TEXT_MATCHING = "text-matching"
@@ -128,13 +128,13 @@ class JinaClient:
         payload: dict = {
             "model": self.model,
             "dimensions": self.dimensions,
+            "normalized": True,
             "input": texts,
         }
 
-        # v4 uses task parameter; v3 uses input_type
-        if "v4" in self.model:
+        # v4+ uses task parameter with object inputs; v3 uses input_type with plain strings
+        if "v3" not in self.model:
             payload["task"] = task
-            # v4 expects objects with text key
             payload["input"] = [{"text": t} for t in texts]
         else:
             # v3 mapping
