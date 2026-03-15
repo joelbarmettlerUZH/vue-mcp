@@ -1,0 +1,1234 @@
+{
+  "createApp": {
+    "name": "createApp",
+    "entity_type": "global_api",
+    "page_path": "api/application.md",
+    "section": "createApp() {#createapp}",
+    "related": []
+  },
+  "createSSRApp": {
+    "name": "createSSRApp",
+    "entity_type": "global_api",
+    "page_path": "api/application.md",
+    "section": "createSSRApp() {#createssrapp}",
+    "related": []
+  },
+  "app.mount": {
+    "name": "app.mount",
+    "entity_type": "global_api",
+    "page_path": "api/application.md",
+    "section": "app.mount() {#app-mount}",
+    "related": []
+  },
+  "app.unmount": {
+    "name": "app.unmount",
+    "entity_type": "global_api",
+    "page_path": "api/application.md",
+    "section": "app.unmount() {#app-unmount}",
+    "related": []
+  },
+  "app.onUnmount": {
+    "name": "app.onUnmount",
+    "entity_type": "global_api",
+    "page_path": "api/application.md",
+    "section": "app.onUnmount() <sup class=\"vt-badge\" data-text=\"3.5+\" /> {#app-onunmount}",
+    "related": []
+  },
+  "app.component": {
+    "name": "app.component",
+    "entity_type": "global_api",
+    "page_path": "api/application.md",
+    "section": "app.component() {#app-component}",
+    "related": []
+  },
+  "app.directive": {
+    "name": "app.directive",
+    "entity_type": "global_api",
+    "page_path": "api/application.md",
+    "section": "app.directive() {#app-directive}",
+    "related": []
+  },
+  "app.use": {
+    "name": "app.use",
+    "entity_type": "global_api",
+    "page_path": "api/application.md",
+    "section": "app.use() {#app-use}",
+    "related": []
+  },
+  "app.mixin": {
+    "name": "app.mixin",
+    "entity_type": "global_api",
+    "page_path": "api/application.md",
+    "section": "app.mixin() {#app-mixin}",
+    "related": []
+  },
+  "app.provide": {
+    "name": "app.provide",
+    "entity_type": "global_api",
+    "page_path": "api/application.md",
+    "section": "app.provide() {#app-provide}",
+    "related": []
+  },
+  "app.runWithContext": {
+    "name": "app.runWithContext",
+    "entity_type": "global_api",
+    "page_path": "api/application.md",
+    "section": "app.runWithContext() {#app-runwithcontext}",
+    "related": []
+  },
+  "app.version": {
+    "name": "app.version",
+    "entity_type": "global_api",
+    "page_path": "api/application.md",
+    "section": "app.version {#app-version}",
+    "related": []
+  },
+  "app.config": {
+    "name": "app.config",
+    "entity_type": "global_api",
+    "page_path": "api/application.md",
+    "section": "app.config {#app-config}",
+    "related": []
+  },
+  "app.config.errorHandler": {
+    "name": "app.config.errorHandler",
+    "entity_type": "global_api",
+    "page_path": "api/application.md",
+    "section": "app.config.errorHandler {#app-config-errorhandler}",
+    "related": []
+  },
+  "app.config.warnHandler": {
+    "name": "app.config.warnHandler",
+    "entity_type": "global_api",
+    "page_path": "api/application.md",
+    "section": "app.config.warnHandler {#app-config-warnhandler}",
+    "related": []
+  },
+  "app.config.performance": {
+    "name": "app.config.performance",
+    "entity_type": "global_api",
+    "page_path": "api/application.md",
+    "section": "app.config.performance {#app-config-performance}",
+    "related": []
+  },
+  "app.config.compilerOptions": {
+    "name": "app.config.compilerOptions",
+    "entity_type": "global_api",
+    "page_path": "api/application.md",
+    "section": "app.config.compilerOptions {#app-config-compileroptions}",
+    "related": []
+  },
+  "app.config.globalProperties": {
+    "name": "app.config.globalProperties",
+    "entity_type": "global_api",
+    "page_path": "api/application.md",
+    "section": "app.config.globalProperties {#app-config-globalproperties}",
+    "related": []
+  },
+  "app.config.optionMergeStrategies": {
+    "name": "app.config.optionMergeStrategies",
+    "entity_type": "global_api",
+    "page_path": "api/application.md",
+    "section": "app.config.optionMergeStrategies {#app-config-optionmergestrategies}",
+    "related": []
+  },
+  "app.config.idPrefix": {
+    "name": "app.config.idPrefix",
+    "entity_type": "global_api",
+    "page_path": "api/application.md",
+    "section": "app.config.idPrefix <sup class=\"vt-badge\" data-text=\"3.5+\" /> {#app-config-idprefix}",
+    "related": []
+  },
+  "app.config.throwUnhandledErrorInProduction": {
+    "name": "app.config.throwUnhandledErrorInProduction",
+    "entity_type": "global_api",
+    "page_path": "api/application.md",
+    "section": "app.config.throwUnhandledErrorInProduction <sup class=\"vt-badge\" data-text=\"3.5+\" /> {#app-config-throwunhandlederrorinproduction}",
+    "related": []
+  },
+  "Transition": {
+    "name": "Transition",
+    "entity_type": "component",
+    "page_path": "api/built-in-components.md",
+    "section": "`<Transition>` {#transition}",
+    "related": []
+  },
+  "TransitionGroup": {
+    "name": "TransitionGroup",
+    "entity_type": "component",
+    "page_path": "api/built-in-components.md",
+    "section": "`<TransitionGroup>` {#transitiongroup}",
+    "related": []
+  },
+  "KeepAlive": {
+    "name": "KeepAlive",
+    "entity_type": "component",
+    "page_path": "api/built-in-components.md",
+    "section": "`<KeepAlive>` {#keepalive}",
+    "related": []
+  },
+  "Teleport": {
+    "name": "Teleport",
+    "entity_type": "component",
+    "page_path": "api/built-in-components.md",
+    "section": "`<Teleport>` {#teleport}",
+    "related": []
+  },
+  "Suspense": {
+    "name": "Suspense",
+    "entity_type": "component",
+    "page_path": "api/built-in-components.md",
+    "section": "`<Suspense>` <sup class=\"vt-badge experimental\" /> {#suspense}",
+    "related": []
+  },
+  "v-text": {
+    "name": "v-text",
+    "entity_type": "directive",
+    "page_path": "api/built-in-directives.md",
+    "section": "v-text {#v-text}",
+    "related": []
+  },
+  "v-html": {
+    "name": "v-html",
+    "entity_type": "directive",
+    "page_path": "api/built-in-directives.md",
+    "section": "v-html {#v-html}",
+    "related": []
+  },
+  "v-show": {
+    "name": "v-show",
+    "entity_type": "directive",
+    "page_path": "api/built-in-directives.md",
+    "section": "v-show {#v-show}",
+    "related": []
+  },
+  "v-if": {
+    "name": "v-if",
+    "entity_type": "directive",
+    "page_path": "api/built-in-directives.md",
+    "section": "v-if {#v-if}",
+    "related": []
+  },
+  "v-else": {
+    "name": "v-else",
+    "entity_type": "directive",
+    "page_path": "api/built-in-directives.md",
+    "section": "v-else {#v-else}",
+    "related": []
+  },
+  "v-else-if": {
+    "name": "v-else-if",
+    "entity_type": "directive",
+    "page_path": "api/built-in-directives.md",
+    "section": "v-else-if {#v-else-if}",
+    "related": []
+  },
+  "v-for": {
+    "name": "v-for",
+    "entity_type": "directive",
+    "page_path": "api/built-in-directives.md",
+    "section": "v-for {#v-for}",
+    "related": []
+  },
+  "v-on": {
+    "name": "v-on",
+    "entity_type": "directive",
+    "page_path": "api/built-in-directives.md",
+    "section": "v-on {#v-on}",
+    "related": []
+  },
+  "v-bind": {
+    "name": "v-bind",
+    "entity_type": "directive",
+    "page_path": "api/built-in-directives.md",
+    "section": "v-bind {#v-bind}",
+    "related": []
+  },
+  "v-model": {
+    "name": "v-model",
+    "entity_type": "directive",
+    "page_path": "api/built-in-directives.md",
+    "section": "v-model {#v-model}",
+    "related": []
+  },
+  "v-slot": {
+    "name": "v-slot",
+    "entity_type": "directive",
+    "page_path": "api/built-in-directives.md",
+    "section": "v-slot {#v-slot}",
+    "related": []
+  },
+  "v-pre": {
+    "name": "v-pre",
+    "entity_type": "directive",
+    "page_path": "api/built-in-directives.md",
+    "section": "v-pre {#v-pre}",
+    "related": []
+  },
+  "v-once": {
+    "name": "v-once",
+    "entity_type": "directive",
+    "page_path": "api/built-in-directives.md",
+    "section": "v-once {#v-once}",
+    "related": []
+  },
+  "v-memo": {
+    "name": "v-memo",
+    "entity_type": "directive",
+    "page_path": "api/built-in-directives.md",
+    "section": "v-memo {#v-memo}",
+    "related": []
+  },
+  "v-cloak": {
+    "name": "v-cloak",
+    "entity_type": "directive",
+    "page_path": "api/built-in-directives.md",
+    "section": "v-cloak {#v-cloak}",
+    "related": []
+  },
+  "key": {
+    "name": "key",
+    "entity_type": "directive",
+    "page_path": "api/built-in-special-attributes.md",
+    "section": "key {#key}",
+    "related": []
+  },
+  "ref": {
+    "name": "ref",
+    "entity_type": "composable",
+    "page_path": "api/reactivity-core.md",
+    "section": "ref() {#ref}",
+    "related": []
+  },
+  "is": {
+    "name": "is",
+    "entity_type": "directive",
+    "page_path": "api/built-in-special-attributes.md",
+    "section": "is {#is}",
+    "related": []
+  },
+  "component": {
+    "name": "component",
+    "entity_type": "component",
+    "page_path": "api/built-in-special-elements.md",
+    "section": "`<component>` {#component}",
+    "related": []
+  },
+  "slot": {
+    "name": "slot",
+    "entity_type": "component",
+    "page_path": "api/built-in-special-elements.md",
+    "section": "`<slot>` {#slot}",
+    "related": []
+  },
+  "template": {
+    "name": "template",
+    "entity_type": "option",
+    "page_path": "api/options-rendering.md",
+    "section": "template {#template}",
+    "related": []
+  },
+  "__VUE_OPTIONS_API__": {
+    "name": "__VUE_OPTIONS_API__",
+    "entity_type": "other",
+    "page_path": "api/compile-time-flags.md",
+    "section": "`__VUE_OPTIONS_API__` {#VUE_OPTIONS_API}",
+    "related": []
+  },
+  "__VUE_PROD_DEVTOOLS__": {
+    "name": "__VUE_PROD_DEVTOOLS__",
+    "entity_type": "other",
+    "page_path": "api/compile-time-flags.md",
+    "section": "`__VUE_PROD_DEVTOOLS__` {#VUE_PROD_DEVTOOLS}",
+    "related": []
+  },
+  "__VUE_PROD_HYDRATION_MISMATCH_DETAILS__": {
+    "name": "__VUE_PROD_HYDRATION_MISMATCH_DETAILS__",
+    "entity_type": "other",
+    "page_path": "api/compile-time-flags.md",
+    "section": "`__VUE_PROD_HYDRATION_MISMATCH_DETAILS__` {#VUE_PROD_HYDRATION_MISMATCH_DETAILS}",
+    "related": []
+  },
+  "$data": {
+    "name": "$data",
+    "entity_type": "instance_property",
+    "page_path": "api/component-instance.md",
+    "section": "$data {#data}",
+    "related": []
+  },
+  "$props": {
+    "name": "$props",
+    "entity_type": "instance_property",
+    "page_path": "api/component-instance.md",
+    "section": "$props {#props}",
+    "related": []
+  },
+  "$el": {
+    "name": "$el",
+    "entity_type": "instance_property",
+    "page_path": "api/component-instance.md",
+    "section": "$el {#el}",
+    "related": []
+  },
+  "$options": {
+    "name": "$options",
+    "entity_type": "instance_property",
+    "page_path": "api/component-instance.md",
+    "section": "$options {#options}",
+    "related": []
+  },
+  "$parent": {
+    "name": "$parent",
+    "entity_type": "instance_property",
+    "page_path": "api/component-instance.md",
+    "section": "$parent {#parent}",
+    "related": []
+  },
+  "$root": {
+    "name": "$root",
+    "entity_type": "instance_property",
+    "page_path": "api/component-instance.md",
+    "section": "$root {#root}",
+    "related": []
+  },
+  "$slots": {
+    "name": "$slots",
+    "entity_type": "instance_property",
+    "page_path": "api/component-instance.md",
+    "section": "$slots {#slots}",
+    "related": []
+  },
+  "$refs": {
+    "name": "$refs",
+    "entity_type": "instance_property",
+    "page_path": "api/component-instance.md",
+    "section": "$refs {#refs}",
+    "related": []
+  },
+  "$attrs": {
+    "name": "$attrs",
+    "entity_type": "instance_property",
+    "page_path": "api/component-instance.md",
+    "section": "$attrs {#attrs}",
+    "related": []
+  },
+  "$watch": {
+    "name": "$watch",
+    "entity_type": "instance_property",
+    "page_path": "api/component-instance.md",
+    "section": "$watch() {#watch}",
+    "related": []
+  },
+  "$emit": {
+    "name": "$emit",
+    "entity_type": "instance_property",
+    "page_path": "api/component-instance.md",
+    "section": "$emit() {#emit}",
+    "related": []
+  },
+  "$forceUpdate": {
+    "name": "$forceUpdate",
+    "entity_type": "instance_property",
+    "page_path": "api/component-instance.md",
+    "section": "$forceUpdate() {#forceupdate}",
+    "related": []
+  },
+  "$nextTick": {
+    "name": "$nextTick",
+    "entity_type": "instance_property",
+    "page_path": "api/component-instance.md",
+    "section": "$nextTick() {#nexttick}",
+    "related": []
+  },
+  "provide": {
+    "name": "provide",
+    "entity_type": "option",
+    "page_path": "api/options-composition.md",
+    "section": "provide {#provide}",
+    "related": []
+  },
+  "inject": {
+    "name": "inject",
+    "entity_type": "option",
+    "page_path": "api/options-composition.md",
+    "section": "inject {#inject}",
+    "related": []
+  },
+  "hasInjectionContext": {
+    "name": "hasInjectionContext",
+    "entity_type": "composable",
+    "page_path": "api/composition-api-dependency-injection.md",
+    "section": "hasInjectionContext() {#has-injection-context}",
+    "related": []
+  },
+  "useAttrs": {
+    "name": "useAttrs",
+    "entity_type": "composable",
+    "page_path": "api/sfc-script-setup.md",
+    "section": "`useSlots()` & `useAttrs()` {#useslots-useattrs}",
+    "related": []
+  },
+  "useSlots": {
+    "name": "useSlots",
+    "entity_type": "composable",
+    "page_path": "api/sfc-script-setup.md",
+    "section": "`useSlots()` & `useAttrs()` {#useslots-useattrs}",
+    "related": []
+  },
+  "useModel": {
+    "name": "useModel",
+    "entity_type": "composable",
+    "page_path": "api/composition-api-helpers.md",
+    "section": "useModel() {#usemodel}",
+    "related": []
+  },
+  "useTemplateRef": {
+    "name": "useTemplateRef",
+    "entity_type": "composable",
+    "page_path": "api/composition-api-helpers.md",
+    "section": "useTemplateRef() <sup class=\"vt-badge\" data-text=\"3.5+\" /> {#usetemplateref}",
+    "related": []
+  },
+  "useId": {
+    "name": "useId",
+    "entity_type": "composable",
+    "page_path": "api/composition-api-helpers.md",
+    "section": "useId() <sup class=\"vt-badge\" data-text=\"3.5+\" /> {#useid}",
+    "related": []
+  },
+  "onMounted": {
+    "name": "onMounted",
+    "entity_type": "lifecycle_hook",
+    "page_path": "api/composition-api-lifecycle.md",
+    "section": "onMounted() {#onmounted}",
+    "related": []
+  },
+  "onUpdated": {
+    "name": "onUpdated",
+    "entity_type": "lifecycle_hook",
+    "page_path": "api/composition-api-lifecycle.md",
+    "section": "onUpdated() {#onupdated}",
+    "related": []
+  },
+  "onUnmounted": {
+    "name": "onUnmounted",
+    "entity_type": "lifecycle_hook",
+    "page_path": "api/composition-api-lifecycle.md",
+    "section": "onUnmounted() {#onunmounted}",
+    "related": []
+  },
+  "onBeforeMount": {
+    "name": "onBeforeMount",
+    "entity_type": "lifecycle_hook",
+    "page_path": "api/composition-api-lifecycle.md",
+    "section": "onBeforeMount() {#onbeforemount}",
+    "related": []
+  },
+  "onBeforeUpdate": {
+    "name": "onBeforeUpdate",
+    "entity_type": "lifecycle_hook",
+    "page_path": "api/composition-api-lifecycle.md",
+    "section": "onBeforeUpdate() {#onbeforeupdate}",
+    "related": []
+  },
+  "onBeforeUnmount": {
+    "name": "onBeforeUnmount",
+    "entity_type": "lifecycle_hook",
+    "page_path": "api/composition-api-lifecycle.md",
+    "section": "onBeforeUnmount() {#onbeforeunmount}",
+    "related": []
+  },
+  "onErrorCaptured": {
+    "name": "onErrorCaptured",
+    "entity_type": "lifecycle_hook",
+    "page_path": "api/composition-api-lifecycle.md",
+    "section": "onErrorCaptured() {#onerrorcaptured}",
+    "related": []
+  },
+  "onRenderTracked": {
+    "name": "onRenderTracked",
+    "entity_type": "lifecycle_hook",
+    "page_path": "api/composition-api-lifecycle.md",
+    "section": "onRenderTracked() <sup class=\"vt-badge dev-only\" /> {#onrendertracked}",
+    "related": []
+  },
+  "onRenderTriggered": {
+    "name": "onRenderTriggered",
+    "entity_type": "lifecycle_hook",
+    "page_path": "api/composition-api-lifecycle.md",
+    "section": "onRenderTriggered() <sup class=\"vt-badge dev-only\" /> {#onrendertriggered}",
+    "related": []
+  },
+  "onActivated": {
+    "name": "onActivated",
+    "entity_type": "lifecycle_hook",
+    "page_path": "api/composition-api-lifecycle.md",
+    "section": "onActivated() {#onactivated}",
+    "related": []
+  },
+  "onDeactivated": {
+    "name": "onDeactivated",
+    "entity_type": "lifecycle_hook",
+    "page_path": "api/composition-api-lifecycle.md",
+    "section": "onDeactivated() {#ondeactivated}",
+    "related": []
+  },
+  "onServerPrefetch": {
+    "name": "onServerPrefetch",
+    "entity_type": "lifecycle_hook",
+    "page_path": "api/composition-api-lifecycle.md",
+    "section": "onServerPrefetch() <sup class=\"vt-badge\" data-text=\"SSR only\" /> {#onserverprefetch}",
+    "related": []
+  },
+  "defineCustomElement": {
+    "name": "defineCustomElement",
+    "entity_type": "global_api",
+    "page_path": "api/custom-elements.md",
+    "section": "defineCustomElement() {#definecustomelement}",
+    "related": []
+  },
+  "useHost": {
+    "name": "useHost",
+    "entity_type": "global_api",
+    "page_path": "api/custom-elements.md",
+    "section": "useHost() <sup class=\"vt-badge\" data-text=\"3.5+\"/> {#usehost}",
+    "related": []
+  },
+  "useShadowRoot": {
+    "name": "useShadowRoot",
+    "entity_type": "global_api",
+    "page_path": "api/custom-elements.md",
+    "section": "useShadowRoot() <sup class=\"vt-badge\" data-text=\"3.5+\"/> {#useshadowroot}",
+    "related": []
+  },
+  "this.$host": {
+    "name": "this.$host",
+    "entity_type": "global_api",
+    "page_path": "api/custom-elements.md",
+    "section": "this.$host <sup class=\"vt-badge\" data-text=\"3.5+\"/> {#this-host}",
+    "related": []
+  },
+  "createRenderer": {
+    "name": "createRenderer",
+    "entity_type": "global_api",
+    "page_path": "api/custom-renderer.md",
+    "section": "createRenderer() {#createrenderer}",
+    "related": []
+  },
+  "version": {
+    "name": "version",
+    "entity_type": "global_api",
+    "page_path": "api/general.md",
+    "section": "version {#version}",
+    "related": []
+  },
+  "nextTick": {
+    "name": "nextTick",
+    "entity_type": "global_api",
+    "page_path": "api/general.md",
+    "section": "nextTick() {#nexttick}",
+    "related": []
+  },
+  "defineComponent": {
+    "name": "defineComponent",
+    "entity_type": "global_api",
+    "page_path": "api/general.md",
+    "section": "defineComponent() {#definecomponent}",
+    "related": []
+  },
+  "defineAsyncComponent": {
+    "name": "defineAsyncComponent",
+    "entity_type": "global_api",
+    "page_path": "api/general.md",
+    "section": "defineAsyncComponent() {#defineasynccomponent}",
+    "related": []
+  },
+  "mixins": {
+    "name": "mixins",
+    "entity_type": "option",
+    "page_path": "api/options-composition.md",
+    "section": "mixins {#mixins}",
+    "related": []
+  },
+  "extends": {
+    "name": "extends",
+    "entity_type": "option",
+    "page_path": "api/options-composition.md",
+    "section": "extends {#extends}",
+    "related": []
+  },
+  "beforeCreate": {
+    "name": "beforeCreate",
+    "entity_type": "lifecycle_hook",
+    "page_path": "api/options-lifecycle.md",
+    "section": "beforeCreate {#beforecreate}",
+    "related": []
+  },
+  "created": {
+    "name": "created",
+    "entity_type": "lifecycle_hook",
+    "page_path": "api/options-lifecycle.md",
+    "section": "created {#created}",
+    "related": []
+  },
+  "beforeMount": {
+    "name": "beforeMount",
+    "entity_type": "lifecycle_hook",
+    "page_path": "api/options-lifecycle.md",
+    "section": "beforeMount {#beforemount}",
+    "related": []
+  },
+  "mounted": {
+    "name": "mounted",
+    "entity_type": "lifecycle_hook",
+    "page_path": "api/options-lifecycle.md",
+    "section": "mounted {#mounted}",
+    "related": []
+  },
+  "beforeUpdate": {
+    "name": "beforeUpdate",
+    "entity_type": "lifecycle_hook",
+    "page_path": "api/options-lifecycle.md",
+    "section": "beforeUpdate {#beforeupdate}",
+    "related": []
+  },
+  "updated": {
+    "name": "updated",
+    "entity_type": "lifecycle_hook",
+    "page_path": "api/options-lifecycle.md",
+    "section": "updated {#updated}",
+    "related": []
+  },
+  "beforeUnmount": {
+    "name": "beforeUnmount",
+    "entity_type": "lifecycle_hook",
+    "page_path": "api/options-lifecycle.md",
+    "section": "beforeUnmount {#beforeunmount}",
+    "related": []
+  },
+  "unmounted": {
+    "name": "unmounted",
+    "entity_type": "lifecycle_hook",
+    "page_path": "api/options-lifecycle.md",
+    "section": "unmounted {#unmounted}",
+    "related": []
+  },
+  "errorCaptured": {
+    "name": "errorCaptured",
+    "entity_type": "lifecycle_hook",
+    "page_path": "api/options-lifecycle.md",
+    "section": "errorCaptured {#errorcaptured}",
+    "related": []
+  },
+  "renderTracked": {
+    "name": "renderTracked",
+    "entity_type": "lifecycle_hook",
+    "page_path": "api/options-lifecycle.md",
+    "section": "renderTracked <sup class=\"vt-badge dev-only\" /> {#rendertracked}",
+    "related": []
+  },
+  "renderTriggered": {
+    "name": "renderTriggered",
+    "entity_type": "lifecycle_hook",
+    "page_path": "api/options-lifecycle.md",
+    "section": "renderTriggered <sup class=\"vt-badge dev-only\" /> {#rendertriggered}",
+    "related": []
+  },
+  "activated": {
+    "name": "activated",
+    "entity_type": "lifecycle_hook",
+    "page_path": "api/options-lifecycle.md",
+    "section": "activated {#activated}",
+    "related": []
+  },
+  "deactivated": {
+    "name": "deactivated",
+    "entity_type": "lifecycle_hook",
+    "page_path": "api/options-lifecycle.md",
+    "section": "deactivated {#deactivated}",
+    "related": []
+  },
+  "serverPrefetch": {
+    "name": "serverPrefetch",
+    "entity_type": "lifecycle_hook",
+    "page_path": "api/options-lifecycle.md",
+    "section": "serverPrefetch <sup class=\"vt-badge\" data-text=\"SSR only\" /> {#serverprefetch}",
+    "related": []
+  },
+  "name": {
+    "name": "name",
+    "entity_type": "option",
+    "page_path": "api/options-misc.md",
+    "section": "name {#name}",
+    "related": []
+  },
+  "inheritAttrs": {
+    "name": "inheritAttrs",
+    "entity_type": "option",
+    "page_path": "api/options-misc.md",
+    "section": "inheritAttrs {#inheritattrs}",
+    "related": []
+  },
+  "components": {
+    "name": "components",
+    "entity_type": "option",
+    "page_path": "api/options-misc.md",
+    "section": "components {#components}",
+    "related": []
+  },
+  "directives": {
+    "name": "directives",
+    "entity_type": "option",
+    "page_path": "api/options-misc.md",
+    "section": "directives {#directives}",
+    "related": []
+  },
+  "render": {
+    "name": "render",
+    "entity_type": "option",
+    "page_path": "api/options-rendering.md",
+    "section": "render {#render}",
+    "related": []
+  },
+  "compilerOptions": {
+    "name": "compilerOptions",
+    "entity_type": "option",
+    "page_path": "api/options-rendering.md",
+    "section": "compilerOptions {#compileroptions}",
+    "related": []
+  },
+  "slots": {
+    "name": "slots",
+    "entity_type": "option",
+    "page_path": "api/options-rendering.md",
+    "section": "slots<sup class=\"vt-badge ts\"/> {#slots}",
+    "related": []
+  },
+  "data": {
+    "name": "data",
+    "entity_type": "option",
+    "page_path": "api/options-state.md",
+    "section": "data {#data}",
+    "related": []
+  },
+  "props": {
+    "name": "props",
+    "entity_type": "option",
+    "page_path": "api/options-state.md",
+    "section": "props {#props}",
+    "related": []
+  },
+  "computed": {
+    "name": "computed",
+    "entity_type": "composable",
+    "page_path": "api/reactivity-core.md",
+    "section": "computed() {#computed}",
+    "related": []
+  },
+  "methods": {
+    "name": "methods",
+    "entity_type": "option",
+    "page_path": "api/options-state.md",
+    "section": "methods {#methods}",
+    "related": []
+  },
+  "watch": {
+    "name": "watch",
+    "entity_type": "composable",
+    "page_path": "api/reactivity-core.md",
+    "section": "watch() {#watch}",
+    "related": []
+  },
+  "emits": {
+    "name": "emits",
+    "entity_type": "option",
+    "page_path": "api/options-state.md",
+    "section": "emits {#emits}",
+    "related": []
+  },
+  "expose": {
+    "name": "expose",
+    "entity_type": "option",
+    "page_path": "api/options-state.md",
+    "section": "expose {#expose}",
+    "related": []
+  },
+  "shallowRef": {
+    "name": "shallowRef",
+    "entity_type": "composable",
+    "page_path": "api/reactivity-advanced.md",
+    "section": "shallowRef() {#shallowref}",
+    "related": []
+  },
+  "triggerRef": {
+    "name": "triggerRef",
+    "entity_type": "composable",
+    "page_path": "api/reactivity-advanced.md",
+    "section": "triggerRef() {#triggerref}",
+    "related": []
+  },
+  "customRef": {
+    "name": "customRef",
+    "entity_type": "composable",
+    "page_path": "api/reactivity-advanced.md",
+    "section": "customRef() {#customref}",
+    "related": []
+  },
+  "shallowReactive": {
+    "name": "shallowReactive",
+    "entity_type": "composable",
+    "page_path": "api/reactivity-advanced.md",
+    "section": "shallowReactive() {#shallowreactive}",
+    "related": []
+  },
+  "shallowReadonly": {
+    "name": "shallowReadonly",
+    "entity_type": "composable",
+    "page_path": "api/reactivity-advanced.md",
+    "section": "shallowReadonly() {#shallowreadonly}",
+    "related": []
+  },
+  "toRaw": {
+    "name": "toRaw",
+    "entity_type": "composable",
+    "page_path": "api/reactivity-advanced.md",
+    "section": "toRaw() {#toraw}",
+    "related": []
+  },
+  "markRaw": {
+    "name": "markRaw",
+    "entity_type": "composable",
+    "page_path": "api/reactivity-advanced.md",
+    "section": "markRaw() {#markraw}",
+    "related": []
+  },
+  "effectScope": {
+    "name": "effectScope",
+    "entity_type": "composable",
+    "page_path": "api/reactivity-advanced.md",
+    "section": "effectScope() {#effectscope}",
+    "related": []
+  },
+  "getCurrentScope": {
+    "name": "getCurrentScope",
+    "entity_type": "composable",
+    "page_path": "api/reactivity-advanced.md",
+    "section": "getCurrentScope() {#getcurrentscope}",
+    "related": []
+  },
+  "onScopeDispose": {
+    "name": "onScopeDispose",
+    "entity_type": "composable",
+    "page_path": "api/reactivity-advanced.md",
+    "section": "onScopeDispose() {#onscopedispose}",
+    "related": []
+  },
+  "reactive": {
+    "name": "reactive",
+    "entity_type": "composable",
+    "page_path": "api/reactivity-core.md",
+    "section": "reactive() {#reactive}",
+    "related": []
+  },
+  "readonly": {
+    "name": "readonly",
+    "entity_type": "composable",
+    "page_path": "api/reactivity-core.md",
+    "section": "readonly() {#readonly}",
+    "related": []
+  },
+  "watchEffect": {
+    "name": "watchEffect",
+    "entity_type": "composable",
+    "page_path": "api/reactivity-core.md",
+    "section": "watchEffect() {#watcheffect}",
+    "related": []
+  },
+  "watchPostEffect": {
+    "name": "watchPostEffect",
+    "entity_type": "composable",
+    "page_path": "api/reactivity-core.md",
+    "section": "watchPostEffect() {#watchposteffect}",
+    "related": []
+  },
+  "watchSyncEffect": {
+    "name": "watchSyncEffect",
+    "entity_type": "composable",
+    "page_path": "api/reactivity-core.md",
+    "section": "watchSyncEffect() {#watchsynceffect}",
+    "related": []
+  },
+  "onWatcherCleanup": {
+    "name": "onWatcherCleanup",
+    "entity_type": "composable",
+    "page_path": "api/reactivity-core.md",
+    "section": "onWatcherCleanup() <sup class=\"vt-badge\" data-text=\"3.5+\" /> {#onwatchercleanup}",
+    "related": []
+  },
+  "isRef": {
+    "name": "isRef",
+    "entity_type": "composable",
+    "page_path": "api/reactivity-utilities.md",
+    "section": "isRef() {#isref}",
+    "related": []
+  },
+  "unref": {
+    "name": "unref",
+    "entity_type": "composable",
+    "page_path": "api/reactivity-utilities.md",
+    "section": "unref() {#unref}",
+    "related": []
+  },
+  "toRef": {
+    "name": "toRef",
+    "entity_type": "composable",
+    "page_path": "api/reactivity-utilities.md",
+    "section": "toRef() {#toref}",
+    "related": []
+  },
+  "toValue": {
+    "name": "toValue",
+    "entity_type": "composable",
+    "page_path": "api/reactivity-utilities.md",
+    "section": "toValue() {#tovalue}",
+    "related": []
+  },
+  "toRefs": {
+    "name": "toRefs",
+    "entity_type": "composable",
+    "page_path": "api/reactivity-utilities.md",
+    "section": "toRefs() {#torefs}",
+    "related": []
+  },
+  "isProxy": {
+    "name": "isProxy",
+    "entity_type": "composable",
+    "page_path": "api/reactivity-utilities.md",
+    "section": "isProxy() {#isproxy}",
+    "related": []
+  },
+  "isReactive": {
+    "name": "isReactive",
+    "entity_type": "composable",
+    "page_path": "api/reactivity-utilities.md",
+    "section": "isReactive() {#isreactive}",
+    "related": []
+  },
+  "isReadonly": {
+    "name": "isReadonly",
+    "entity_type": "composable",
+    "page_path": "api/reactivity-utilities.md",
+    "section": "isReadonly() {#isreadonly}",
+    "related": []
+  },
+  "h": {
+    "name": "h",
+    "entity_type": "global_api",
+    "page_path": "api/render-function.md",
+    "section": "h() {#h}",
+    "related": []
+  },
+  "mergeProps": {
+    "name": "mergeProps",
+    "entity_type": "global_api",
+    "page_path": "api/render-function.md",
+    "section": "mergeProps() {#mergeprops}",
+    "related": []
+  },
+  "cloneVNode": {
+    "name": "cloneVNode",
+    "entity_type": "global_api",
+    "page_path": "api/render-function.md",
+    "section": "cloneVNode() {#clonevnode}",
+    "related": []
+  },
+  "isVNode": {
+    "name": "isVNode",
+    "entity_type": "global_api",
+    "page_path": "api/render-function.md",
+    "section": "isVNode() {#isvnode}",
+    "related": []
+  },
+  "resolveComponent": {
+    "name": "resolveComponent",
+    "entity_type": "global_api",
+    "page_path": "api/render-function.md",
+    "section": "resolveComponent() {#resolvecomponent}",
+    "related": []
+  },
+  "resolveDirective": {
+    "name": "resolveDirective",
+    "entity_type": "global_api",
+    "page_path": "api/render-function.md",
+    "section": "resolveDirective() {#resolvedirective}",
+    "related": []
+  },
+  "withDirectives": {
+    "name": "withDirectives",
+    "entity_type": "global_api",
+    "page_path": "api/render-function.md",
+    "section": "withDirectives() {#withdirectives}",
+    "related": []
+  },
+  "withModifiers": {
+    "name": "withModifiers",
+    "entity_type": "global_api",
+    "page_path": "api/render-function.md",
+    "section": "withModifiers() {#withmodifiers}",
+    "related": []
+  },
+  "defineProps": {
+    "name": "defineProps",
+    "entity_type": "compiler_macro",
+    "page_path": "api/sfc-script-setup.md",
+    "section": "defineProps() & defineEmits() {#defineprops-defineemits}",
+    "related": []
+  },
+  "defineEmits": {
+    "name": "defineEmits",
+    "entity_type": "compiler_macro",
+    "page_path": "api/sfc-script-setup.md",
+    "section": "defineProps() & defineEmits() {#defineprops-defineemits}",
+    "related": []
+  },
+  "defineModel": {
+    "name": "defineModel",
+    "entity_type": "compiler_macro",
+    "page_path": "api/sfc-script-setup.md",
+    "section": "defineModel() {#definemodel}",
+    "related": []
+  },
+  "defineExpose": {
+    "name": "defineExpose",
+    "entity_type": "compiler_macro",
+    "page_path": "api/sfc-script-setup.md",
+    "section": "defineExpose() {#defineexpose}",
+    "related": []
+  },
+  "defineOptions": {
+    "name": "defineOptions",
+    "entity_type": "compiler_macro",
+    "page_path": "api/sfc-script-setup.md",
+    "section": "defineOptions() {#defineoptions}",
+    "related": []
+  },
+  "defineSlots": {
+    "name": "defineSlots",
+    "entity_type": "compiler_macro",
+    "page_path": "api/sfc-script-setup.md",
+    "section": "defineSlots()<sup class=\"vt-badge ts\"/> {#defineslots}",
+    "related": []
+  },
+  "renderToString": {
+    "name": "renderToString",
+    "entity_type": "global_api",
+    "page_path": "api/ssr.md",
+    "section": "renderToString() {#rendertostring}",
+    "related": []
+  },
+  "renderToNodeStream": {
+    "name": "renderToNodeStream",
+    "entity_type": "global_api",
+    "page_path": "api/ssr.md",
+    "section": "renderToNodeStream() {#rendertonodestream}",
+    "related": []
+  },
+  "pipeToNodeWritable": {
+    "name": "pipeToNodeWritable",
+    "entity_type": "global_api",
+    "page_path": "api/ssr.md",
+    "section": "pipeToNodeWritable() {#pipetonodewritable}",
+    "related": []
+  },
+  "renderToWebStream": {
+    "name": "renderToWebStream",
+    "entity_type": "global_api",
+    "page_path": "api/ssr.md",
+    "section": "renderToWebStream() {#rendertowebstream}",
+    "related": []
+  },
+  "pipeToWebWritable": {
+    "name": "pipeToWebWritable",
+    "entity_type": "global_api",
+    "page_path": "api/ssr.md",
+    "section": "pipeToWebWritable() {#pipetowebwritable}",
+    "related": []
+  },
+  "renderToSimpleStream": {
+    "name": "renderToSimpleStream",
+    "entity_type": "global_api",
+    "page_path": "api/ssr.md",
+    "section": "renderToSimpleStream() {#rendertosimplestream}",
+    "related": []
+  },
+  "useSSRContext": {
+    "name": "useSSRContext",
+    "entity_type": "global_api",
+    "page_path": "api/ssr.md",
+    "section": "useSSRContext() {#usessrcontext}",
+    "related": []
+  },
+  "data-allow-mismatch": {
+    "name": "data-allow-mismatch",
+    "entity_type": "global_api",
+    "page_path": "api/ssr.md",
+    "section": "data-allow-mismatch <sup class=\"vt-badge\" data-text=\"3.5+\" /> {#data-allow-mismatch}",
+    "related": []
+  },
+  "PropType": {
+    "name": "PropType",
+    "entity_type": "other",
+    "page_path": "api/utility-types.md",
+    "section": "PropType\\<T> {#proptype-t}",
+    "related": []
+  },
+  "MaybeRef": {
+    "name": "MaybeRef",
+    "entity_type": "other",
+    "page_path": "api/utility-types.md",
+    "section": "MaybeRef\\<T> {#mayberef}",
+    "related": []
+  },
+  "MaybeRefOrGetter": {
+    "name": "MaybeRefOrGetter",
+    "entity_type": "other",
+    "page_path": "api/utility-types.md",
+    "section": "MaybeRefOrGetter\\<T> {#maybereforgetter}",
+    "related": []
+  },
+  "ExtractPropTypes": {
+    "name": "ExtractPropTypes",
+    "entity_type": "other",
+    "page_path": "api/utility-types.md",
+    "section": "ExtractPropTypes\\<T> {#extractproptypes}",
+    "related": []
+  },
+  "ExtractPublicPropTypes": {
+    "name": "ExtractPublicPropTypes",
+    "entity_type": "other",
+    "page_path": "api/utility-types.md",
+    "section": "ExtractPublicPropTypes\\<T> {#extractpublicproptypes}",
+    "related": []
+  },
+  "ComponentCustomProperties": {
+    "name": "ComponentCustomProperties",
+    "entity_type": "other",
+    "page_path": "api/utility-types.md",
+    "section": "ComponentCustomProperties {#componentcustomproperties}",
+    "related": []
+  },
+  "ComponentCustomOptions": {
+    "name": "ComponentCustomOptions",
+    "entity_type": "other",
+    "page_path": "api/utility-types.md",
+    "section": "ComponentCustomOptions {#componentcustomoptions}",
+    "related": []
+  },
+  "ComponentCustomProps": {
+    "name": "ComponentCustomProps",
+    "entity_type": "other",
+    "page_path": "api/utility-types.md",
+    "section": "ComponentCustomProps {#componentcustomprops}",
+    "related": []
+  }
+}

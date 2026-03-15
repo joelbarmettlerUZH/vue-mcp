@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     jina_api_key: str = ""
     jina_embedding_model: str = "jina-embeddings-v4"
     jina_reranker_model: str = "jina-reranker-v3"
+    jina_embedding_dimensions: int = 1024
 
     # Gemini
     gemini_api_key: str = ""
