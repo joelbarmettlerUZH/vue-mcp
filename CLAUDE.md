@@ -64,9 +64,9 @@ All query-time LLM tasks (sub-question decomposition, multi-query rewriting, ste
 
 Indexing-time tasks (contextual enrichment, HyPE question generation, summary generation) use a slightly more capable but still cost-effective model. These run in batch during indexing, not at query time, so latency is less critical than quality. Gemini 2.5 Flash, Claude Haiku, or GPT-4o-mini are all viable.
 
-### 4.5 LLM for Evaluation: Gemini 2.5 Pro (or equivalent)
+### 4.5 LLM for Evaluation: Gemini 3.1 Flash (or equivalent)
 
-Test dataset generation and LLM-as-judge evaluation use a large-context model like Gemini 2.5 Pro (1M+ token context window) to ingest a significant portion of the Vue documentation in a single prompt.
+Test dataset generation and LLM-as-judge evaluation use a large-context model like Gemini 3.1 Flash (gemini-3.1-flash-lite-preview) (1M+ token context window) to ingest a significant portion of the Vue documentation in a single prompt.
 
 ### 4.6 MCP SDK & Application Framework
 
@@ -558,7 +558,7 @@ If the initial retrieval yields no results above a minimum confidence threshold:
 
 ### 10.1 Test Dataset
 
-Generate a benchmark of 200+ queries using Gemini 2.5 Pro with 1M+ token context. Feed a substantial portion of the Vue documentation into the model and prompt it to generate challenging, diverse questions across all intent types. For each generated question, the model also produces a ground-truth answer with explicit references to the documentation sections it drew from.
+Generate a benchmark of 200+ queries using Gemini 3.1 Flash (gemini-3.1-flash-lite-preview) with 1M+ token context. Feed a substantial portion of the Vue documentation into the model and prompt it to generate challenging, diverse questions across all intent types. For each generated question, the model also produces a ground-truth answer with explicit references to the documentation sections it drew from.
 
 ### 10.2 Metrics
 
@@ -698,7 +698,7 @@ Write `server/tools/api_lookup.py`: the `vue_api_lookup` fast-path tool.
 
 Improve reconstruction: code block rendering, adjacent chunk merging, source URLs, summary line.
 
-Write `eval/generate_questions.py`: send Vue documentation to Gemini 2.5 Pro, generate 50+ test questions with ground-truth answers.
+Write `eval/generate_questions.py`: send the whole Vue documentation to Gemini 3.1 Flash (gemini-3.1-flash-lite-preview), generate 50+ test questions with ground-truth answers.
 
 Write `eval/run_eval.py`: run questions through the search pipeline, judge with LLM, report metrics.
 
@@ -872,7 +872,7 @@ These are decisions to validate during implementation:
 | **No separate code embedding model** | jina-embeddings-v4 handles code natively via task-specific LoRA. Avoids dual-space complexity. To be validated during spike week. |
 | **No HyDE** | Per-query LLM cost and hallucination risk. Vocabulary gap addressed at indexing time via HyPE (zero query-time overhead). Can be reconsidered if evaluation shows specific categories underperforming. |
 | **Gemini 2.5 Flash Lite for query-time LLM** | Extreme speed (~1s for 3 parallel calls) and cost ($0.10/M input). Combined query transformation cost: ~$0.00025. Well within budget. |
-| **LLM-as-judge evaluation** | Faster and cheaper than human annotation. Gemini 2.5 Pro generates test questions and judges answer quality. |
+| **LLM-as-judge evaluation** | Faster and cheaper than human annotation. Gemini 3.1 Flash (gemini-3.1-flash-lite-preview) generates test questions and judges answer quality. |
 | **Hosted deployment** | Commercial product ($10/1000 interactions). API-based models, hosted Qdrant, no self-hosting of ML models. |
 | **Per-query cost target: $0.001** | $10/1000 interactions revenue, need headroom for hosting costs. Achieved: ~$0.0005/query average, 2x headroom. |
 | **No LangChain/LlamaIndex** | Custom pipeline by design. Framework abstractions would be fought against more than they help. RRF is ~20 lines. Entity matching is dictionary lookup. |
