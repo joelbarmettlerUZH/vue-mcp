@@ -1,4 +1,4 @@
-"""Tests for Day 3: entity extraction, cross-references, and sort keys."""
+"""Tests for entity extraction, cross-references, and sort keys."""
 
 from pathlib import Path
 

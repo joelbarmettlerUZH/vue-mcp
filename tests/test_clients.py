@@ -1,4 +1,4 @@
-"""Day 4 tests: Jina client, BM25, Qdrant collection setup and hybrid search."""
+"""Tests for Jina client, BM25, and Qdrant collection setup and hybrid search."""
 
 import asyncio
 import pytest
