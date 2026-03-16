@@ -67,10 +67,7 @@ def main() -> None:
 
     for chunk in chunks:
         title = f"[{chunk.chunk_type.value}] {chunk.chunk_id}"
-        subtitle = (
-            f"api_style={chunk.metadata.api_style} | "
-            f"breadcrumb={chunk.metadata.breadcrumb}"
-        )
+        subtitle = f"api_style={chunk.metadata.api_style} | breadcrumb={chunk.metadata.breadcrumb}"
 
         if chunk.chunk_type == ChunkType.CODE_BLOCK:
             body = f"Language: {chunk.metadata.language_tag}\n"

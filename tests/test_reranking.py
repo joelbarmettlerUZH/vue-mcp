@@ -12,10 +12,10 @@ from vue_docs_core.clients.jina import JinaClient, RerankResult
 from vue_docs_core.clients.qdrant import SearchHit
 from vue_docs_server.tools.search import _rerank_hits
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_hit(
     chunk_id: str = "guide/essentials/computed#section",
@@ -41,6 +41,7 @@ def _make_hit(
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
+
 
 class TestRerankHits:
     @pytest.mark.asyncio
@@ -116,10 +117,12 @@ class TestRerankHits:
     @pytest.mark.asyncio
     async def test_reranking_includes_breadcrumb_in_document_text(self):
         """The document text sent to the reranker should include the breadcrumb for context."""
-        hits = [_make_hit(
-            content="Computed properties cache their results.",
-            breadcrumb="Guide > Essentials > Computed",
-        )]
+        hits = [
+            _make_hit(
+                content="Computed properties cache their results.",
+                breadcrumb="Guide > Essentials > Computed",
+            )
+        ]
 
         captured_docs = []
 
@@ -137,12 +140,14 @@ class TestRerankHits:
     @pytest.mark.asyncio
     async def test_reranking_code_block_includes_preceding_prose(self):
         """Code block chunks should include preceding_prose in the reranker document text."""
-        hits = [_make_hit(
-            chunk_type="code_block",
-            content="const count = ref(0)",
-            preceding_prose="Here is an example of using ref:",
-            breadcrumb="Guide > Essentials > Reactivity",
-        )]
+        hits = [
+            _make_hit(
+                chunk_type="code_block",
+                content="const count = ref(0)",
+                preceding_prose="Here is an example of using ref:",
+                breadcrumb="Guide > Essentials > Reactivity",
+            )
+        ]
 
         captured_docs = []
 

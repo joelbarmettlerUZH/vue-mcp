@@ -48,9 +48,7 @@ async def vue_section_topics(section: str) -> str:
             matching[folder] = pages
 
     if not matching:
-        available = ", ".join(sorted(set(
-            f.split("/")[0] for f in state.folder_structure.keys() if f
-        )))
+        available = ", ".join(sorted(set(f.split("/")[0] for f in state.folder_structure if f)))
         raise ResourceError(
             f"Section not found: '{section}'. Available top-level sections: {available}"
         )

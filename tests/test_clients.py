@@ -1,21 +1,19 @@
 """Tests for Jina client, BM25, and Qdrant collection setup and hybrid search."""
 
-import asyncio
-import pytest
+import contextlib
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from qdrant_client.models import SparseVector
 
 from vue_docs_core.clients.bm25 import BM25Model
 from vue_docs_core.clients.jina import (
-    JinaClient,
     TASK_RETRIEVAL_PASSAGE,
     TASK_RETRIEVAL_QUERY,
     EmbeddingResult,
-    RerankResult,
+    JinaClient,
 )
 from vue_docs_core.clients.qdrant import QdrantDocClient, _chunk_id_to_point_id
-
 
 # ---------------------------------------------------------------------------
 # BM25 tests (no API calls)
@@ -125,10 +123,7 @@ class TestBM25Model:
 class TestJinaClientEmbed:
     def _make_response(self, dims: int = 1024, n: int = 1, tokens: int = 10) -> dict:
         return {
-            "data": [
-                {"embedding": [0.1] * dims, "index": i}
-                for i in range(n)
-            ],
+            "data": [{"embedding": [0.1] * dims, "index": i} for i in range(n)],
             "usage": {"total_tokens": tokens},
         }
 
@@ -139,7 +134,11 @@ class TestJinaClientEmbed:
         mock_resp.json.return_value = self._make_response(1024, 2, 20)
         mock_resp.raise_for_status = MagicMock()
 
-        with patch.object(client, "_request_with_retry", new=AsyncMock(return_value=self._make_response(1024, 2, 20))):
+        with patch.object(
+            client,
+            "_request_with_retry",
+            new=AsyncMock(return_value=self._make_response(1024, 2, 20)),
+        ):
             result = await client.embed(["text one", "text two"])
 
         assert len(result.embeddings) == 2
@@ -211,9 +210,7 @@ class TestChunkIdToPointId:
         assert a == b
 
     def test_unique(self):
-        ids = {
-            _chunk_id_to_point_id(f"chunk#{i}") for i in range(1000)
-        }
+        ids = {_chunk_id_to_point_id(f"chunk#{i}") for i in range(1000)}
         assert len(ids) == 1000
 
     def test_positive_int(self):
@@ -242,7 +239,6 @@ class TestLiveIntegration:
 
     @pytest.mark.asyncio
     async def test_embed_upsert_search(self):
-        from vue_docs_core.config import settings
 
         jina = JinaClient()
         qdrant = QdrantDocClient(collection=self.COLLECTION, dense_dim=1024)
@@ -254,9 +250,7 @@ class TestLiveIntegration:
             assert info["points_count"] == 0
 
             # 2. Embed all texts
-            embed_result = await jina.embed_batched(
-                self.TEXTS, task=TASK_RETRIEVAL_PASSAGE
-            )
+            embed_result = await jina.embed_batched(self.TEXTS, task=TASK_RETRIEVAL_PASSAGE)
             assert len(embed_result.embeddings) == len(self.TEXTS)
             assert len(embed_result.embeddings[0]) == 1024
 
@@ -288,7 +282,9 @@ class TestLiveIntegration:
             )
 
             # Wait for indexing to propagate
-            import time; time.sleep(1)
+            import time
+
+            time.sleep(1)
 
             info = qdrant.collection_info()
             assert info["points_count"] == len(self.TEXTS)
@@ -311,8 +307,6 @@ class TestLiveIntegration:
 
         finally:
             # Cleanup test collection
-            try:
+            with contextlib.suppress(Exception):
                 qdrant.client.delete_collection(self.COLLECTION)
-            except Exception:
-                pass
             await jina.close()

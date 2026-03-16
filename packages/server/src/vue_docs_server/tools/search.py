@@ -6,43 +6,40 @@ from typing import Annotated
 from fastmcp.exceptions import ToolError
 from pydantic import Field
 
-from vue_docs_core.clients.jina import JinaClient, TASK_RETRIEVAL_QUERY
+from vue_docs_core.clients.jina import JinaClient
 from vue_docs_core.clients.qdrant import SearchHit
+from vue_docs_core.config import RERANK_MIN_SCORE, RETRIEVAL_LIMIT, TASK_RETRIEVAL_QUERY
 from vue_docs_core.retrieval.expansion import expand_cross_references
 from vue_docs_core.retrieval.reconstruction import reconstruct_results
-
 from vue_docs_server.startup import state
 
 logger = logging.getLogger(__name__)
 
 
-# Number of candidates to retrieve from Qdrant per prefetch arm.
-_RETRIEVAL_LIMIT = 50
-
-# Minimum reranker relevance score to include a result.
-_RERANK_MIN_SCORE = 0.01
-
-
 async def vue_docs_search(
-    query: Annotated[str, Field(
-        description="A developer question or topic about Vue.js. "
-                    "Examples: 'how does computed caching work', "
-                    "'v-model on custom components', "
-                    "'defineProps TypeScript usage'."
-    )],
-    scope: Annotated[str, Field(
-        default="all",
-        description="Documentation section to search within. Use 'all' for the "
-                    "full docs, or narrow with a folder path like 'guide', "
-                    "'guide/essentials', 'guide/components', 'api', 'tutorial'. "
-                    "Read the vue://scopes resource for the complete list."
-    )] = "all",
-    max_results: Annotated[int, Field(
-        default=3,
-        ge=1,
-        le=20,
-        description="Number of documentation sections to return."
-    )] = 3,
+    query: Annotated[
+        str,
+        Field(
+            description="A developer question or topic about Vue.js. "
+            "Examples: 'how does computed caching work', "
+            "'v-model on custom components', "
+            "'defineProps TypeScript usage'."
+        ),
+    ],
+    scope: Annotated[
+        str,
+        Field(
+            default="all",
+            description="Documentation section to search within. Use 'all' for the "
+            "full docs, or narrow with a folder path like 'guide', "
+            "'guide/essentials', 'guide/components', 'api', 'tutorial'. "
+            "Read the vue://scopes resource for the complete list.",
+        ),
+    ] = "all",
+    max_results: Annotated[
+        int,
+        Field(default=3, ge=1, le=20, description="Number of documentation sections to return."),
+    ] = 3,
 ) -> str:
     """Search the Vue.js documentation.
 
@@ -72,21 +69,19 @@ async def vue_docs_search(
         hits = state.qdrant.hybrid_search(
             dense_vector=dense_vector,
             sparse_vector=sparse_vector,
-            limit=_RETRIEVAL_LIMIT,
+            limit=RETRIEVAL_LIMIT,
             scope_filter=scope_filter,
             entity_boost=entity_boost if entity_boost else None,
         )
 
-        if not hits:
-            # Retry with broader scope if scoped search yielded nothing
-            if scope_filter:
-                logger.info("No results for scope '%s', retrying with all", scope)
-                hits = state.qdrant.hybrid_search(
-                    dense_vector=dense_vector,
-                    sparse_vector=sparse_vector,
-                    limit=_RETRIEVAL_LIMIT,
-                    entity_boost=entity_boost if entity_boost else None,
-                )
+        if not hits and scope_filter:
+            logger.info("No results for scope '%s', retrying with all", scope)
+            hits = state.qdrant.hybrid_search(
+                dense_vector=dense_vector,
+                sparse_vector=sparse_vector,
+                limit=RETRIEVAL_LIMIT,
+                entity_boost=entity_boost if entity_boost else None,
+            )
 
         if not hits:
             return f"No documentation found for: {query}"
@@ -103,7 +98,7 @@ async def vue_docs_search(
         await jina.close()
 
     # Discard low-relevance results after reranking
-    hits = [h for h in hits if h.score >= _RERANK_MIN_SCORE]
+    hits = [h for h in hits if h.score >= RERANK_MIN_SCORE]
 
     if not hits:
         return f"No documentation found for: {query}"
@@ -121,11 +116,6 @@ async def _rerank_hits(
     Sends all candidates through the listwise reranker and returns hits
     reordered by reranker relevance. Falls back to the original ordering
     on failure.
-
-    Args:
-        jina: Active JinaClient instance.
-        query: The original search query.
-        hits: Candidate hits after HyPE resolution, sorted by fusion score.
 
     Returns:
         Reranked hits.
@@ -155,17 +145,20 @@ async def _rerank_hits(
 
         # Rebuild hits list in reranked order with reranker scores
         reranked: list[SearchHit] = []
-        for idx, score in zip(result.indices, result.scores):
+        for idx, score in zip(result.indices, result.scores, strict=False):
             hit = hits[idx]
-            reranked.append(SearchHit(
-                chunk_id=hit.chunk_id,
-                score=score,
-                payload=hit.payload,
-            ))
+            reranked.append(
+                SearchHit(
+                    chunk_id=hit.chunk_id,
+                    score=score,
+                    payload=hit.payload,
+                )
+            )
 
         logger.info(
             "Reranked %d candidates (tokens: %d)",
-            len(hits), result.total_tokens,
+            len(hits),
+            result.total_tokens,
         )
         return reranked
 
@@ -208,11 +201,13 @@ def _resolve_hype_hits(hits: list) -> list:
             parent_id = payload.get("chunk_id", "")
             if parent_id and parent_id not in seen_chunk_ids:
                 score = hype_scores.get(parent_id, 0.0)
-                resolved.append(SearchHit(
-                    chunk_id=parent_id,
-                    score=score,
-                    payload=payload,
-                ))
+                resolved.append(
+                    SearchHit(
+                        chunk_id=parent_id,
+                        score=score,
+                        payload=payload,
+                    )
+                )
                 seen_chunk_ids[parent_id] = score
 
     # Re-sort by score descending

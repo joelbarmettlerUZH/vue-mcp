@@ -16,13 +16,8 @@ from dataclasses import dataclass, field
 
 from rapidfuzz import fuzz, process
 
+from vue_docs_core.config import FUZZY_MIN_SCORE
 from vue_docs_core.models.entity import EntityIndex
-
-
-# Minimum fuzzy match score (0-100) to accept a match.
-# 85 catches typos like "definProps" → "defineProps" (score ~91)
-# but rejects loose matches like "custom" → "customRef" (score ~80).
-FUZZY_MIN_SCORE = 85
 
 # Minimum token length for fuzzy matching — avoids false positives
 # on common short words. Tokens shorter than this are exact-only.
@@ -36,9 +31,22 @@ FUZZY_MIN_LENGTH = 6
 # appear in code context (backticks, v- prefix, < prefix, etc.), not as
 # bare words in natural language queries.
 _AMBIGUOUS_NAMES: set[str] = {
-    "$options", "component", "components", "data", "h", "inject", "is",
-    "key", "methods", "name", "props", "provide", "render", "slot",
-    "template", "watch",
+    "$options",
+    "component",
+    "components",
+    "data",
+    "h",
+    "inject",
+    "is",
+    "key",
+    "methods",
+    "name",
+    "props",
+    "provide",
+    "render",
+    "slot",
+    "template",
+    "watch",
 }
 
 
@@ -68,9 +76,7 @@ class EntityMatcher:
 
         # Build lookup structures
         self._entity_names: list[str] = list(entity_index.entities.keys())
-        self._name_lower_map: dict[str, str] = {
-            name.lower(): name for name in self._entity_names
-        }
+        self._name_lower_map: dict[str, str] = {name.lower(): name for name in self._entity_names}
         # Separate short names (exact only) from long names (fuzzy eligible).
         # Store lowercased for case-insensitive comparison, map back to original.
         self._fuzzy_candidates_lower: list[str] = [
@@ -116,7 +122,10 @@ class EntityMatcher:
         return result
 
     def _match_exact(
-        self, query_clean: str, code_names: set[str], result: EntityMatchResult,
+        self,
+        query_clean: str,
+        code_names: set[str],
+        result: EntityMatchResult,
     ) -> None:
         """Case-insensitive substring match against entity names.
 
@@ -188,7 +197,7 @@ class EntityMatcher:
                 score_cutoff=FUZZY_MIN_SCORE,
             )
 
-            for match_lower, score, _ in matches:
+            for match_lower, _score, _ in matches:
                 original_name = self._fuzzy_lower_to_original[match_lower]
                 # Skip if already matched by a higher-priority method
                 if original_name in result.match_sources:
@@ -217,7 +226,7 @@ def _tokenize(query: str) -> list[str]:
 
 def _is_word_boundary(text: str, term: str) -> bool:
     """Check that term appears at word boundaries in text (not as substring of larger word)."""
-    pattern = r"(?:^|[\s\-_.,;:!?()`]){}(?:$|[\s\-_.,;:!?()`])".format(re.escape(term))
+    pattern = rf"(?:^|[\s\-_.,;:!?()`]){re.escape(term)}(?:$|[\s\-_.,;:!?()`])"
     return bool(re.search(pattern, text))
 
 

@@ -70,7 +70,14 @@ QUESTION_FUNCTION = {
                         },
                         "intent": {
                             "type": "string",
-                            "enum": ["api_lookup", "conceptual", "howto", "debugging", "comparison", "migration"],
+                            "enum": [
+                                "api_lookup",
+                                "conceptual",
+                                "howto",
+                                "debugging",
+                                "comparison",
+                                "migration",
+                            ],
                             "description": "The intent category of the question.",
                         },
                         "difficulty": {
@@ -93,7 +100,14 @@ QUESTION_FUNCTION = {
                             "description": "List of Vue API names relevant to the answer.",
                         },
                     },
-                    "required": ["question", "intent", "difficulty", "expected_answer", "relevant_paths", "relevant_apis"],
+                    "required": [
+                        "question",
+                        "intent",
+                        "difficulty",
+                        "expected_answer",
+                        "relevant_paths",
+                        "relevant_apis",
+                    ],
                 },
             }
         },
@@ -144,9 +158,7 @@ def build_docs_content(files: list[tuple[str, str]], max_chars: int = 800_000) -
     for rel_path, content in sorted_files:
         entry = f"\n\n--- FILE: {rel_path} ---\n\n{content}"
         if total + len(entry) > max_chars:
-            logger.info(
-                "Truncating at %d files (%.0fK chars)", included, total / 1000
-            )
+            logger.info("Truncating at %d files (%.0fK chars)", included, total / 1000)
             break
         parts.append(entry)
         total += len(entry)
@@ -246,9 +258,7 @@ def generate_questions(
         q.setdefault("relevant_apis", [])
         valid.append(q)
 
-    logger.info(
-        "Generated %d valid questions (requested %d)", len(valid), count
-    )
+    logger.info("Generated %d valid questions (requested %d)", len(valid), count)
 
     # Report intent distribution
     intent_counts: dict[str, int] = {}

@@ -6,13 +6,13 @@ RAPTOR hierarchical summary generation (page, folder, top-level).
 No real API calls.
 """
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from vue_docs_core.clients.gemini import GeminiClient, GeminiFunctionCallResponse, GeminiResponse
 from vue_docs_core.models.chunk import Chunk, ChunkMetadata, ChunkType
 from vue_docs_ingestion.enrichment import enrich_chunks_contextual, generate_hype_questions
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -53,9 +53,7 @@ class TestGeminiClient:
         self, text: str = "Generated text", input_tokens: int = 100, output_tokens: int = 20
     ) -> dict:
         return {
-            "candidates": [
-                {"content": {"parts": [{"text": text}]}}
-            ],
+            "candidates": [{"content": {"parts": [{"text": text}]}}],
             "usageMetadata": {
                 "promptTokenCount": input_tokens,
                 "candidatesTokenCount": output_tokens,
@@ -67,9 +65,7 @@ class TestGeminiClient:
         client = GeminiClient(api_key="test-key", model="gemini-2.5-flash")
         api_resp = self._make_api_response("Hello world")
 
-        with patch.object(
-            client, "_request_with_retry", new=AsyncMock(return_value=api_resp)
-        ):
+        with patch.object(client, "_request_with_retry", new=AsyncMock(return_value=api_resp)):
             result = await client.generate("Say hello")
 
         assert result.text == "Hello world"
@@ -81,9 +77,7 @@ class TestGeminiClient:
         client = GeminiClient(api_key="test-key")
         api_resp = self._make_api_response("  trimmed  \n")
 
-        with patch.object(
-            client, "_request_with_retry", new=AsyncMock(return_value=api_resp)
-        ):
+        with patch.object(client, "_request_with_retry", new=AsyncMock(return_value=api_resp)):
             result = await client.generate("prompt")
 
         assert result.text == "trimmed"
@@ -93,9 +87,7 @@ class TestGeminiClient:
         client = GeminiClient(api_key="test-key")
         api_resp = {"candidates": [], "usageMetadata": {}}
 
-        with patch.object(
-            client, "_request_with_retry", new=AsyncMock(return_value=api_resp)
-        ):
+        with patch.object(client, "_request_with_retry", new=AsyncMock(return_value=api_resp)):
             result = await client.generate("prompt")
 
         assert result.text == ""
@@ -135,8 +127,11 @@ class TestGeminiClient:
         prefix = "This chunk explains computed property caching in Vue 3."
 
         with patch.object(
-            client, "generate_cached",
-            new=AsyncMock(return_value=GeminiResponse(text=prefix, input_tokens=500, output_tokens=30)),
+            client,
+            "generate_cached",
+            new=AsyncMock(
+                return_value=GeminiResponse(text=prefix, input_tokens=500, output_tokens=30)
+            ),
         ):
             result = await client.enrich_chunk(
                 page_content="# Computed\n\nFull page here...",
@@ -170,25 +165,27 @@ class TestGeminiClient:
     async def test_generate_with_tool_returns_function_call(self):
         client = GeminiClient(api_key="test-key")
         api_resp = {
-            "candidates": [{
-                "content": {
-                    "parts": [{
-                        "functionCall": {
-                            "name": "my_func",
-                            "args": {"key": "value", "count": 3},
-                        }
-                    }]
+            "candidates": [
+                {
+                    "content": {
+                        "parts": [
+                            {
+                                "functionCall": {
+                                    "name": "my_func",
+                                    "args": {"key": "value", "count": 3},
+                                }
+                            }
+                        ]
+                    }
                 }
-            }],
+            ],
             "usageMetadata": {
                 "promptTokenCount": 100,
                 "candidatesTokenCount": 20,
             },
         }
 
-        with patch.object(
-            client, "_request_with_retry", new=AsyncMock(return_value=api_resp)
-        ):
+        with patch.object(client, "_request_with_retry", new=AsyncMock(return_value=api_resp)):
             result = await client.generate_with_tool(
                 "Generate something",
                 function_name="my_func",
@@ -213,7 +210,9 @@ class TestGeminiClient:
         async def capture_request(url, payload):
             captured_payload.update(payload)
             return {
-                "candidates": [{"content": {"parts": [{"functionCall": {"name": "f", "args": {}}}]}}],
+                "candidates": [
+                    {"content": {"parts": [{"functionCall": {"name": "f", "args": {}}}]}}
+                ],
                 "usageMetadata": {},
             }
 
@@ -227,16 +226,16 @@ class TestGeminiClient:
 
         assert "tools" in captured_payload
         assert captured_payload["tool_config"]["function_calling_config"]["mode"] == "ANY"
-        assert captured_payload["tool_config"]["function_calling_config"]["allowed_function_names"] == ["f"]
+        assert captured_payload["tool_config"]["function_calling_config"][
+            "allowed_function_names"
+        ] == ["f"]
 
     @pytest.mark.asyncio
     async def test_generate_with_tool_empty_response(self):
         client = GeminiClient(api_key="test-key")
         api_resp = {"candidates": [], "usageMetadata": {}}
 
-        with patch.object(
-            client, "_request_with_retry", new=AsyncMock(return_value=api_resp)
-        ):
+        with patch.object(client, "_request_with_retry", new=AsyncMock(return_value=api_resp)):
             result = await client.generate_with_tool(
                 "prompt",
                 function_name="f",
@@ -329,9 +328,7 @@ class TestEnrichChunksContextual:
         page_contents = {}  # No page content available
 
         client = GeminiClient(api_key="test-key")
-        enriched, skipped, errors = await enrich_chunks_contextual(
-            chunks, page_contents, client
-        )
+        enriched, skipped, errors = await enrich_chunks_contextual(chunks, page_contents, client)
 
         assert enriched == 0
         assert skipped >= 1
@@ -491,17 +488,20 @@ class TestGeminiHypeGeneration:
         client = GeminiClient(api_key="test-key")
         fc_response = GeminiFunctionCallResponse(
             function_name="save_questions",
-            arguments={"questions": [
-                "How does computed property caching work in Vue?",
-                "Why is my computed not updating?",
-                "What is the difference between computed and methods?",
-            ]},
+            arguments={
+                "questions": [
+                    "How does computed property caching work in Vue?",
+                    "Why is my computed not updating?",
+                    "What is the difference between computed and methods?",
+                ]
+            },
             input_tokens=500,
             output_tokens=50,
         )
 
         with patch.object(
-            client, "generate_cached_with_tool",
+            client,
+            "generate_cached_with_tool",
             new=AsyncMock(return_value=fc_response),
         ):
             result = await client.generate_hype_questions(
@@ -525,7 +525,8 @@ class TestGeminiHypeGeneration:
         )
 
         with patch.object(
-            client, "generate_cached_with_tool",
+            client,
+            "generate_cached_with_tool",
             new=AsyncMock(return_value=fc_response),
         ):
             result = await client.generate_hype_questions(
@@ -550,7 +551,8 @@ class TestGeminiHypeGeneration:
         )
 
         with patch.object(
-            client, "generate_cached_with_tool",
+            client,
+            "generate_cached_with_tool",
             new=AsyncMock(return_value=fc_response),
         ):
             result = await client.generate_hype_questions(
@@ -573,7 +575,8 @@ class TestGeminiHypeGeneration:
         )
 
         with patch.object(
-            client, "generate_cached_with_tool",
+            client,
+            "generate_cached_with_tool",
             new=AsyncMock(return_value=fc_response),
         ):
             result = await client.generate_hype_questions(
@@ -681,7 +684,8 @@ class TestHypeQuestionOrchestration:
 class TestHypeEmbedding:
     @pytest.mark.asyncio
     async def test_embeds_hype_questions_with_query_task(self):
-        from vue_docs_core.clients.jina import EmbeddingResult, JinaClient, TASK_RETRIEVAL_QUERY
+        from vue_docs_core.clients.jina import EmbeddingResult, JinaClient
+        from vue_docs_core.config import TASK_RETRIEVAL_QUERY
         from vue_docs_ingestion.embedder import embed_hype_questions
 
         chunk = _make_chunk(chunk_id="page#s1")
@@ -728,8 +732,8 @@ class TestHypeEmbedding:
 
 class TestHypeIndexer:
     def test_hype_payload_structure(self):
-        from vue_docs_ingestion.indexer import _hype_payload
         from vue_docs_ingestion.embedder import HypeEmbedding
+        from vue_docs_ingestion.indexer import _hype_payload
 
         parent = _make_chunk(chunk_id="guide/computed#caching")
         hype = HypeEmbedding(
@@ -747,8 +751,8 @@ class TestHypeIndexer:
         assert payload["folder_path"] == parent.metadata.folder_path
 
     def test_hype_payload_inherits_parent_metadata(self):
-        from vue_docs_ingestion.indexer import _hype_payload
         from vue_docs_ingestion.embedder import HypeEmbedding
+        from vue_docs_ingestion.indexer import _hype_payload
 
         parent = _make_chunk(
             chunk_id="guide/computed#section",
@@ -861,11 +865,15 @@ class TestGeminiGenerateSummary:
         client = GeminiClient(api_key="test-key")
 
         with patch.object(
-            client, "generate",
-            new=AsyncMock(return_value=GeminiResponse(
-                text="This page covers computed properties in Vue 3.",
-                input_tokens=500, output_tokens=30,
-            )),
+            client,
+            "generate",
+            new=AsyncMock(
+                return_value=GeminiResponse(
+                    text="This page covers computed properties in Vue 3.",
+                    input_tokens=500,
+                    output_tokens=30,
+                )
+            ),
         ):
             result = await client.generate_summary(
                 "# Computed\n\nFull page content...",
@@ -880,11 +888,15 @@ class TestGeminiGenerateSummary:
         client = GeminiClient(api_key="test-key")
 
         with patch.object(
-            client, "generate",
-            new=AsyncMock(return_value=GeminiResponse(
-                text="This section covers Vue essentials.",
-                input_tokens=300, output_tokens=20,
-            )),
+            client,
+            "generate",
+            new=AsyncMock(
+                return_value=GeminiResponse(
+                    text="This section covers Vue essentials.",
+                    input_tokens=300,
+                    output_tokens=20,
+                )
+            ),
         ):
             result = await client.generate_summary(
                 "**Reactivity:** ...\n\n**Computed:** ...",
@@ -899,11 +911,15 @@ class TestGeminiGenerateSummary:
         client = GeminiClient(api_key="test-key")
 
         with patch.object(
-            client, "generate",
-            new=AsyncMock(return_value=GeminiResponse(
-                text="The guide covers all core Vue concepts.",
-                input_tokens=200, output_tokens=15,
-            )),
+            client,
+            "generate",
+            new=AsyncMock(
+                return_value=GeminiResponse(
+                    text="The guide covers all core Vue concepts.",
+                    input_tokens=200,
+                    output_tokens=15,
+                )
+            ),
         ):
             result = await client.generate_summary(
                 "**Essentials:** ...\n\n**Components:** ...",
@@ -922,8 +938,12 @@ class TestGeneratePageSummaries:
         chunks = [
             _make_chunk(chunk_id="page#s1", file_path="guide/a.md", page_title="Page A"),
             _make_chunk(chunk_id="page#s2", file_path="guide/a.md", page_title="Page A"),
-            _make_chunk(chunk_id="page2#s1", file_path="guide/b.md", page_title="Page B",
-                        folder_path="guide"),
+            _make_chunk(
+                chunk_id="page2#s1",
+                file_path="guide/b.md",
+                page_title="Page B",
+                folder_path="guide",
+            ),
         ]
         page_contents = {
             "guide/a.md": "# Page A content",
@@ -991,8 +1011,9 @@ class TestGeneratePageSummaries:
 
         chunks = [
             _make_chunk(chunk_id="p1#s1", file_path="guide/a.md", page_title="A"),
-            _make_chunk(chunk_id="p2#s1", file_path="guide/b.md", page_title="B",
-                        folder_path="guide"),
+            _make_chunk(
+                chunk_id="p2#s1", file_path="guide/b.md", page_title="B", folder_path="guide"
+            ),
         ]
         page_contents = {"guide/a.md": "# A", "guide/b.md": "# B"}
         client = GeminiClient(api_key="test-key")
@@ -1077,8 +1098,10 @@ class TestGenerateFolderSummaries:
             chunk_type=ChunkType.PAGE_SUMMARY,
             content="Summary A",
             metadata=ChunkMetadata(
-                file_path="g/e/a.md", folder_path="g/e",
-                page_title="A", api_entities=["ref", "computed"],
+                file_path="g/e/a.md",
+                folder_path="g/e",
+                page_title="A",
+                api_entities=["ref", "computed"],
                 global_sort_key="01",
             ),
         )
@@ -1087,8 +1110,10 @@ class TestGenerateFolderSummaries:
             chunk_type=ChunkType.PAGE_SUMMARY,
             content="Summary B",
             metadata=ChunkMetadata(
-                file_path="g/e/b.md", folder_path="g/e",
-                page_title="B", api_entities=["reactive", "ref"],
+                file_path="g/e/b.md",
+                folder_path="g/e",
+                page_title="B",
+                api_entities=["reactive", "ref"],
                 global_sort_key="02",
             ),
         )
@@ -1119,7 +1144,8 @@ class TestGenerateTopSummaries:
                 chunk_type=ChunkType.FOLDER_SUMMARY,
                 content="Essentials summary",
                 metadata=ChunkMetadata(
-                    file_path="", folder_path="guide/essentials",
+                    file_path="",
+                    folder_path="guide/essentials",
                     page_title="Guide > Essentials",
                     global_sort_key="02_guide/01_essentials",
                 ),
@@ -1129,7 +1155,8 @@ class TestGenerateTopSummaries:
                 chunk_type=ChunkType.FOLDER_SUMMARY,
                 content="Components summary",
                 metadata=ChunkMetadata(
-                    file_path="", folder_path="guide/components",
+                    file_path="",
+                    folder_path="guide/components",
                     page_title="Guide > Components",
                     global_sort_key="02_guide/02_components",
                 ),
@@ -1139,7 +1166,8 @@ class TestGenerateTopSummaries:
                 chunk_type=ChunkType.FOLDER_SUMMARY,
                 content="API summary",
                 metadata=ChunkMetadata(
-                    file_path="", folder_path="api",
+                    file_path="",
+                    folder_path="api",
                     page_title="Api",
                     global_sort_key="05_api",
                 ),
@@ -1170,7 +1198,8 @@ class TestGenerateTopSummaries:
                 chunk_type=ChunkType.FOLDER_SUMMARY,
                 content="Tutorial summary",
                 metadata=ChunkMetadata(
-                    file_path="", folder_path="tutorial",
+                    file_path="",
+                    folder_path="tutorial",
                     page_title="Tutorial",
                     global_sort_key="06_tutorial",
                 ),
@@ -1198,7 +1227,8 @@ class TestGenerateTopSummaries:
                 chunk_type=ChunkType.FOLDER_SUMMARY,
                 content="Essentials",
                 metadata=ChunkMetadata(
-                    file_path="", folder_path="guide/essentials",
+                    file_path="",
+                    folder_path="guide/essentials",
                     page_title="Essentials",
                     global_sort_key="01",
                 ),

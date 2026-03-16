@@ -1,13 +1,13 @@
 """Tests for core Pydantic models."""
 
 from vue_docs_core.models import (
+    ApiEntity,
     Chunk,
     ChunkMetadata,
     ChunkType,
-    ApiEntity,
-    EntityIndex,
     CrossReference,
     CrossRefType,
+    EntityIndex,
     QueryIntent,
     QueryTransformResult,
     SearchResult,

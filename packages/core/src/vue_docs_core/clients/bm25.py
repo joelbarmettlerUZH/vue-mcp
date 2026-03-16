@@ -9,7 +9,6 @@ import logging
 from pathlib import Path
 
 import bm25s
-import numpy as np
 from qdrant_client.models import SparseVector
 
 logger = logging.getLogger(__name__)
@@ -31,18 +30,15 @@ class BM25Model:
         return len(self._vocab)
 
     def fit(self, corpus_texts: list[str]) -> None:
-        """Fit the BM25 model on corpus texts.
-
-        Args:
-            corpus_texts: List of document texts to build vocabulary from.
-        """
+        """Fit the BM25 model on corpus texts."""
         tokenized = bm25s.tokenize(corpus_texts)
         self._model = bm25s.BM25()
         self._model.index(tokenized)
         self._vocab = dict(self._model.vocab_dict)
         logger.info(
             "BM25 model fitted: %d documents, %d vocab tokens",
-            len(corpus_texts), len(self._vocab),
+            len(corpus_texts),
+            len(self._vocab),
         )
 
     def get_doc_sparse_vectors(self, texts: list[str]) -> list[SparseVector]:
@@ -50,9 +46,6 @@ class BM25Model:
 
         The texts must be the same corpus used in fit(), in the same order.
         This extracts per-document BM25 score vectors from the fitted model.
-
-        Args:
-            texts: Document texts (same as used in fit()).
 
         Returns:
             List of SparseVector for each document.
@@ -79,9 +72,7 @@ class BM25Model:
                         doc_values.append(float(data[j]))
                         break
 
-            sparse_vectors.append(
-                SparseVector(indices=doc_token_ids, values=doc_values)
-            )
+            sparse_vectors.append(SparseVector(indices=doc_token_ids, values=doc_values))
 
         return sparse_vectors
 
@@ -91,9 +82,6 @@ class BM25Model:
         Maps query tokens to the model vocabulary and creates a sparse vector
         with value 1.0 for each matched token. The dot product with document
         vectors then sums the BM25 scores for matching tokens.
-
-        Args:
-            query: Query text.
 
         Returns:
             SparseVector for the query.
@@ -151,6 +139,4 @@ class BM25Model:
             if set(saved_vocab.keys()) != set(self._vocab.keys()):
                 logger.warning("Vocab mismatch between saved and loaded model")
 
-        logger.info(
-            "BM25 model loaded from %s (%d vocab tokens)", path, len(self._vocab)
-        )
+        logger.info("BM25 model loaded from %s (%d vocab tokens)", path, len(self._vocab))

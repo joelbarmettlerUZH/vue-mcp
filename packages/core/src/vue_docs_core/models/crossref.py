@@ -6,9 +6,9 @@ from pydantic import BaseModel
 
 
 class CrossRefType(str, Enum):
-    HIGH = "high"    # guide <-> api
+    HIGH = "high"  # guide <-> api
     MEDIUM = "medium"  # same-folder guide -> guide
-    LOW = "low"      # cross-folder guide -> guide
+    LOW = "low"  # cross-folder guide -> guide
 
 
 class CrossReference(BaseModel):

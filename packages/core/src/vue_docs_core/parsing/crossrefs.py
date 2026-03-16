@@ -9,7 +9,7 @@ import re
 from pathlib import PurePosixPath
 
 from vue_docs_core.models.chunk import Chunk
-from vue_docs_core.models.crossref import CrossRefType, CrossReference
+from vue_docs_core.models.crossref import CrossReference, CrossRefType
 
 _LINK_RE = re.compile(r"\[([^\]]*)\]\(([^)]+)\)")
 

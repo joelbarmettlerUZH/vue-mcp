@@ -6,17 +6,15 @@ from dataclasses import dataclass
 
 import httpx
 
-from vue_docs_core.config import settings
+from vue_docs_core.config import (
+    JINA_EMBEDDING_URL,
+    JINA_RERANKER_URL,
+    TASK_RETRIEVAL_PASSAGE,
+    TASK_RETRIEVAL_QUERY,
+    settings,
+)
 
 logger = logging.getLogger(__name__)
-
-JINA_EMBEDDING_URL = "https://api.jina.ai/v1/embeddings"
-JINA_RERANKER_URL = "https://api.jina.ai/v1/rerank"
-
-# Task types for jina-embeddings-v4 and later
-TASK_RETRIEVAL_PASSAGE = "retrieval.passage"
-TASK_RETRIEVAL_QUERY = "retrieval.query"
-TASK_TEXT_MATCHING = "text-matching"
 
 
 @dataclass
@@ -68,9 +66,7 @@ class JinaClient:
             await self._client.aclose()
             self._client = None
 
-    async def _request_with_retry(
-        self, url: str, payload: dict
-    ) -> dict:
+    async def _request_with_retry(self, url: str, payload: dict) -> dict:
         client = await self._get_client()
         last_error: Exception | None = None
 
@@ -87,7 +83,11 @@ class JinaClient:
                     wait = 2**attempt
                     logger.warning(
                         "Jina API %s (attempt %d/%d), retrying in %ds: %s",
-                        status, attempt + 1, self.max_retries, wait, body,
+                        status,
+                        attempt + 1,
+                        self.max_retries,
+                        wait,
+                        body,
                     )
                     await asyncio.sleep(wait)
                     continue
@@ -98,7 +98,9 @@ class JinaClient:
                 wait = 2**attempt
                 logger.warning(
                     "Jina API timeout (attempt %d/%d), retrying in %ds",
-                    attempt + 1, self.max_retries, wait,
+                    attempt + 1,
+                    self.max_retries,
+                    wait,
                 )
                 await asyncio.sleep(wait)
                 continue
@@ -113,11 +115,6 @@ class JinaClient:
         task: str = TASK_RETRIEVAL_PASSAGE,
     ) -> EmbeddingResult:
         """Embed a list of text strings.
-
-        Args:
-            texts: Texts to embed.
-            task: Jina task type. Use TASK_RETRIEVAL_PASSAGE for documents,
-                  TASK_RETRIEVAL_QUERY for queries.
 
         Returns:
             EmbeddingResult with embeddings and token usage.
@@ -158,11 +155,6 @@ class JinaClient:
     ) -> EmbeddingResult:
         """Embed texts in batches to respect API limits.
 
-        Args:
-            texts: All texts to embed.
-            task: Jina task type.
-            batch_size: Max texts per API call.
-
         Returns:
             Combined EmbeddingResult.
         """
@@ -178,9 +170,7 @@ class JinaClient:
             all_embeddings.extend(result.embeddings)
             total_tokens += result.total_tokens
 
-        return EmbeddingResult(
-            embeddings=all_embeddings, total_tokens=total_tokens
-        )
+        return EmbeddingResult(embeddings=all_embeddings, total_tokens=total_tokens)
 
     async def rerank(
         self,
@@ -189,11 +179,6 @@ class JinaClient:
         top_n: int | None = None,
     ) -> RerankResult:
         """Rerank documents against a query.
-
-        Args:
-            query: The search query.
-            documents: Documents to rerank.
-            top_n: Number of top results to return. Defaults to all.
 
         Returns:
             RerankResult with reranked indices, scores, and token usage.
@@ -216,6 +201,4 @@ class JinaClient:
         scores = [r["relevance_score"] for r in results]
         total_tokens = data.get("usage", {}).get("total_tokens", 0)
 
-        return RerankResult(
-            indices=indices, scores=scores, total_tokens=total_tokens
-        )
+        return RerankResult(indices=indices, scores=scores, total_tokens=total_tokens)

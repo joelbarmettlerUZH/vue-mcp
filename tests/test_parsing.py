@@ -10,15 +10,14 @@ from vue_docs_core.models.entity import EntityType
 from vue_docs_core.parsing.crossrefs import (
     _classify_ref_type,
     _resolve_target_path,
-    extract_cross_references,
     build_crossref_graph,
+    extract_cross_references,
 )
 from vue_docs_core.parsing.entities import (
     _clean_api_name,
     _split_compound_heading,
     build_api_dictionary,
     extract_entities_from_chunk,
-    build_entity_index,
     load_dictionary,
     save_dictionary,
 )
@@ -217,22 +216,36 @@ class TestSavLoadDictionary:
 
 class TestResolveTargetPath:
     def test_absolute_path(self):
-        assert _resolve_target_path("/guide/essentials/computed", "api/core.md") == "guide/essentials/computed"
+        assert (
+            _resolve_target_path("/guide/essentials/computed", "api/core.md")
+            == "guide/essentials/computed"
+        )
 
     def test_relative_path(self):
-        assert _resolve_target_path("./watchers", "guide/essentials/computed.md") == "guide/essentials/watchers"
+        assert (
+            _resolve_target_path("./watchers", "guide/essentials/computed.md")
+            == "guide/essentials/watchers"
+        )
 
     def test_parent_relative(self):
-        assert _resolve_target_path("../components/props", "guide/essentials/computed.md") == "guide/components/props"
+        assert (
+            _resolve_target_path("../components/props", "guide/essentials/computed.md")
+            == "guide/components/props"
+        )
 
     def test_strip_html_extension(self):
         assert _resolve_target_path("/guide/computed.html", "api/core.md") == "guide/computed"
 
     def test_preserve_anchor(self):
-        assert _resolve_target_path("/api/reactivity-core#ref", "guide/test.md") == "api/reactivity-core#ref"
+        assert (
+            _resolve_target_path("/api/reactivity-core#ref", "guide/test.md")
+            == "api/reactivity-core#ref"
+        )
 
     def test_no_anchor(self):
-        assert _resolve_target_path("/api/reactivity-core", "guide/test.md") == "api/reactivity-core"
+        assert (
+            _resolve_target_path("/api/reactivity-core", "guide/test.md") == "api/reactivity-core"
+        )
 
     def test_skip_external(self):
         assert _resolve_target_path("https://vuejs.org", "guide/test.md") is None
@@ -243,16 +256,28 @@ class TestResolveTargetPath:
 
 class TestClassifyRefType:
     def test_guide_to_api_is_high(self):
-        assert _classify_ref_type("guide/essentials/computed.md", "api/reactivity-core") == CrossRefType.HIGH
+        assert (
+            _classify_ref_type("guide/essentials/computed.md", "api/reactivity-core")
+            == CrossRefType.HIGH
+        )
 
     def test_api_to_guide_is_high(self):
-        assert _classify_ref_type("api/reactivity-core.md", "guide/essentials/computed") == CrossRefType.HIGH
+        assert (
+            _classify_ref_type("api/reactivity-core.md", "guide/essentials/computed")
+            == CrossRefType.HIGH
+        )
 
     def test_same_folder_is_medium(self):
-        assert _classify_ref_type("guide/essentials/computed.md", "guide/essentials/watchers") == CrossRefType.MEDIUM
+        assert (
+            _classify_ref_type("guide/essentials/computed.md", "guide/essentials/watchers")
+            == CrossRefType.MEDIUM
+        )
 
     def test_cross_folder_is_low(self):
-        assert _classify_ref_type("guide/essentials/computed.md", "guide/components/props") == CrossRefType.LOW
+        assert (
+            _classify_ref_type("guide/essentials/computed.md", "guide/components/props")
+            == CrossRefType.LOW
+        )
 
 
 class TestExtractCrossReferences:

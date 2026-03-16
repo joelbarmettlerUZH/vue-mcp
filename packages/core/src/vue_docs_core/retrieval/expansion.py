@@ -19,22 +19,15 @@ Only one hop is followed — cross-references of expanded chunks are not expande
 import logging
 
 from vue_docs_core.clients.qdrant import QdrantDocClient, SearchHit
+from vue_docs_core.config import (
+    EXPANSION_LOW_CUTOFF,
+    EXPANSION_MAX_TARGETS,
+    EXPANSION_MEDIUM_CUTOFF,
+    EXPANSION_SCORE,
+)
 from vue_docs_core.models.crossref import CrossRefType
 
 logger = logging.getLogger(__name__)
-
-# Score assigned to expanded chunks (below any real retrieval score,
-# so they don't outrank directly-matched results before reranking).
-_EXPANSION_SCORE = 0.0
-
-# How many top hits to consider for MEDIUM-priority expansion.
-_MEDIUM_CUTOFF = 10
-
-# How many top hits to consider for LOW-priority expansion.
-_LOW_CUTOFF = 5
-
-# Maximum number of cross-reference targets to expand.
-_MAX_TARGETS = 10
 
 
 def expand_cross_references(
@@ -48,12 +41,6 @@ def expand_cross_references(
     from Qdrant and merge them into the result set. Targeted references
     (with anchors) fetch a single chunk; page-level references fetch all
     sections from that page.
-
-    Args:
-        hits: Candidate hits sorted by score descending.
-        qdrant: Qdrant client for fetching expanded chunks.
-        crossref_types: Optional mapping of source_chunk_id -> {target_path: ref_type}.
-            If not provided, all cross-references are treated as HIGH priority.
 
     Returns:
         Expanded hit list with new chunks appended, deduplicated.
@@ -80,9 +67,9 @@ def expand_cross_references(
             ref_type = _get_ref_type(hit.chunk_id, target, crossref_types)
 
             # Apply priority cutoffs
-            if ref_type == CrossRefType.LOW and rank >= _LOW_CUTOFF:
+            if ref_type == CrossRefType.LOW and rank >= EXPANSION_LOW_CUTOFF:
                 continue
-            if ref_type == CrossRefType.MEDIUM and rank >= _MEDIUM_CUTOFF:
+            if ref_type == CrossRefType.MEDIUM and rank >= EXPANSION_MEDIUM_CUTOFF:
                 continue
 
             prio = _PRIORITY_ORDER[ref_type]
@@ -102,12 +89,11 @@ def expand_cross_references(
         return hits
 
     # Cap total targets, prioritizing targeted (specific) over page-level
-    all_targets = (
-        [(tid, prio, "targeted") for tid, prio in targeted_ids.items()]
-        + [(fp, prio, "page") for fp, prio in page_paths.items()]
-    )
+    all_targets = [(tid, prio, "targeted") for tid, prio in targeted_ids.items()] + [
+        (fp, prio, "page") for fp, prio in page_paths.items()
+    ]
     all_targets.sort(key=lambda t: (t[1], 0 if t[2] == "targeted" else 1))
-    selected = all_targets[:_MAX_TARGETS]
+    selected = all_targets[:EXPANSION_MAX_TARGETS]
 
     final_chunk_ids = [t[0] for t in selected if t[2] == "targeted"]
     final_page_paths = [t[0] for t in selected if t[2] == "page"]
@@ -119,11 +105,13 @@ def expand_cross_references(
         for payload in payloads:
             chunk_id = payload.get("chunk_id", "")
             if chunk_id and chunk_id not in seen_ids:
-                hits.append(SearchHit(
-                    chunk_id=chunk_id,
-                    score=_EXPANSION_SCORE,
-                    payload=payload,
-                ))
+                hits.append(
+                    SearchHit(
+                        chunk_id=chunk_id,
+                        score=EXPANSION_SCORE,
+                        payload=payload,
+                    )
+                )
                 seen_ids.add(chunk_id)
                 expanded_count += 1
 
@@ -136,18 +124,22 @@ def expand_cross_references(
         for payload in payloads:
             chunk_id = payload.get("chunk_id", "")
             if chunk_id and chunk_id not in seen_ids:
-                hits.append(SearchHit(
-                    chunk_id=chunk_id,
-                    score=_EXPANSION_SCORE,
-                    payload=payload,
-                ))
+                hits.append(
+                    SearchHit(
+                        chunk_id=chunk_id,
+                        score=EXPANSION_SCORE,
+                        payload=payload,
+                    )
+                )
                 seen_ids.add(chunk_id)
                 expanded_count += 1
 
     if expanded_count:
         logger.info(
             "Expanded %d targeted + %d page-level refs → %d new chunks",
-            len(final_chunk_ids), len(final_page_paths), expanded_count,
+            len(final_chunk_ids),
+            len(final_page_paths),
+            expanded_count,
         )
 
     return hits

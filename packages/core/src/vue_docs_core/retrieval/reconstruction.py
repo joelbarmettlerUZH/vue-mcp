@@ -3,10 +3,7 @@
 from itertools import groupby
 
 from vue_docs_core.clients.qdrant import SearchHit
-
-
-# Base URL for Vue.js documentation
-VUE_DOCS_BASE_URL = "https://vuejs.org"
+from vue_docs_core.config import VUE_DOCS_BASE_URL
 
 
 def _file_path_to_url(file_path: str) -> str:
@@ -108,13 +105,7 @@ def _build_summary_line(hits: list[SearchHit]) -> str:
 
 
 def _render_hit(hit: SearchHit, show_heading: bool = True) -> list[str]:
-    """Render a single hit into markdown lines.
-
-    Args:
-        hit: The search hit to render.
-        show_heading: Whether to show the section/subsection heading.
-            Set to False for non-first hits in a merged group.
-    """
+    """Render a single hit into markdown lines."""
     parts: list[str] = []
     payload = hit.payload
     chunk_type = payload.get("chunk_type", "")
@@ -197,10 +188,6 @@ def reconstruct_results(
     reading order), merges adjacent chunks from the same section, and formats
     with breadcrumbs, code blocks, and cross-references.
 
-    Args:
-        hits: Search hits from Qdrant hybrid search.
-        max_results: Maximum number of chunks to include.
-
     Returns:
         Formatted markdown string with structured results.
     """
@@ -216,12 +203,8 @@ def reconstruct_results(
 
     # Separate folder/top summaries (no file_path) from page-level results
     _SUMMARY_TYPES = {"folder_summary", "top_summary"}
-    high_level_summaries = [
-        h for h in selected if h.payload.get("chunk_type") in _SUMMARY_TYPES
-    ]
-    page_level_hits = [
-        h for h in selected if h.payload.get("chunk_type") not in _SUMMARY_TYPES
-    ]
+    high_level_summaries = [h for h in selected if h.payload.get("chunk_type") in _SUMMARY_TYPES]
+    page_level_hits = [h for h in selected if h.payload.get("chunk_type") not in _SUMMARY_TYPES]
 
     # Group by file_path (source page)
     sections: list[str] = []
@@ -231,9 +214,7 @@ def reconstruct_results(
         for hl in high_level_summaries:
             sections.append("\n".join(_render_hit(hl, show_heading=True)))
 
-    for file_path, group in groupby(
-        page_level_hits, key=lambda h: h.payload.get("file_path", "")
-    ):
+    for file_path, group in groupby(page_level_hits, key=lambda h: h.payload.get("file_path", "")):
         page_hits = list(group)
         if not page_hits:
             continue

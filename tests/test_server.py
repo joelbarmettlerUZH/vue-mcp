@@ -8,7 +8,6 @@ No real API calls — Jina, Qdrant, and BM25 are mocked throughout.
 """
 
 import json
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -18,29 +17,26 @@ from qdrant_client.models import SparseVector
 from vue_docs_core.clients.jina import RerankResult
 from vue_docs_core.clients.qdrant import SearchHit
 from vue_docs_core.models.entity import ApiEntity, EntityIndex, EntityType
-from vue_docs_core.retrieval.reconstruction import (
-    reconstruct_results,
-    _file_path_to_url,
-    _are_adjacent,
-    _merge_adjacent_hits,
-    _build_summary_line,
-)
 from vue_docs_core.retrieval.entity_matcher import (
     EntityMatcher,
-    EntityMatchResult,
+    _is_word_boundary,
     _normalize_query,
     _tokenize,
-    _is_word_boundary,
+)
+from vue_docs_core.retrieval.reconstruction import (
+    _are_adjacent,
+    _build_summary_line,
+    _file_path_to_url,
+    _merge_adjacent_hits,
+    reconstruct_results,
 )
 from vue_docs_server.startup import (
     ServerState,
     load_entity_dictionary,
     load_synonym_table,
-    load_bm25_model,
 )
+from vue_docs_server.tools.api_lookup import _clean_section_title, vue_api_lookup
 from vue_docs_server.tools.search import _detect_entities, vue_docs_search
-from vue_docs_server.tools.api_lookup import vue_api_lookup, _clean_section_title
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -87,7 +83,9 @@ def _make_entity_index() -> EntityIndex:
     """Build an entity index for testing."""
     return EntityIndex(
         entities={
-            "ref": ApiEntity(name="ref", entity_type=EntityType.COMPOSABLE, related=["reactive", "unref"]),
+            "ref": ApiEntity(
+                name="ref", entity_type=EntityType.COMPOSABLE, related=["reactive", "unref"]
+            ),
             "computed": ApiEntity(name="computed", entity_type=EntityType.COMPOSABLE),
             "defineProps": ApiEntity(name="defineProps", entity_type=EntityType.COMPILER_MACRO),
             "defineEmits": ApiEntity(name="defineEmits", entity_type=EntityType.COMPILER_MACRO),
@@ -195,8 +193,13 @@ class TestReconstruction:
         assert "Found 5 relevant" in result
 
     def test_file_path_to_url(self):
-        assert _file_path_to_url("guide/essentials/computed.md") == "https://vuejs.org/guide/essentials/computed"
-        assert _file_path_to_url("/api/reactivity-core.md") == "https://vuejs.org/api/reactivity-core"
+        assert (
+            _file_path_to_url("guide/essentials/computed.md")
+            == "https://vuejs.org/guide/essentials/computed"
+        )
+        assert (
+            _file_path_to_url("/api/reactivity-core.md") == "https://vuejs.org/api/reactivity-core"
+        )
 
     def test_image_chunk_rendering(self):
         hits = [
@@ -471,8 +474,16 @@ class TestStartup:
 
     def test_load_entity_dictionary(self, tmp_path):
         data = {
-            "ref": {"entity_type": "composable", "page_path": "api/reactivity-core", "section": "ref()"},
-            "computed": {"entity_type": "composable", "page_path": "api/reactivity-core", "section": "computed()"},
+            "ref": {
+                "entity_type": "composable",
+                "page_path": "api/reactivity-core",
+                "section": "ref()",
+            },
+            "computed": {
+                "entity_type": "composable",
+                "page_path": "api/reactivity-core",
+                "section": "computed()",
+            },
         }
         dict_path = tmp_path / "entity_dictionary.json"
         dict_path.write_text(json.dumps(data))
@@ -625,9 +636,7 @@ class TestEntityMatcherFuzzy:
         matcher = _make_matcher()
         result = matcher.match("re things")
         # "re" should NOT fuzzy-match to "ref" since "ref" is only 3 chars
-        assert "ref" not in [
-            e for e in result.entities if result.match_sources.get(e) == "fuzzy"
-        ]
+        assert "ref" not in [e for e in result.entities if result.match_sources.get(e) == "fuzzy"]
 
 
 class TestEntityMatcherPriority:
@@ -696,6 +705,7 @@ class TestEntityDetection:
     def test_detect_with_no_matcher(self):
         """When entity_matcher is None, returns empty list."""
         from vue_docs_server.startup import state as server_state
+
         server_state.entity_matcher = None
         detected = _detect_entities("computed properties")
         assert detected == []
@@ -793,7 +803,9 @@ class TestApiLookup:
     @pytest.mark.asyncio
     async def test_lookup_not_ready(self):
         from fastmcp.exceptions import ToolError
+
         from vue_docs_server.startup import state as server_state
+
         server_state.qdrant = None
         server_state.bm25 = None
         with pytest.raises(ToolError, match="not initialized"):
@@ -844,9 +856,7 @@ class TestSearchTool:
         )
         server_state.bm25 = mock_bm25
 
-        entity_index = EntityIndex(
-            entities={"computed": ApiEntity(name="computed")}
-        )
+        entity_index = EntityIndex(entities={"computed": ApiEntity(name="computed")})
         server_state.entity_index = entity_index
         server_state.synonym_table = {}
         server_state.entity_matcher = EntityMatcher(
@@ -862,7 +872,9 @@ class TestSearchTool:
             mock_jina_instance = AsyncMock()
             mock_jina_instance.embed.return_value = mock_embed_result
             mock_jina_instance.rerank.return_value = RerankResult(
-                indices=[0], scores=[0.9], total_tokens=100,
+                indices=[0],
+                scores=[0.9],
+                total_tokens=100,
             )
             mock_jina_instance.close = AsyncMock()
             MockJina.return_value = mock_jina_instance
@@ -877,6 +889,7 @@ class TestSearchTool:
     async def test_search_not_ready(self):
         """Search raises ToolError when server not initialized."""
         from fastmcp.exceptions import ToolError
+
         from vue_docs_server.startup import state as server_state
 
         server_state.qdrant = None
@@ -899,9 +912,7 @@ class TestSearchTool:
         server_state.qdrant = mock_qdrant
 
         mock_bm25 = MagicMock()
-        mock_bm25.get_query_sparse_vector.return_value = SparseVector(
-            indices=[1], values=[1.0]
-        )
+        mock_bm25.get_query_sparse_vector.return_value = SparseVector(indices=[1], values=[1.0])
         server_state.bm25 = mock_bm25
         server_state.entity_index = EntityIndex()
         server_state.synonym_table = {}
@@ -917,7 +928,9 @@ class TestSearchTool:
             mock_jina_instance = AsyncMock()
             mock_jina_instance.embed.return_value = mock_embed_result
             mock_jina_instance.rerank.return_value = RerankResult(
-                indices=[0], scores=[0.9], total_tokens=100,
+                indices=[0],
+                scores=[0.9],
+                total_tokens=100,
             )
             mock_jina_instance.close = AsyncMock()
             MockJina.return_value = mock_jina_instance
@@ -963,9 +976,7 @@ def _setup_server_state():
     server_state.qdrant = mock_qdrant
 
     mock_bm25 = MagicMock()
-    mock_bm25.get_query_sparse_vector.return_value = SparseVector(
-        indices=[1, 5], values=[1.0, 1.0]
-    )
+    mock_bm25.get_query_sparse_vector.return_value = SparseVector(indices=[1, 5], values=[1.0, 1.0])
     server_state.bm25 = mock_bm25
 
     entity_index = EntityIndex(
@@ -1095,7 +1106,9 @@ class TestMCPIntegration:
             mock_jina = AsyncMock()
             mock_jina.embed.return_value = mock_embed_result
             mock_jina.rerank.return_value = RerankResult(
-                indices=[0], scores=[0.9], total_tokens=100,
+                indices=[0],
+                scores=[0.9],
+                total_tokens=100,
             )
             mock_jina.close = AsyncMock()
             MockJina.return_value = mock_jina
@@ -1156,7 +1169,7 @@ class TestMCPIntegration:
             MockJina.return_value = mock_jina
 
             async with Client(mcp) as client:
-                result = await client.call_tool(
+                await client.call_tool(
                     "vue_docs_search",
                     {"query": "ref basics", "scope": "guide/essentials", "max_results": 5},
                 )
@@ -1187,7 +1200,7 @@ class TestMCPIntegration:
             MockJina.return_value = mock_jina
 
             async with Client(mcp) as client:
-                result = await client.call_tool(
+                await client.call_tool(
                     "vue_docs_search",
                     {"query": "how does computed work"},
                 )
@@ -1445,6 +1458,7 @@ class TestGetRelated:
     @pytest.mark.asyncio
     async def test_related_not_ready(self):
         from fastmcp.exceptions import ToolError
+
         from vue_docs_server.startup import state as server_state
         from vue_docs_server.tools.related import vue_get_related
 

@@ -21,6 +21,7 @@ import logging
 from collections import defaultdict
 
 from vue_docs_core.clients.gemini import GeminiClient
+from vue_docs_core.config import PAGE_CONCURRENCY
 from vue_docs_core.models.chunk import Chunk, ChunkMetadata, ChunkType
 
 logger = logging.getLogger(__name__)
@@ -32,11 +33,6 @@ _ENRICHABLE_TYPES = {
     ChunkType.CODE_BLOCK,
     ChunkType.IMAGE,
 }
-
-# Max concurrent Gemini requests per page to avoid rate limits.
-# Kept low to stay within Gemini's 1M tokens/minute quota when
-# processing many pages concurrently.
-_PAGE_CONCURRENCY = 3
 
 
 async def enrich_chunks_contextual(
@@ -51,12 +47,6 @@ async def enrich_chunks_contextual(
     Groups chunks by page, then for each page sends the full page content
     as context to Gemini along with each chunk. Gemini's implicit caching
     benefits from the repeated page prefix across chunks from the same page.
-
-    Args:
-        chunks: All chunks (modified in-place with contextual_prefix).
-        page_contents: Mapping of file_path → full raw markdown content.
-        gemini_client: Initialized Gemini client.
-        max_concurrent_pages: Max pages to process in parallel.
 
     Returns:
         Tuple of (enriched_count, skipped_count, error_count).
@@ -92,8 +82,7 @@ async def enrich_chunks_contextual(
 
     # Process all pages concurrently (bounded by semaphore)
     tasks = [
-        process_page(file_path, page_chunks)
-        for file_path, page_chunks in chunks_by_file.items()
+        process_page(file_path, page_chunks) for file_path, page_chunks in chunks_by_file.items()
     ]
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -108,9 +97,7 @@ async def enrich_chunks_contextual(
             errors += err
 
     # Count non-enrichable chunks as skipped
-    non_enrichable = sum(
-        1 for c in chunks if c.chunk_type not in _ENRICHABLE_TYPES
-    )
+    non_enrichable = sum(1 for c in chunks if c.chunk_type not in _ENRICHABLE_TYPES)
     skipped += non_enrichable
 
     return enriched, skipped, errors
@@ -128,13 +115,6 @@ async def generate_hype_questions(
 
     Groups chunks by page, then for each page generates HyPE questions
     using Gemini. Questions are stored in chunk.hype_questions.
-
-    Args:
-        chunks: All chunks (modified in-place with hype_questions).
-        page_contents: Mapping of file_path → full raw markdown content.
-        gemini_client: Initialized Gemini client.
-        max_concurrent_pages: Max pages to process in parallel.
-        num_questions: Number of questions to generate per chunk.
 
     Returns:
         Tuple of (generated_count, skipped_count, error_count).
@@ -168,8 +148,7 @@ async def generate_hype_questions(
             )
 
     tasks = [
-        process_page(file_path, page_chunks)
-        for file_path, page_chunks in chunks_by_file.items()
+        process_page(file_path, page_chunks) for file_path, page_chunks in chunks_by_file.items()
     ]
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -183,9 +162,7 @@ async def generate_hype_questions(
             skipped += s
             errors += err
 
-    non_enrichable = sum(
-        1 for c in chunks if c.chunk_type not in _ENRICHABLE_TYPES
-    )
+    non_enrichable = sum(1 for c in chunks if c.chunk_type not in _ENRICHABLE_TYPES)
     skipped += non_enrichable
 
     return generated, skipped, errors
@@ -203,7 +180,7 @@ async def _generate_hype_page_chunks(
     skipped = 0
     errors = 0
 
-    chunk_sem = asyncio.Semaphore(_PAGE_CONCURRENCY)
+    chunk_sem = asyncio.Semaphore(PAGE_CONCURRENCY)
 
     async def generate_one(chunk: Chunk) -> str:
         if chunk.hype_questions:
@@ -222,7 +199,8 @@ async def _generate_hype_page_chunks(
             except Exception as exc:
                 logger.warning(
                     "Failed to generate HyPE for chunk %s: %s",
-                    chunk.chunk_id, exc,
+                    chunk.chunk_id,
+                    exc,
                 )
                 return "error"
 
@@ -255,12 +233,6 @@ async def generate_page_summaries(
     capturing what the page teaches, which APIs it covers, and what a developer
     would learn from reading it.
 
-    Args:
-        chunks: All leaf chunks (used to derive page metadata).
-        page_contents: Mapping of file_path → full raw markdown content.
-        gemini_client: Initialized Gemini client.
-        max_concurrent: Max concurrent Gemini requests.
-
     Returns:
         List of page summary Chunk objects.
     """
@@ -291,7 +263,9 @@ async def generate_page_summaries(
         async with sem:
             try:
                 summary_text = await gemini_client.generate_summary(
-                    content, level="page", title=page_title,
+                    content,
+                    level="page",
+                    title=page_title,
                 )
             except Exception as exc:
                 logger.warning("Failed to generate page summary for %s: %s", file_path, exc)
@@ -327,7 +301,9 @@ async def generate_page_summaries(
             summaries.append(result)
 
     logger.info(
-        "Generated %d page summaries (%d errors)", len(summaries), errors,
+        "Generated %d page summaries (%d errors)",
+        len(summaries),
+        errors,
     )
     return summaries
 
@@ -342,11 +318,6 @@ async def generate_folder_summaries(
 
     For each unique folder, concatenates all page summaries within it and
     generates a 3-5 sentence summary capturing the section's theme.
-
-    Args:
-        page_summaries: Page summary Chunk objects from Layer 1.
-        gemini_client: Initialized Gemini client.
-        max_concurrent: Max concurrent Gemini requests.
 
     Returns:
         List of folder summary Chunk objects.
@@ -377,7 +348,9 @@ async def generate_folder_summaries(
         async with sem:
             try:
                 summary_text = await gemini_client.generate_summary(
-                    combined, level="folder", title=folder_title,
+                    combined,
+                    level="folder",
+                    title=folder_title,
                 )
             except Exception as exc:
                 logger.warning("Failed to generate folder summary for %s: %s", folder_path, exc)
@@ -419,7 +392,9 @@ async def generate_folder_summaries(
             summaries.append(result)
 
     logger.info(
-        "Generated %d folder summaries (%d errors)", len(summaries), errors,
+        "Generated %d folder summaries (%d errors)",
+        len(summaries),
+        errors,
     )
     return summaries
 
@@ -433,17 +408,17 @@ async def generate_top_summaries(
     For each top-level documentation area (guide, api, tutorial, examples),
     generates a 2-3 sentence summary from the folder summaries.
 
-    Args:
-        folder_summaries: Folder summary Chunk objects from Layer 2.
-        gemini_client: Initialized Gemini client.
-
     Returns:
         List of top-level summary Chunk objects.
     """
     # Group folder summaries by top-level path segment
     by_top: dict[str, list[Chunk]] = defaultdict(list)
     for fs in folder_summaries:
-        top = fs.metadata.folder_path.split("/")[0] if "/" in fs.metadata.folder_path else fs.metadata.folder_path
+        top = (
+            fs.metadata.folder_path.split("/")[0]
+            if "/" in fs.metadata.folder_path
+            else fs.metadata.folder_path
+        )
         by_top[top].append(fs)
 
     summaries: list[Chunk] = []
@@ -461,7 +436,9 @@ async def generate_top_summaries(
 
         try:
             summary_text = await gemini_client.generate_summary(
-                combined, level="top", title=top_title,
+                combined,
+                level="top",
+                title=top_title,
             )
         except Exception as exc:
             logger.warning("Failed to generate top summary for %s: %s", top_path, exc)
@@ -476,23 +453,27 @@ async def generate_top_summaries(
         sort_key = top_folders[0].metadata.global_sort_key if top_folders else top_path
 
         chunk_id = f"{top_path}#top_summary"
-        summaries.append(Chunk(
-            chunk_id=chunk_id,
-            chunk_type=ChunkType.TOP_SUMMARY,
-            content=summary_text,
-            metadata=ChunkMetadata(
-                file_path="",
-                folder_path=top_path,
-                page_title=top_title,
-                section_title="",
-                breadcrumb=top_title,
-                global_sort_key=sort_key,
-                api_entities=sorted(all_entities),
-            ),
-        ))
+        summaries.append(
+            Chunk(
+                chunk_id=chunk_id,
+                chunk_type=ChunkType.TOP_SUMMARY,
+                content=summary_text,
+                metadata=ChunkMetadata(
+                    file_path="",
+                    folder_path=top_path,
+                    page_title=top_title,
+                    section_title="",
+                    breadcrumb=top_title,
+                    global_sort_key=sort_key,
+                    api_entities=sorted(all_entities),
+                ),
+            )
+        )
 
     logger.info(
-        "Generated %d top summaries (%d errors)", len(summaries), errors,
+        "Generated %d top summaries (%d errors)",
+        len(summaries),
+        errors,
     )
     return summaries
 
@@ -512,7 +493,7 @@ async def _enrich_page_chunks(
     skipped = 0
     errors = 0
 
-    chunk_sem = asyncio.Semaphore(_PAGE_CONCURRENCY)
+    chunk_sem = asyncio.Semaphore(PAGE_CONCURRENCY)
 
     # Return values: "enriched", "skipped", "error"
     async def enrich_one(chunk: Chunk) -> str:
@@ -533,7 +514,8 @@ async def _enrich_page_chunks(
             except Exception as exc:
                 logger.warning(
                     "Failed to enrich chunk %s: %s",
-                    chunk.chunk_id, exc,
+                    chunk.chunk_id,
+                    exc,
                 )
                 return "error"
 

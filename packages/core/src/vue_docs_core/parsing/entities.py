@@ -82,9 +82,7 @@ def _is_api_name_candidate(text: str, *, strict: bool = False) -> bool:
 
     if strict:
         # In strict mode, require strong API indicators
-        if any(marker in text for marker in ("()", "`", "<", "v-", "$", "__")):
-            return True
-        return False
+        return bool(any(marker in text for marker in ("()", "`", "<", "v-", "$", "__")))
 
     # Contains backslash (escaped generics like PropType\<T>) — valid
     if "\\" in text:
@@ -96,9 +94,7 @@ def _is_api_name_candidate(text: str, *, strict: bool = False) -> bool:
     if text[0].isupper() and not text[0:2].isupper():
         return True
     # ALL_CAPS with underscores (compile-time flags like __VUE_OPTIONS_API__)
-    if text.startswith("__"):
-        return True
-    return False
+    return bool(text.startswith("__"))
 
 
 def _clean_api_name(heading_text: str, *, strict: bool = False) -> str | None:
@@ -160,7 +156,7 @@ def _entity_type_for_file(file_stem: str, name: str) -> EntityType:
 
     # Refine component-instance entries
     if file_stem == "component-instance":
-        if name.startswith("$") and "(" in name or name.endswith("()"):
+        if (name.startswith("$") and "(" in name) or name.endswith("()"):
             return EntityType.INSTANCE_METHOD
         return EntityType.INSTANCE_PROPERTY
 
@@ -178,9 +174,6 @@ def _entity_type_for_file(file_stem: str, name: str) -> EntityType:
 
 def build_api_dictionary(api_dir: Path) -> dict[str, ApiEntity]:
     """Scan H2 headings in all API markdown files to build the entity dictionary.
-
-    Args:
-        api_dir: Path to ``data/vue-docs/src/api/``.
 
     Returns:
         Dict mapping normalized API names to :class:`ApiEntity` objects.
@@ -207,7 +200,7 @@ def build_api_dictionary(api_dir: Path) -> dict[str, ApiEntity]:
                 names = _split_compound_heading(heading_text, strict=strict)
                 for name in names:
                     entity_type = _entity_type_for_file(file_stem, name)
-                    slug = re.sub(r"\{#([\w-]+)\}", r"\1", heading_text)
+                    re.sub(r"\{#([\w-]+)\}", r"\1", heading_text)
                     dictionary[name] = ApiEntity(
                         name=name,
                         entity_type=entity_type,

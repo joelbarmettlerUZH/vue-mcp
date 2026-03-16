@@ -5,7 +5,7 @@ from collections import defaultdict
 from fastmcp.exceptions import ResourceError
 
 from vue_docs_server.startup import state
-from vue_docs_server.tools.api_lookup import _find_entity, _page_path_to_url, _clean_section_title
+from vue_docs_server.tools.api_lookup import _clean_section_title, _find_entity, _page_path_to_url
 
 
 async def vue_api_index() -> str:
@@ -20,8 +20,7 @@ async def vue_api_index() -> str:
 
     lines: list[str] = [
         "# Vue.js API Index\n",
-        f"**{len(state.entity_index.entities)} API entities** across "
-        f"{len(by_type)} categories.\n",
+        f"**{len(state.entity_index.entities)} API entities** across {len(by_type)} categories.\n",
         "Use `vue_api_lookup` to get details, or read `vue://api/entities/{{name}}`.\n",
     ]
 
@@ -38,9 +37,7 @@ async def vue_api_entity(name: str) -> str:
     """Detailed information about a specific Vue.js API entity."""
     entity = _find_entity(name)
     if entity is None:
-        available_sample = ", ".join(
-            sorted(state.entity_index.entities.keys())[:15]
-        )
+        available_sample = ", ".join(sorted(state.entity_index.entities.keys())[:15])
         raise ResourceError(
             f"API entity not found: '{name}'. "
             f"Read vue://api/index for all entities. "

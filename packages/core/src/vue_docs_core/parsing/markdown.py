@@ -14,7 +14,7 @@ Design (Option A — section-only chunking):
   - Playground links are stripped (noise for retrieval).
   - Image references are extracted as separate chunks (they need special
     handling for multimodal search).
-  - If a section exceeds ``_MAX_SECTION_CHARS``, it is split at H3
+  - If a section exceeds ``MAX_SECTION_CHARS``, it is split at H3
     boundaries, with the section intro paragraph prepended for context.
 """
 
@@ -24,18 +24,14 @@ from pathlib import Path
 
 from markdown_it import MarkdownIt
 
+from vue_docs_core.config import MAX_SECTION_CHARS
 from vue_docs_core.models.chunk import Chunk, ChunkMetadata, ChunkType
 
 _SLUG_RE = re.compile(r"\{#([\w-]+)\}\s*$")
 _API_STYLE_OPEN_RE = re.compile(r'<div\s+class="(options-api|composition-api)"')
 _DIV_CLOSE_RE = re.compile(r"^\s*</div>\s*$")
 _PLAYGROUND_RE = re.compile(r"\[Try it in the Playground\]\([^)]+\)\s*")
-_API_DIV_OPEN_RE = re.compile(
-    r'^\s*<div\s+class="(options-api|composition-api)">\s*$'
-)
-
-# Sections larger than this are split at H3 boundaries
-_MAX_SECTION_CHARS = 3000
+_API_DIV_OPEN_RE = re.compile(r'^\s*<div\s+class="(options-api|composition-api)">\s*$')
 
 
 # ---------------------------------------------------------------------------
@@ -44,7 +40,7 @@ _MAX_SECTION_CHARS = 3000
 
 
 class _Heading:
-    __slots__ = ("level", "text", "slug", "line")
+    __slots__ = ("level", "line", "slug", "text")
 
     def __init__(self, level: int, text: str, slug: str, line: int):
         self.level = level
@@ -100,11 +96,7 @@ def _build_api_style_map(lines: list[str]) -> list[str]:
 
 def _section_api_style(api_map: list[str], start: int, end: int) -> str:
     """Aggregate API style for a range of lines."""
-    styles = {
-        api_map[i]
-        for i in range(start, min(end, len(api_map)))
-        if api_map[i] != "both"
-    }
+    styles = {api_map[i] for i in range(start, min(end, len(api_map))) if api_map[i] != "both"}
     if not styles:
         return "both"
     if styles == {"options"}:
@@ -189,12 +181,7 @@ def parse_markdown_file(file_path: Path, docs_root: Path) -> list[Chunk]:
     subsection headings, and other content are kept inline within sections.
     Images are extracted as separate chunks.
 
-    Large sections (>{_MAX_SECTION_CHARS} chars) are split at H3 boundaries.
-
-    Args:
-        file_path: Absolute path to the ``.md`` file.
-        docs_root: Root directory of the Vue docs source
-                   (e.g. ``data/vue-docs/src/``).
+    Large sections (>{MAX_SECTION_CHARS} chars) are split at H3 boundaries.
 
     Returns:
         List of chunks in document order.
@@ -287,13 +274,10 @@ def parse_markdown_file(file_path: Path, docs_root: Path) -> list[Chunk]:
 
         # ---- H3 subsections within this H2 (for splitting large sections) ---
         # Only split at H3 level, not H4 — H4s stay inline within their H3
-        h3s = [
-            h for h in headings
-            if h.level == 3 and sec_start < h.line < sec_end
-        ]
+        h3s = [h for h in headings if h.level == 3 and sec_start < h.line < sec_end]
 
         # ---- decide whether to split ----
-        if len(sec_content) > _MAX_SECTION_CHARS and h3s:
+        if len(sec_content) > MAX_SECTION_CHARS and h3s:
             # Split at H3 boundaries
             _emit_split_sections(
                 chunks=chunks,
@@ -393,7 +377,7 @@ def _emit_split_sections(
         sub_start = h3.line
         sub_end = sec_end
         # Find the next heading at same or higher level
-        for nxt in h3s[si + 1:]:
+        for nxt in h3s[si + 1 :]:
             if nxt.level <= h3.level:
                 sub_end = nxt.line
                 break

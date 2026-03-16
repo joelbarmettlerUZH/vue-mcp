@@ -21,6 +21,7 @@ members = ["packages/*"]
 dev = [
     "pytest>=9.0",
     "pytest-asyncio>=1.0",
+    "ruff>=0.11",
 ]
 
 [tool.pytest.ini_options]
@@ -29,3 +30,36 @@ asyncio_mode = "auto"
 markers = [
     "integration: marks tests as live integration tests requiring real API keys (deselect with '-m not integration')",
 ]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+src = ["packages/*/src", "tests", "eval"]
+
+[tool.ruff.lint]
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "I",     # isort
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "SIM",   # flake8-simplify
+    "TCH",   # flake8-type-checking
+    "RUF",   # ruff-specific rules
+]
+ignore = [
+    "E501",    # line too long — handled by formatter
+    "SIM108",  # ternary operator — sometimes less readable
+    "UP007",   # X | Y union syntax — already using it where appropriate
+    "UP042",   # replace-str-enum — ChunkType(str, Enum) is intentional for Qdrant payload compat
+    "RUF012",  # mutable-class-default — Pydantic models handle this correctly
+    "RUF059",  # unused-unpacked-variable — common in unpacking patterns
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["vue_docs_core", "vue_docs_ingestion", "vue_docs_server"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

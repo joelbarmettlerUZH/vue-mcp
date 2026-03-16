@@ -27,7 +27,8 @@ async def vue_search_scopes() -> str:
     scope_counts: dict[str, int] = {}
     for scope in sorted(folders.keys()):
         count = sum(
-            len(pages) for f, pages in state.folder_structure.items()
+            len(pages)
+            for f, pages in state.folder_structure.items()
             if f == scope or f.startswith(scope + "/")
         )
         scope_counts[scope] = count
@@ -35,8 +36,8 @@ async def vue_search_scopes() -> str:
     lines: list[str] = [
         "# Valid Search Scopes\n",
         "Use these values for the `scope` parameter of `vue_docs_search`.\n",
-        '| Scope | Pages | Description |',
-        '|-------|-------|-------------|',
+        "| Scope | Pages | Description |",
+        "|-------|-------|-------------|",
         f'| `"all"` | {len(state.page_paths)} | Search all documentation |',
     ]
 

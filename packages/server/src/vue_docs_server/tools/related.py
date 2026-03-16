@@ -6,18 +6,21 @@ from typing import Annotated
 from fastmcp.exceptions import ToolError
 from pydantic import Field
 
-from vue_docs_core.retrieval.reconstruction import VUE_DOCS_BASE_URL
+from vue_docs_core.config import VUE_DOCS_BASE_URL
 from vue_docs_server.startup import state
 
 logger = logging.getLogger(__name__)
 
 
 async def vue_get_related(
-    topic: Annotated[str, Field(
-        description="A Vue.js API name, concept, or topic to find related documentation for. "
-                    "Examples: 'ref', 'reactivity', 'component lifecycle', 'Transition', "
-                    "'two-way binding'."
-    )],
+    topic: Annotated[
+        str,
+        Field(
+            description="A Vue.js API name, concept, or topic to find related documentation for. "
+            "Examples: 'ref', 'reactivity', 'component lifecycle', 'Transition', "
+            "'two-way binding'."
+        ),
+    ],
 ) -> str:
     """Find related Vue.js documentation for a given topic or API name.
 
@@ -39,7 +42,7 @@ async def vue_get_related(
             f"Try `vue_docs_search` for a broader documentation search."
         )
 
-    parts: list[str] = [f"# Related documentation for \"{topic}\"\n"]
+    parts: list[str] = [f'# Related documentation for "{topic}"\n']
 
     # Collect all related entities
     seen: set[str] = set()
@@ -82,8 +85,6 @@ async def vue_get_related(
 
     # Suggest next steps
     parts.append("---")
-    parts.append(
-        f"Use `vue_docs_search` with these API names for full documentation content."
-    )
+    parts.append("Use `vue_docs_search` with these API names for full documentation content.")
 
     return "\n".join(parts)

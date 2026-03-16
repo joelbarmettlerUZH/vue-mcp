@@ -4,24 +4,16 @@ Covers expand_cross_references: targeted vs page-level expansion,
 priority cutoffs, deduplication, empty inputs, and target capping.
 """
 
-from unittest.mock import MagicMock, call
-
-import pytest
+from unittest.mock import MagicMock
 
 from vue_docs_core.clients.qdrant import QdrantDocClient, SearchHit
-from vue_docs_core.models.crossref import CrossRefType
-from vue_docs_core.retrieval.expansion import (
-    expand_cross_references,
-    _EXPANSION_SCORE,
-    _LOW_CUTOFF,
-    _MAX_TARGETS,
-    _MEDIUM_CUTOFF,
-)
-
+from vue_docs_core.config import EXPANSION_LOW_CUTOFF, EXPANSION_MAX_TARGETS, EXPANSION_SCORE
+from vue_docs_core.retrieval.expansion import expand_cross_references
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_hit(
     chunk_id: str = "guide/essentials/computed#section",
@@ -59,6 +51,7 @@ def _make_payload(
 # Tests
 # ---------------------------------------------------------------------------
 
+
 class TestExpandCrossReferences:
     def test_targeted_expansion_uses_chunk_id_lookup(self):
         """Cross-refs with anchors should fetch by chunk_id, not file_path."""
@@ -79,7 +72,7 @@ class TestExpandCrossReferences:
 
         assert len(result) == 2
         assert result[1].chunk_id == "api/sfc-script-setup#definemodel"
-        assert result[1].score == _EXPANSION_SCORE
+        assert result[1].score == EXPANSION_SCORE
         qdrant.get_by_chunk_ids.assert_called_once_with(["api/sfc-script-setup#definemodel"])
         qdrant.get_by_file_paths.assert_not_called()
 
@@ -111,7 +104,7 @@ class TestExpandCrossReferences:
             _make_hit(
                 cross_references=[
                     "api/sfc-script-setup#definemodel",  # targeted
-                    "guide/essentials/forms",             # page-level
+                    "guide/essentials/forms",  # page-level
                 ],
             ),
         ]
@@ -172,16 +165,15 @@ class TestExpandCrossReferences:
         """LOW refs beyond top-5 should be skipped."""
         hits = []
         for i in range(8):
-            hits.append(_make_hit(
-                chunk_id=f"chunk-{i}#s",
-                score=1.0 - i * 0.05,
-                cross_references=[f"target/page-{i}#section"],
-            ))
+            hits.append(
+                _make_hit(
+                    chunk_id=f"chunk-{i}#s",
+                    score=1.0 - i * 0.05,
+                    cross_references=[f"target/page-{i}#section"],
+                )
+            )
 
-        crossref_types = {
-            f"chunk-{i}#s": {f"target/page-{i}#section": "low"}
-            for i in range(8)
-        }
+        crossref_types = {f"chunk-{i}#s": {f"target/page-{i}#section": "low"} for i in range(8)}
 
         qdrant = MagicMock(spec=QdrantDocClient)
         qdrant.get_by_chunk_ids.return_value = []
@@ -189,17 +181,19 @@ class TestExpandCrossReferences:
         expand_cross_references(hits, qdrant, crossref_types=crossref_types)
 
         call_args = qdrant.get_by_chunk_ids.call_args
-        assert len(call_args[0][0]) == _LOW_CUTOFF
+        assert len(call_args[0][0]) == EXPANSION_LOW_CUTOFF
 
     def test_caps_at_max_targets(self):
-        """Expansion should not exceed _MAX_TARGETS total."""
+        """Expansion should not exceed EXPANSION_MAX_TARGETS total."""
         hits = []
         for i in range(20):
-            hits.append(_make_hit(
-                chunk_id=f"chunk-{i}#s",
-                score=1.0 - i * 0.01,
-                cross_references=[f"target/page-{i}#section"],
-            ))
+            hits.append(
+                _make_hit(
+                    chunk_id=f"chunk-{i}#s",
+                    score=1.0 - i * 0.01,
+                    cross_references=[f"target/page-{i}#section"],
+                )
+            )
 
         qdrant = MagicMock(spec=QdrantDocClient)
         qdrant.get_by_chunk_ids.return_value = []
@@ -207,7 +201,7 @@ class TestExpandCrossReferences:
         expand_cross_references(hits, qdrant)
 
         call_args = qdrant.get_by_chunk_ids.call_args
-        assert len(call_args[0][0]) == _MAX_TARGETS
+        assert len(call_args[0][0]) == EXPANSION_MAX_TARGETS
 
     def test_targeted_preferred_over_page_level(self):
         """When capped, targeted refs should be kept over page-level refs."""

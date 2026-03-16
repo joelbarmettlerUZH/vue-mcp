@@ -5,7 +5,6 @@ No real API calls — Jina and Qdrant are mocked throughout.
 """
 
 import json
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -16,7 +15,6 @@ from vue_docs_ingestion.embedder import embed_dense
 from vue_docs_ingestion.indexer import _chunk_payload, upsert_chunks_batch
 from vue_docs_ingestion.scanner import find_markdown_files, hash_file
 from vue_docs_ingestion.state import FileState, IndexState
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -156,7 +154,9 @@ class TestIndexState:
     def test_save_and_reload(self, tmp_path):
         state_path = tmp_path / "state.json"
         state = IndexState(state_path)
-        state.set("file.md", FileState(content_hash="hash1", pipeline_version="1", chunk_ids=["c1"]))
+        state.set(
+            "file.md", FileState(content_hash="hash1", pipeline_version="1", chunk_ids=["c1"])
+        )
         state.save()
 
         assert state_path.exists()
@@ -217,9 +217,7 @@ class TestEmbedder:
             total_tokens=250,
         )
 
-        with patch.object(
-            JinaClient, "embed", new=AsyncMock(return_value=fake_result)
-        ):
+        with patch.object(JinaClient, "embed", new=AsyncMock(return_value=fake_result)):
             client = JinaClient(api_key="test")
             vectors, tokens = await embed_dense(chunks, client)
 
@@ -381,11 +379,10 @@ class TestPipelineDryRun:
         data = tmp_path / "data"
         data.mkdir()
 
-        from vue_docs_ingestion.scanner import hash_file
-        from vue_docs_ingestion.state import FileState, IndexState
-
         # Pre-populate state so file appears up-to-date (use current pipeline_version)
         from vue_docs_core.config import settings as app_settings
+        from vue_docs_ingestion.scanner import hash_file
+        from vue_docs_ingestion.state import FileState, IndexState
 
         state = IndexState(data / "state" / "index_state.json")
         state.set(
@@ -421,11 +418,10 @@ class TestPipelineDryRun:
         data = tmp_path / "data"
         data.mkdir()
 
-        from vue_docs_ingestion.scanner import hash_file
-        from vue_docs_ingestion.state import FileState, IndexState
-
         # Pre-populate state (file is "up to date")
         from vue_docs_core.config import settings as app_settings
+        from vue_docs_ingestion.scanner import hash_file
+        from vue_docs_ingestion.state import FileState, IndexState
 
         state = IndexState(data / "state" / "index_state.json")
         state.set(
@@ -452,9 +448,7 @@ class TestPipelineDryRun:
         mock_jina = MagicMock()
 
         async def dynamic_embed(texts, task, batch_size=64):
-            return EmbeddingResult(
-                embeddings=[[0.1] * 1024] * len(texts), total_tokens=100
-            )
+            return EmbeddingResult(embeddings=[[0.1] * 1024] * len(texts), total_tokens=100)
 
         mock_jina.embed_batched = AsyncMock(side_effect=dynamic_embed)
         mock_jina.close = AsyncMock()
@@ -477,6 +471,7 @@ class TestPipelineDryRun:
 class TestCLI:
     def test_run_help(self):
         from typer.testing import CliRunner
+
         from vue_docs_ingestion.cli import app
 
         runner = CliRunner()
@@ -486,6 +481,7 @@ class TestCLI:
 
     def test_status_help(self):
         from typer.testing import CliRunner
+
         from vue_docs_ingestion.cli import app
 
         runner = CliRunner()
@@ -494,6 +490,7 @@ class TestCLI:
 
     def test_run_fails_on_nonexistent_docs_path(self, tmp_path):
         from typer.testing import CliRunner
+
         from vue_docs_ingestion.cli import app
 
         runner = CliRunner()
@@ -502,6 +499,7 @@ class TestCLI:
 
     def test_status_no_state_prints_guidance(self, tmp_path):
         from typer.testing import CliRunner
+
         from vue_docs_ingestion.cli import app
 
         runner = CliRunner()
@@ -511,6 +509,7 @@ class TestCLI:
 
     def test_run_dry_run_lists_files(self, tmp_path):
         from typer.testing import CliRunner
+
         from vue_docs_ingestion.cli import app
 
         docs = tmp_path / "src"

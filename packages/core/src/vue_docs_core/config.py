@@ -1,6 +1,7 @@
-"""Application configuration via environment variables."""
+"""Application configuration via environment variables and constants."""
 
 from pydantic_settings import BaseSettings
+from qdrant_client.models import PayloadSchemaType
 
 
 class Settings(BaseSettings):
@@ -31,3 +32,60 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+# ---------------------------------------------------------------------------
+# API endpoints
+# ---------------------------------------------------------------------------
+
+GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
+JINA_EMBEDDING_URL = "https://api.jina.ai/v1/embeddings"
+JINA_RERANKER_URL = "https://api.jina.ai/v1/rerank"
+VUE_DOCS_BASE_URL = "https://vuejs.org"
+
+# ---------------------------------------------------------------------------
+# Jina task types for jina-embeddings-v4+
+# ---------------------------------------------------------------------------
+
+TASK_RETRIEVAL_PASSAGE = "retrieval.passage"
+TASK_RETRIEVAL_QUERY = "retrieval.query"
+TASK_TEXT_MATCHING = "text-matching"
+
+# ---------------------------------------------------------------------------
+# Qdrant vector names and indexed fields
+# ---------------------------------------------------------------------------
+
+DENSE_VECTOR_NAME = "dense"
+SPARSE_VECTOR_NAME = "bm25"
+
+INDEXED_FIELDS = {
+    "chunk_id": PayloadSchemaType.KEYWORD,
+    "file_path": PayloadSchemaType.KEYWORD,
+    "folder_path": PayloadSchemaType.KEYWORD,
+    "chunk_type": PayloadSchemaType.KEYWORD,
+    "content_type": PayloadSchemaType.KEYWORD,
+    "api_style": PayloadSchemaType.KEYWORD,
+    "api_entities": PayloadSchemaType.KEYWORD,
+    "global_sort_key": PayloadSchemaType.KEYWORD,
+    "parent_chunk_id": PayloadSchemaType.KEYWORD,
+}
+
+# ---------------------------------------------------------------------------
+# Retrieval tuning constants
+# ---------------------------------------------------------------------------
+
+RETRIEVAL_LIMIT = 50
+RERANK_MIN_SCORE = 0.01
+FUZZY_MIN_SCORE = 85
+EXPANSION_SCORE = 0.0
+EXPANSION_MEDIUM_CUTOFF = 10
+EXPANSION_LOW_CUTOFF = 5
+EXPANSION_MAX_TARGETS = 10
+
+# ---------------------------------------------------------------------------
+# Ingestion tuning constants
+# ---------------------------------------------------------------------------
+
+EMBED_BATCH_SIZE = 256
+UPSERT_BATCH_SIZE = 256
+PAGE_CONCURRENCY = 3
+MAX_SECTION_CHARS = 3000

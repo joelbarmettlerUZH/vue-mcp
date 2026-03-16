@@ -10,20 +10,22 @@ from typing import Annotated
 from fastmcp.exceptions import ToolError
 from pydantic import Field
 
-from vue_docs_core.retrieval.reconstruction import VUE_DOCS_BASE_URL
-
+from vue_docs_core.config import VUE_DOCS_BASE_URL
 from vue_docs_server.startup import state
 
 logger = logging.getLogger(__name__)
 
 
 async def vue_api_lookup(
-    api_name: Annotated[str, Field(
-        description="The Vue API name to look up. Examples: 'ref', 'computed', "
-                    "'defineProps', 'v-model', 'onMounted', 'watchEffect', "
-                    "'Transition', 'KeepAlive'. "
-                    "Read the vue://api/index resource to browse all available API names."
-    )],
+    api_name: Annotated[
+        str,
+        Field(
+            description="The Vue API name to look up. Examples: 'ref', 'computed', "
+            "'defineProps', 'v-model', 'onMounted', 'watchEffect', "
+            "'Transition', 'KeepAlive'. "
+            "Read the vue://api/index resource to browse all available API names."
+        ),
+    ],
 ) -> str:
     """Look up a Vue.js API by exact name.
 
@@ -44,10 +46,7 @@ async def vue_api_lookup(
             entity = _find_entity(match_result.entities[0])
 
     if entity is None:
-        return (
-            f"No API entity found for '{api_name}'. "
-            f"Try vue_docs_search for broader queries."
-        )
+        return f"No API entity found for '{api_name}'. Try vue_docs_search for broader queries."
 
     # Build response
     parts: list[str] = []
@@ -74,7 +73,7 @@ async def vue_api_lookup(
         parts.append(f"\nReferenced in {len(chunk_ids)} documentation chunks.")
 
     parts.append(
-        f"\nUse `vue_docs_search` with query \"{entity.name}\" for full documentation content."
+        f'\nUse `vue_docs_search` with query "{entity.name}" for full documentation content.'
     )
 
     return "\n".join(parts)
@@ -104,6 +103,7 @@ def _page_path_to_url(page_path: str) -> str:
 def _clean_section_title(section: str) -> str:
     """Remove {#anchor} markers and HTML tags from section titles."""
     import re
+
     # Remove backticks first (before HTML removal, since backtick-wrapped
     # content like `<Transition>` should be preserved as plain text)
     section = section.replace("`", "")

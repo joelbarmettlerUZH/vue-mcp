@@ -6,13 +6,13 @@ from pydantic import Field
 
 
 def debug_vue_issue(
-    symptom: Annotated[str, Field(
-        description="Description of the unexpected behavior or error message."
-    )],
-    code_snippet: Annotated[str, Field(
-        default="",
-        description="Relevant code snippet where the issue occurs (optional)."
-    )] = "",
+    symptom: Annotated[
+        str, Field(description="Description of the unexpected behavior or error message.")
+    ],
+    code_snippet: Annotated[
+        str,
+        Field(default="", description="Relevant code snippet where the issue occurs (optional)."),
+    ] = "",
 ) -> str:
     """Structured prompt for debugging a Vue.js issue using the documentation."""
     code_block = ""
@@ -35,10 +35,13 @@ def debug_vue_issue(
 
 
 def compare_vue_apis(
-    items: Annotated[str, Field(
-        description="Comma-separated list of Vue APIs or patterns to compare. "
-                    "Examples: 'ref, reactive', 'computed, watch', 'v-if, v-show'."
-    )],
+    items: Annotated[
+        str,
+        Field(
+            description="Comma-separated list of Vue APIs or patterns to compare. "
+            "Examples: 'ref, reactive', 'computed, watch', 'v-if, v-show'."
+        ),
+    ],
 ) -> str:
     """Compare two or more Vue.js APIs or patterns using the official documentation."""
     api_list = [item.strip() for item in items.split(",") if item.strip()]
@@ -59,14 +62,20 @@ def compare_vue_apis(
 
 
 def migrate_vue_pattern(
-    from_pattern: Annotated[str, Field(
-        description="The current pattern or API being migrated from. "
-                    "Examples: 'Options API', 'Vue 2 mixins', 'event bus'."
-    )],
-    to_pattern: Annotated[str, Field(
-        description="The target pattern or API to migrate to. "
-                    "Examples: 'Composition API', 'composables', 'provide/inject'."
-    )],
+    from_pattern: Annotated[
+        str,
+        Field(
+            description="The current pattern or API being migrated from. "
+            "Examples: 'Options API', 'Vue 2 mixins', 'event bus'."
+        ),
+    ],
+    to_pattern: Annotated[
+        str,
+        Field(
+            description="The target pattern or API to migrate to. "
+            "Examples: 'Composition API', 'composables', 'provide/inject'."
+        ),
+    ],
 ) -> str:
     """Guide for migrating between Vue.js patterns using the official documentation."""
     return (

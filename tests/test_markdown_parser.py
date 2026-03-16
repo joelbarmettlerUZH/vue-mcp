@@ -246,7 +246,9 @@ class TestLargeSectionSplitting:
         props_md = DOCS_ROOT / "guide" / "components" / "props.md"
         chunks = parse_markdown_file(props_md, DOCS_ROOT)
         # "Prop Passing Details" has almost no intro
-        prop_passing = [c for c in chunks if c.chunk_id == "guide/components/props#prop-passing-details"]
+        prop_passing = [
+            c for c in chunks if c.chunk_id == "guide/components/props#prop-passing-details"
+        ]
         # Should either not exist, or have meaningful content
         if prop_passing:
             assert len(prop_passing[0].content) >= 100

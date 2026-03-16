@@ -5,15 +5,11 @@ payload-to-chunk reconstruction, and the summary input hash helper.
 No real API calls.
 """
 
-import json
-import pytest
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
-from vue_docs_core.models.chunk import Chunk, ChunkMetadata, ChunkType
+from vue_docs_core.models.chunk import ChunkType
 from vue_docs_ingestion.scanner import find_markdown_files, hash_file
 from vue_docs_ingestion.state import FileState, IndexState
-
 
 # ---------------------------------------------------------------------------
 # State persistence
@@ -25,12 +21,15 @@ class TestIndexState:
         state_path = tmp_path / "state.json"
         state = IndexState(state_path)
 
-        state.set("guide/a.md", FileState(
-            content_hash="abc123",
-            pipeline_version="5",
-            chunk_ids=["guide/a#intro", "guide/a#details"],
-            last_indexed="2026-03-16T00:00:00Z",
-        ))
+        state.set(
+            "guide/a.md",
+            FileState(
+                content_hash="abc123",
+                pipeline_version="5",
+                chunk_ids=["guide/a#intro", "guide/a#details"],
+                last_indexed="2026-03-16T00:00:00Z",
+            ),
+        )
         state.save()
 
         # Reload
@@ -65,14 +64,22 @@ class TestIndexState:
 
     def test_total_chunks(self, tmp_path):
         state = IndexState(tmp_path / "state.json")
-        state.set("a.md", FileState(
-            content_hash="x", pipeline_version="1",
-            chunk_ids=["a#1", "a#2"],
-        ))
-        state.set("b.md", FileState(
-            content_hash="y", pipeline_version="1",
-            chunk_ids=["b#1"],
-        ))
+        state.set(
+            "a.md",
+            FileState(
+                content_hash="x",
+                pipeline_version="1",
+                chunk_ids=["a#1", "a#2"],
+            ),
+        )
+        state.set(
+            "b.md",
+            FileState(
+                content_hash="y",
+                pipeline_version="1",
+                chunk_ids=["b#1"],
+            ),
+        )
         assert state.total_chunks() == 3
 
     def test_remove_nonexistent_is_noop(self, tmp_path):
@@ -99,11 +106,14 @@ class TestChangeDetection:
         file_hash = hash_file(md_file)
 
         state = IndexState(tmp_path / "state.json")
-        state.set("test.md", FileState(
-            content_hash=file_hash,
-            pipeline_version="5",
-            chunk_ids=["test#intro"],
-        ))
+        state.set(
+            "test.md",
+            FileState(
+                content_hash=file_hash,
+                pipeline_version="5",
+                chunk_ids=["test#intro"],
+            ),
+        )
 
         existing = state.get("test.md")
         assert existing is not None
@@ -117,10 +127,13 @@ class TestChangeDetection:
         old_hash = hash_file(md_file)
 
         state = IndexState(tmp_path / "state.json")
-        state.set("test.md", FileState(
-            content_hash=old_hash,
-            pipeline_version="5",
-        ))
+        state.set(
+            "test.md",
+            FileState(
+                content_hash=old_hash,
+                pipeline_version="5",
+            ),
+        )
 
         # Modify the file
         md_file.write_text("# Updated content with changes")
@@ -132,10 +145,13 @@ class TestChangeDetection:
     def test_version_bump_forces_reindex(self, tmp_path):
         """A file indexed with old pipeline version should be reprocessed."""
         state = IndexState(tmp_path / "state.json")
-        state.set("test.md", FileState(
-            content_hash="abc",
-            pipeline_version="4",  # Old version
-        ))
+        state.set(
+            "test.md",
+            FileState(
+                content_hash="abc",
+                pipeline_version="4",  # Old version
+            ),
+        )
 
         existing = state.get("test.md")
         assert existing.pipeline_version != "5"  # Current version

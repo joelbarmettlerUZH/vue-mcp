@@ -2,16 +2,14 @@
 
 import asyncio
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 import httpx
 
-from vue_docs_core.config import settings
+from vue_docs_core.config import GEMINI_API_BASE, settings
 
 logger = logging.getLogger(__name__)
-
-GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 
 
 @dataclass
@@ -24,6 +22,7 @@ class GeminiResponse:
 @dataclass
 class GeminiFunctionCallResponse:
     """Response from a Gemini function calling request."""
+
     function_name: str
     arguments: dict[str, Any]
     input_tokens: int
@@ -79,7 +78,11 @@ class GeminiClient:
                     wait = 2**attempt
                     logger.warning(
                         "Gemini API %s (attempt %d/%d), retrying in %ds: %s",
-                        status, attempt + 1, self.max_retries, wait, body,
+                        status,
+                        attempt + 1,
+                        self.max_retries,
+                        wait,
+                        body,
                     )
                     await asyncio.sleep(wait)
                     continue
@@ -90,7 +93,9 @@ class GeminiClient:
                 wait = 2**attempt
                 logger.warning(
                     "Gemini API timeout (attempt %d/%d), retrying in %ds",
-                    attempt + 1, self.max_retries, wait,
+                    attempt + 1,
+                    self.max_retries,
+                    wait,
                 )
                 await asyncio.sleep(wait)
                 continue
@@ -110,13 +115,6 @@ class GeminiClient:
     ) -> GeminiResponse:
         """Send a prompt to Gemini and return the response text.
 
-        Args:
-            prompt: The user prompt.
-            system_instruction: Optional system instruction.
-            temperature: Sampling temperature (0.0 = deterministic).
-            max_output_tokens: Max tokens in response.
-            model: Override model for this call.
-
         Returns:
             GeminiResponse with text and token usage.
         """
@@ -134,9 +132,7 @@ class GeminiClient:
             },
         }
         if system_instruction:
-            payload["systemInstruction"] = {
-                "parts": [{"text": system_instruction}]
-            }
+            payload["systemInstruction"] = {"parts": [{"text": system_instruction}]}
 
         data = await self._request_with_retry(url, payload)
 
@@ -176,17 +172,6 @@ class GeminiClient:
         Defines a single tool and forces Gemini to call it, ensuring the
         response conforms to the provided JSON schema.
 
-        Args:
-            prompt: The user prompt.
-            function_name: Name of the function to define.
-            function_description: Description of what the function does.
-            parameters_schema: JSON Schema for the function parameters
-                (the structured output you want).
-            system_instruction: Optional system instruction.
-            temperature: Sampling temperature.
-            max_output_tokens: Max tokens in response.
-            model: Override model for this call.
-
         Returns:
             GeminiFunctionCallResponse with parsed arguments.
         """
@@ -200,13 +185,17 @@ class GeminiClient:
                 "maxOutputTokens": max_output_tokens,
                 "thinkingConfig": {"thinkingBudget": 0},
             },
-            "tools": [{
-                "function_declarations": [{
-                    "name": function_name,
-                    "description": function_description,
-                    "parameters": parameters_schema,
-                }]
-            }],
+            "tools": [
+                {
+                    "function_declarations": [
+                        {
+                            "name": function_name,
+                            "description": function_description,
+                            "parameters": parameters_schema,
+                        }
+                    ]
+                }
+            ],
             "tool_config": {
                 "function_calling_config": {
                     "mode": "ANY",
@@ -215,9 +204,7 @@ class GeminiClient:
             },
         }
         if system_instruction:
-            payload["systemInstruction"] = {
-                "parts": [{"text": system_instruction}]
-            }
+            payload["systemInstruction"] = {"parts": [{"text": system_instruction}]}
 
         data = await self._request_with_retry(url, payload)
 
@@ -290,14 +277,6 @@ class GeminiClient:
         We structure the prompt so the page content is the stable prefix and the
         chunk-specific part varies.
 
-        Args:
-            cached_content: The large, repeated content (e.g., full page text).
-            per_chunk_prompt: The varying part (e.g., specific chunk to enrich).
-            system_instruction: Optional system instruction.
-            temperature: Sampling temperature.
-            max_output_tokens: Max tokens in response.
-            model: Override model for this call.
-
         Returns:
             GeminiResponse with text and token usage.
         """
@@ -324,12 +303,6 @@ class GeminiClient:
         Uses forced function calling to get a structured list of questions,
         avoiding brittle newline-based parsing.
 
-        Args:
-            page_content: The full markdown content of the page.
-            chunk_content: The specific chunk text to generate questions for.
-            page_title: The page title for context.
-            num_questions: Number of questions to generate (3-5).
-
         Returns:
             A list of hypothetical developer questions.
         """
@@ -345,7 +318,7 @@ class GeminiClient:
         )
 
         per_chunk_prompt = (
-            f"Given the following chunk from the page \"{page_title}\", "
+            f'Given the following chunk from the page "{page_title}", '
             f"generate {num_questions} hypothetical developer questions:\n\n"
             f"CHUNK:\n{chunk_content}"
         )
@@ -382,13 +355,6 @@ class GeminiClient:
         title: str = "",
     ) -> str:
         """Generate a summary for a page, folder, or top-level section.
-
-        Args:
-            content: The content to summarize. For pages, this is the full
-                markdown. For folders, concatenated page summaries. For
-                top-level, concatenated folder summaries.
-            level: One of "page", "folder", or "top".
-            title: The title of the page/folder/section being summarized.
 
         Returns:
             A 3-5 sentence summary string.
@@ -444,11 +410,6 @@ class GeminiClient:
         the chunk within the page's topic, mentioning relevant Vue concepts
         and API names.
 
-        Args:
-            page_content: The full markdown content of the page.
-            chunk_content: The specific chunk text to enrich.
-            page_title: The page title for context.
-
         Returns:
             A 2-3 sentence contextual prefix string.
         """
@@ -464,7 +425,7 @@ class GeminiClient:
         )
 
         per_chunk_prompt = (
-            f"Given the following chunk from the page \"{page_title}\", "
+            f'Given the following chunk from the page "{page_title}", '
             f"write a contextual summary:\n\n"
             f"CHUNK:\n{chunk_content}"
         )

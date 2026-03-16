@@ -101,10 +101,7 @@ def upsert_hype_batch(
     if not hype_embeddings:
         return
 
-    chunk_ids = [
-        f"{h.parent_chunk_id}#hype#{i}"
-        for i, h in enumerate(hype_embeddings)
-    ]
+    chunk_ids = [f"{h.parent_chunk_id}#hype#{i}" for i, h in enumerate(hype_embeddings)]
     dense_vectors = [h.embedding for h in hype_embeddings]
     payloads = [_hype_payload(h) for h in hype_embeddings]
 

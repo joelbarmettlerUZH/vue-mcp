@@ -17,13 +17,13 @@ import logging
 import statistics
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
 
 from vue_docs_core.config import settings
-from vue_docs_server.startup import startup, shutdown
+from vue_docs_server.startup import shutdown, startup
 from vue_docs_server.tools.search import vue_docs_search
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
@@ -198,7 +198,9 @@ def _parse_scores_from_text(text: str) -> dict:
         match = re.search(rf"{dim}\s*[=:]\s*(\d)", text.lower())
         scores[dim] = int(match.group(1)) if match else 0
 
-    if all(scores.get(d, 0) == 0 for d in ("relevance", "completeness", "correctness", "api_coverage")):
+    if all(
+        scores.get(d, 0) == 0 for d in ("relevance", "completeness", "correctness", "api_coverage")
+    ):
         raise RuntimeError(f"Could not parse scores from text response: {text[:100]}")
 
     return scores
@@ -226,19 +228,24 @@ async def run_evaluation(
 
         # Run search
         try:
-            retrieved_context, latency = await run_search(
-                question, max_results=max_results
-            )
+            retrieved_context, latency = await run_search(question, max_results=max_results)
         except Exception as e:
             logger.error("Search failed for '%s': %s", question[:50], e)
-            results.append({
-                "question": question,
-                "intent": intent,
-                "difficulty": difficulty,
-                "latency": 0,
-                "scores": {"relevance": 0, "completeness": 0, "correctness": 0, "api_coverage": 0},
-                "error": str(e),
-            })
+            results.append(
+                {
+                    "question": question,
+                    "intent": intent,
+                    "difficulty": difficulty,
+                    "latency": 0,
+                    "scores": {
+                        "relevance": 0,
+                        "completeness": 0,
+                        "correctness": 0,
+                        "api_coverage": 0,
+                    },
+                    "error": str(e),
+                }
+            )
             continue
 
         # Judge with LLM (retry up to 5 times on transient errors)
@@ -254,20 +261,24 @@ async def run_evaluation(
                 )
                 break
             except Exception as e:
-                logger.warning("Judging attempt %d failed for '%s': %s", attempt + 1, question[:50], e)
+                logger.warning(
+                    "Judging attempt %d failed for '%s': %s", attempt + 1, question[:50], e
+                )
                 if attempt < 4:
-                    await asyncio.sleep(2 ** attempt)
+                    await asyncio.sleep(2**attempt)
                 else:
                     raise
 
-        results.append({
-            "question": question,
-            "intent": intent,
-            "difficulty": difficulty,
-            "latency": round(latency, 3),
-            "scores": scores,
-            "retrieved_preview": retrieved_context[:500],
-        })
+        results.append(
+            {
+                "question": question,
+                "intent": intent,
+                "difficulty": difficulty,
+                "latency": round(latency, 3),
+                "scores": scores,
+                "retrieved_preview": retrieved_context[:500],
+            }
+        )
 
         logger.info(
             "  -> relevance=%d completeness=%d correctness=%d api=%d latency=%.2fs",
@@ -367,19 +378,27 @@ def format_report(metrics: dict) -> str:
 
     lines.append("OVERALL SCORES (1-5 scale):")
     lines.append(f"  Composite:    {overall.get('avg_composite', 'N/A')}")
-    lines.append(f"  Relevance:    {overall.get('avg_relevance', 'N/A')} (median {overall.get('median_relevance', 'N/A')})")
-    lines.append(f"  Completeness: {overall.get('avg_completeness', 'N/A')} (median {overall.get('median_completeness', 'N/A')})")
-    lines.append(f"  Correctness:  {overall.get('avg_correctness', 'N/A')} (median {overall.get('median_correctness', 'N/A')})")
-    lines.append(f"  API Coverage: {overall.get('avg_api_coverage', 'N/A')} (median {overall.get('median_api_coverage', 'N/A')})")
+    lines.append(
+        f"  Relevance:    {overall.get('avg_relevance', 'N/A')} (median {overall.get('median_relevance', 'N/A')})"
+    )
+    lines.append(
+        f"  Completeness: {overall.get('avg_completeness', 'N/A')} (median {overall.get('median_completeness', 'N/A')})"
+    )
+    lines.append(
+        f"  Correctness:  {overall.get('avg_correctness', 'N/A')} (median {overall.get('median_correctness', 'N/A')})"
+    )
+    lines.append(
+        f"  API Coverage: {overall.get('avg_api_coverage', 'N/A')} (median {overall.get('median_api_coverage', 'N/A')})"
+    )
 
-    lines.append(f"\nLATENCY:")
+    lines.append("\nLATENCY:")
     lines.append(f"  Average: {overall.get('avg_latency', 'N/A')}s")
     lines.append(f"  P95:     {overall.get('p95_latency', 'N/A')}s")
     lines.append(f"  Max:     {overall.get('max_latency', 'N/A')}s")
 
     by_intent = metrics.get("by_intent", {})
     if by_intent:
-        lines.append(f"\nBY INTENT:")
+        lines.append("\nBY INTENT:")
         for intent, m in sorted(by_intent.items()):
             lines.append(
                 f"  {intent:15s} (n={m.get('count', 0):2d})  "
@@ -391,7 +410,7 @@ def format_report(metrics: dict) -> str:
 
     by_difficulty = metrics.get("by_difficulty", {})
     if by_difficulty:
-        lines.append(f"\nBY DIFFICULTY:")
+        lines.append("\nBY DIFFICULTY:")
         for diff, m in sorted(by_difficulty.items()):
             lines.append(
                 f"  {diff:10s} (n={m.get('count', 0):2d})  "
@@ -433,7 +452,7 @@ async def main_async(args: argparse.Namespace) -> None:
     output_dir = args.output
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
 
     results_path = output_dir / f"eval_{timestamp}.json"
     with open(results_path, "w") as f:

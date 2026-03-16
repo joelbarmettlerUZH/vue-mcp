@@ -14,7 +14,6 @@ from qdrant_client.models import (
     FusionQuery,
     MatchAny,
     NearestQuery,
-    PayloadSchemaType,
     PointStruct,
     Prefetch,
     SparseIndexParams,
@@ -23,24 +22,9 @@ from qdrant_client.models import (
     VectorParams,
 )
 
-from vue_docs_core.config import settings
+from vue_docs_core.config import DENSE_VECTOR_NAME, INDEXED_FIELDS, SPARSE_VECTOR_NAME, settings
 
 logger = logging.getLogger(__name__)
-
-DENSE_VECTOR_NAME = "dense"
-SPARSE_VECTOR_NAME = "bm25"
-
-INDEXED_FIELDS = {
-    "chunk_id": PayloadSchemaType.KEYWORD,
-    "file_path": PayloadSchemaType.KEYWORD,
-    "folder_path": PayloadSchemaType.KEYWORD,
-    "chunk_type": PayloadSchemaType.KEYWORD,
-    "content_type": PayloadSchemaType.KEYWORD,
-    "api_style": PayloadSchemaType.KEYWORD,
-    "api_entities": PayloadSchemaType.KEYWORD,
-    "global_sort_key": PayloadSchemaType.KEYWORD,
-    "parent_chunk_id": PayloadSchemaType.KEYWORD,
-}
 
 
 @dataclass
@@ -92,7 +76,8 @@ class QdrantDocClient:
         if not exists:
             logger.info(
                 "Creating collection '%s' (dense_dim=%d)",
-                self.collection, self.dense_dim,
+                self.collection,
+                self.dense_dim,
             )
             self.client.create_collection(
                 collection_name=self.collection,
@@ -117,17 +102,16 @@ class QdrantDocClient:
         else:
             logger.info("Collection '%s' already exists", self.collection)
 
-        # Create payload indices
+        # Create payload indices (may already exist)
+        import contextlib
+
         for field_name, field_type in INDEXED_FIELDS.items():
-            try:
+            with contextlib.suppress(Exception):
                 self.client.create_payload_index(
                     collection_name=self.collection,
                     field_name=field_name,
                     field_schema=field_type,
                 )
-            except Exception:
-                # Index may already exist
-                pass
 
         logger.info("Payload indices ensured for %d fields", len(INDEXED_FIELDS))
 
@@ -177,13 +161,6 @@ class QdrantDocClient:
         entity_boost: list[str] | None = None,
     ) -> list[SearchHit]:
         """Run hybrid dense+sparse search with RRF fusion.
-
-        Args:
-            dense_vector: Query dense embedding.
-            sparse_vector: Query BM25 sparse vector.
-            limit: Max results to return.
-            scope_filter: Optional folder_path prefix filter.
-            entity_boost: Optional API entity names to boost via should filter.
 
         Returns:
             List of SearchHit results.
@@ -242,11 +219,13 @@ class QdrantDocClient:
         hits = []
         for point in results.points:
             chunk_id = point.payload.get("chunk_id", "")
-            hits.append(SearchHit(
-                chunk_id=chunk_id,
-                score=point.score,
-                payload=point.payload,
-            ))
+            hits.append(
+                SearchHit(
+                    chunk_id=chunk_id,
+                    score=point.score,
+                    payload=point.payload,
+                )
+            )
 
         return hits
 
@@ -269,7 +248,7 @@ class QdrantDocClient:
             with_payload=True,
         )
 
-        return [point.payload for point, _ in zip(results[0], range(len(chunk_ids)))]
+        return [point.payload for point, _ in zip(results[0], range(len(chunk_ids)), strict=False)]
 
     def get_by_file_paths(
         self,
@@ -278,11 +257,6 @@ class QdrantDocClient:
         limit: int = 100,
     ) -> list[dict]:
         """Retrieve points matching any of the given file_path values.
-
-        Args:
-            file_paths: File paths to match (e.g. ["guide/essentials/computed.md"]).
-            chunk_types: Optional filter on chunk_type (e.g. ["section", "subsection"]).
-            limit: Max points to return.
 
         Returns:
             List of payload dicts.
@@ -352,6 +326,7 @@ class QdrantDocClient:
 def _chunk_id_to_point_id(chunk_id: str) -> int:
     """Convert a chunk_id string to a deterministic positive integer for Qdrant."""
     import hashlib
+
     h = hashlib.sha256(chunk_id.encode()).hexdigest()
     # Use first 15 hex chars to stay within int64 range
     return int(h[:15], 16)

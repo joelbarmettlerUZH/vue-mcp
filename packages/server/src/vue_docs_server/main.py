@@ -5,7 +5,15 @@ from contextlib import asynccontextmanager
 
 from fastmcp import FastMCP
 
-from vue_docs_server.startup import startup, shutdown
+from vue_docs_server.prompts import compare_vue_apis, debug_vue_issue, migrate_vue_pattern
+from vue_docs_server.resources.api_index import vue_api_entity, vue_api_index
+from vue_docs_server.resources.pages import vue_doc_page
+from vue_docs_server.resources.scopes import vue_search_scopes
+from vue_docs_server.resources.topics import vue_section_topics, vue_table_of_contents
+from vue_docs_server.startup import shutdown, startup
+from vue_docs_server.tools.api_lookup import vue_api_lookup
+from vue_docs_server.tools.related import vue_get_related
+from vue_docs_server.tools.search import vue_docs_search
 
 logging.basicConfig(
     level=logging.INFO,
@@ -54,27 +62,12 @@ mcp = FastMCP(
     lifespan=lifespan,
 )
 
-# ---------------------------------------------------------------------------
 # Tools
-# ---------------------------------------------------------------------------
-
-from vue_docs_server.tools.search import vue_docs_search  # noqa: E402
-from vue_docs_server.tools.api_lookup import vue_api_lookup  # noqa: E402
-from vue_docs_server.tools.related import vue_get_related  # noqa: E402
-
 mcp.tool(annotations={"readOnlyHint": True})(vue_docs_search)
 mcp.tool(annotations={"readOnlyHint": True})(vue_api_lookup)
 mcp.tool(annotations={"readOnlyHint": True})(vue_get_related)
 
-# ---------------------------------------------------------------------------
 # Resources
-# ---------------------------------------------------------------------------
-
-from vue_docs_server.resources.pages import vue_doc_page  # noqa: E402
-from vue_docs_server.resources.topics import vue_table_of_contents, vue_section_topics  # noqa: E402
-from vue_docs_server.resources.api_index import vue_api_index, vue_api_entity  # noqa: E402
-from vue_docs_server.resources.scopes import vue_search_scopes  # noqa: E402
-
 mcp.resource("vue://pages/{path*}", mime_type="text/markdown")(vue_doc_page)
 mcp.resource("vue://topics", mime_type="text/markdown")(vue_table_of_contents)
 mcp.resource("vue://topics/{section*}", mime_type="text/markdown")(vue_section_topics)
@@ -82,20 +75,11 @@ mcp.resource("vue://api/index", mime_type="text/markdown")(vue_api_index)
 mcp.resource("vue://api/entities/{name}", mime_type="text/markdown")(vue_api_entity)
 mcp.resource("vue://scopes", mime_type="text/markdown")(vue_search_scopes)
 
-# ---------------------------------------------------------------------------
 # Prompts
-# ---------------------------------------------------------------------------
-
-from vue_docs_server.prompts import debug_vue_issue, compare_vue_apis, migrate_vue_pattern  # noqa: E402
-
 mcp.prompt(debug_vue_issue)
 mcp.prompt(compare_vue_apis)
 mcp.prompt(migrate_vue_pattern)
 
-
-# ---------------------------------------------------------------------------
-# Entry point
-# ---------------------------------------------------------------------------
 
 def main() -> None:
     """Run the MCP server."""

@@ -21,12 +21,8 @@ def _configure_logging(verbose: bool) -> None:
 
 @app.command()
 def run(
-    docs_path: str = typer.Option(
-        settings.vue_docs_path, help="Path to Vue docs source directory"
-    ),
-    data_path: str = typer.Option(
-        settings.data_path, help="Path to shared data directory"
-    ),
+    docs_path: str = typer.Option(settings.vue_docs_path, help="Path to Vue docs source directory"),
+    data_path: str = typer.Option(settings.data_path, help="Path to shared data directory"),
     full: bool = typer.Option(False, "--full", help="Force full re-index of all files"),
     dry_run: bool = typer.Option(
         False, "--dry-run", help="Show what would change without processing"
@@ -57,9 +53,7 @@ def run(
 
 @app.command()
 def status(
-    data_path: str = typer.Option(
-        settings.data_path, help="Path to shared data directory"
-    ),
+    data_path: str = typer.Option(settings.data_path, help="Path to shared data directory"),
 ) -> None:
     """Show current index status."""
     from vue_docs_core.clients.qdrant import QdrantDocClient

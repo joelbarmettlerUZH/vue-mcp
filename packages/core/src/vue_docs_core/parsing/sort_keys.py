@@ -57,9 +57,7 @@ def parse_sidebar_config(config_path: Path) -> dict[str, str]:
                 path = path.split("#")[0]  # strip anchors
 
                 if path:
-                    sort_key = (
-                        f"{section_idx:02d}_{max(0, group_idx):02d}_{item_idx:02d}"
-                    )
+                    sort_key = f"{section_idx:02d}_{max(0, group_idx):02d}_{item_idx:02d}"
                     result[path] = sort_key
                     item_idx += 1
 
@@ -68,10 +66,6 @@ def parse_sidebar_config(config_path: Path) -> dict[str, str]:
 
 def compute_sort_key(file_path: str, sidebar_map: dict[str, str]) -> str:
     """Return the sort key for a documentation file.
-
-    Args:
-        file_path: Doc-relative path, e.g. ``guide/essentials/computed.md``.
-        sidebar_map: Mapping from :func:`parse_sidebar_config`.
 
     Returns:
         Sort key string.  Files not in the sidebar get a ``99_`` prefixed

@@ -1,7 +1,5 @@
 """Page content resource — raw markdown of any Vue.js documentation page."""
 
-from pathlib import Path
-
 from fastmcp.exceptions import ResourceError
 
 from vue_docs_server.startup import state
@@ -14,13 +12,9 @@ async def vue_doc_page(path: str) -> str:
 
     md_path = state.vue_docs_path / f"{path}.md"
     if not md_path.exists():
-        available = ", ".join(
-            p.removesuffix(".md") for p in state.page_paths[:10]
-        )
+        available = ", ".join(p.removesuffix(".md") for p in state.page_paths[:10])
         raise ResourceError(
-            f"Page not found: {path}. "
-            f"Read vue://topics for available pages. "
-            f"Examples: {available}"
+            f"Page not found: {path}. Read vue://topics for available pages. Examples: {available}"
         )
 
     return md_path.read_text(encoding="utf-8")
