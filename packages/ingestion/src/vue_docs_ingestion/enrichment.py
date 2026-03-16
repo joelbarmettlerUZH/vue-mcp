@@ -19,8 +19,9 @@ in the same Qdrant collection for unified retrieval.
 import asyncio
 import logging
 from collections import defaultdict
+from typing import Annotated
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from vue_docs_core.clients.gemini import GeminiClient
 from vue_docs_core.config import PAGE_CONCURRENCY
@@ -30,9 +31,11 @@ from vue_docs_core.models.chunk import Chunk, ChunkMetadata, ChunkType
 class EnrichmentResult(BaseModel):
     """Result counts from an enrichment or HyPE generation pass."""
 
-    enriched: int
-    skipped: int
-    errors: int
+    enriched: Annotated[int, Field(description="Number of chunks successfully enriched")]
+    skipped: Annotated[
+        int, Field(description="Number of chunks skipped (already enriched or non-enrichable)")
+    ]
+    errors: Annotated[int, Field(description="Number of chunks that failed enrichment")]
 
 
 logger = logging.getLogger(__name__)

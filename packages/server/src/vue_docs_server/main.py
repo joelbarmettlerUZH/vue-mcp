@@ -81,7 +81,7 @@ mcp.prompt(compare_vue_apis)
 mcp.prompt(migrate_vue_pattern)
 
 
-def main() -> None:
+def main():
     """Run the MCP server."""
     mcp.run()
 

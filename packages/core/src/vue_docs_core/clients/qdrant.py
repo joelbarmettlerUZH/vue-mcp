@@ -1,8 +1,9 @@
 """Qdrant collection setup, upsert, and hybrid search."""
 
 import logging
-from dataclasses import dataclass
+from typing import Annotated
 
+from pydantic import BaseModel, Field
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
     BinaryQuantization,
@@ -27,11 +28,10 @@ from vue_docs_core.config import DENSE_VECTOR_NAME, INDEXED_FIELDS, SPARSE_VECTO
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class SearchHit:
-    chunk_id: str
-    score: float
-    payload: dict
+class SearchHit(BaseModel):
+    chunk_id: Annotated[str, Field(description="Unique identifier of the matched chunk")]
+    score: Annotated[float, Field(description="Relevance score from the search")]
+    payload: Annotated[dict, Field(description="Full payload data of the matched point")]
 
 
 class QdrantDocClient:
@@ -59,12 +59,12 @@ class QdrantDocClient:
             self._client = QdrantClient(**kwargs)
         return self._client
 
-    def close(self) -> None:
+    def close(self):
         if self._client is not None:
             self._client.close()
             self._client = None
 
-    def setup_collection(self, recreate: bool = False) -> None:
+    def setup_collection(self, recreate: bool = False):
         """Create the collection with dense + sparse vectors and payload indices."""
         exists = self.client.collection_exists(self.collection)
 
@@ -121,7 +121,7 @@ class QdrantDocClient:
         dense_vectors: list[list[float]],
         sparse_vectors: list[SparseVector],
         payloads: list[dict],
-    ) -> None:
+    ):
         """Upsert chunks with their dense and sparse vectors."""
         if not chunk_ids:
             return
@@ -279,7 +279,7 @@ class QdrantDocClient:
 
         return [point.payload for point in results[0]]
 
-    def delete_by_file_path(self, file_path: str) -> None:
+    def delete_by_file_path(self, file_path: str):
         """Delete all points originating from a given file."""
         self.client.delete(
             collection_name=self.collection,
@@ -294,7 +294,7 @@ class QdrantDocClient:
         )
         logger.info("Deleted points for file_path='%s'", file_path)
 
-    def delete_by_chunk_ids(self, chunk_ids: list[str]) -> None:
+    def delete_by_chunk_ids(self, chunk_ids: list[str]):
         """Delete points matching any of the given chunk_id values."""
         if not chunk_ids:
             return

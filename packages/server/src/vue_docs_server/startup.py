@@ -3,8 +3,9 @@
 import json
 import logging
 from pathlib import Path
+from typing import Annotated
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from vue_docs_core.clients.bm25 import BM25Model
 from vue_docs_core.clients.qdrant import QdrantDocClient
@@ -16,8 +17,13 @@ from vue_docs_core.retrieval.entity_matcher import EntityMatcher
 class IndexStateInfo(BaseModel):
     """Page listing and folder structure loaded from index_state.json."""
 
-    page_paths: list[str]
-    folder_structure: dict[str, list[str]]
+    page_paths: Annotated[
+        list[str], Field(description="Sorted list of all indexed page file paths")
+    ]
+    folder_structure: Annotated[
+        dict[str, list[str]],
+        Field(description="Map of folder path to list of page file paths within it"),
+    ]
 
 
 logger = logging.getLogger(__name__)
@@ -26,7 +32,7 @@ logger = logging.getLogger(__name__)
 class ServerState:
     """Holds all runtime state loaded at startup."""
 
-    def __init__(self) -> None:
+    def __init__(self):
         self.qdrant: QdrantDocClient | None = None
         self.bm25: BM25Model | None = None
         self.entity_index: EntityIndex = EntityIndex()
@@ -116,7 +122,7 @@ def load_index_state(data_path: Path) -> IndexStateInfo:
     return IndexStateInfo(page_paths=page_paths, folder_structure=folder_structure)
 
 
-def startup() -> None:
+def startup():
     """Initialize all server state."""
     data_path = Path(settings.data_path)
     logger.info("Starting server, loading data from %s", data_path)
@@ -158,7 +164,7 @@ def startup() -> None:
     logger.info("Server startup complete")
 
 
-def shutdown() -> None:
+def shutdown():
     """Clean up resources."""
     if state.qdrant:
         state.qdrant.close()

@@ -43,7 +43,7 @@ def upsert_chunks_batch(
     dense_vectors: list[list[float]],
     sparse_vectors: list[SparseVector],
     qdrant: QdrantDocClient,
-) -> None:
+):
     """Upsert a batch of chunks with their vectors into Qdrant."""
     if not chunks:
         return
@@ -92,7 +92,7 @@ def upsert_hype_batch(
     hype_embeddings: list[HypeEmbedding],
     sparse_vectors: list[SparseVector],
     qdrant: QdrantDocClient,
-) -> None:
+):
     """Upsert HyPE question points with their dense vectors into Qdrant.
 
     Each HyPE question is stored as a separate point with chunk_type

@@ -14,7 +14,7 @@ app = typer.Typer(name="vue-docs-ingest", help="Vue docs indexing pipeline")
 console = Console()
 
 
-def _configure_logging(verbose: bool) -> None:
+def _configure_logging(verbose: bool):
     level = logging.DEBUG if verbose else logging.WARNING
     logging.basicConfig(level=level, format="%(levelname)s %(name)s: %(message)s")
 
@@ -28,7 +28,7 @@ def run(
         False, "--dry-run", help="Show what would change without processing"
     ),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable debug logging"),
-) -> None:
+):
     """Run the ingestion pipeline: scan → parse → embed → store."""
     _configure_logging(verbose)
 
@@ -54,7 +54,7 @@ def run(
 @app.command()
 def status(
     data_path: str = typer.Option(settings.data_path, help="Path to shared data directory"),
-) -> None:
+):
     """Show current index status."""
     from vue_docs_core.clients.qdrant import QdrantDocClient
     from vue_docs_ingestion.state import IndexState

@@ -208,7 +208,7 @@ def build_api_dictionary(api_dir: Path) -> dict[str, ApiEntity]:
     return dictionary
 
 
-def save_dictionary(dictionary: dict[str, ApiEntity], path: Path) -> None:
+def save_dictionary(dictionary: dict[str, ApiEntity], path: Path):
     """Persist the API dictionary as JSON."""
     data = {name: entity.model_dump() for name, entity in dictionary.items()}
     path.parent.mkdir(parents=True, exist_ok=True)

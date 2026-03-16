@@ -1,23 +1,30 @@
 """Hash store persistence for incremental updates."""
 
-import dataclasses
 import json
-from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Annotated
+
+from pydantic import BaseModel, Field
 
 
-@dataclass
-class FileState:
-    content_hash: str
-    pipeline_version: str
-    chunk_ids: list[str] = field(default_factory=list)
-    last_indexed: str = ""
+class FileState(BaseModel):
+    content_hash: Annotated[str, Field(description="SHA-256 hash prefix of the file content")]
+    pipeline_version: Annotated[
+        str, Field(description="Pipeline version used when this file was last indexed")
+    ]
+    chunk_ids: Annotated[
+        list[str],
+        Field(description="List of chunk IDs originating from this file", default_factory=list),
+    ]
+    last_indexed: Annotated[
+        str, Field(description="ISO timestamp of when this file was last indexed")
+    ] = ""
 
 
 class IndexState:
     """Persistent hash store for tracking indexed file states."""
 
-    def __init__(self, state_path: Path) -> None:
+    def __init__(self, state_path: Path):
         self.path = state_path
         self._data: dict[str, dict] = {}
         if state_path.exists():
@@ -29,10 +36,10 @@ class IndexState:
             return None
         return FileState(**entry)
 
-    def set(self, file_path: str, state: FileState) -> None:
-        self._data[file_path] = dataclasses.asdict(state)
+    def set(self, file_path: str, state: FileState):
+        self._data[file_path] = state.model_dump()
 
-    def remove(self, file_path: str) -> None:
+    def remove(self, file_path: str):
         self._data.pop(file_path, None)
 
     def all_file_paths(self) -> list[str]:
@@ -41,6 +48,6 @@ class IndexState:
     def total_chunks(self) -> int:
         return sum(len(v.get("chunk_ids", [])) for v in self._data.values())
 
-    def save(self) -> None:
+    def save(self):
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.write_text(json.dumps(self._data, indent=2), encoding="utf-8")

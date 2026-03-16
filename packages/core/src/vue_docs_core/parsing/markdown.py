@@ -364,7 +364,7 @@ def _emit_split_sections(
     page_title: str,
     api_map: list[str],
     sec_image_ids: list[str],
-) -> None:
+):
     """Split a large section at H3 boundaries and emit subsection chunks.
 
     Each subsection gets the intro paragraph (text between the H2 heading

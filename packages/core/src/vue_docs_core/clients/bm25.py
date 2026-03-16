@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class BM25Model:
     """BM25 sparse vector generator for corpus chunks."""
 
-    def __init__(self) -> None:
+    def __init__(self):
         self._model: bm25s.BM25 | None = None
         self._vocab: dict[str, int] = {}
 
@@ -29,7 +29,7 @@ class BM25Model:
     def vocab_size(self) -> int:
         return len(self._vocab)
 
-    def fit(self, corpus_texts: list[str]) -> None:
+    def fit(self, corpus_texts: list[str]):
         """Fit the BM25 model on corpus texts."""
         tokenized = bm25s.tokenize(corpus_texts)
         self._model = bm25s.BM25()
@@ -108,7 +108,7 @@ class BM25Model:
 
         return SparseVector(indices=matched_ids, values=values)
 
-    def save(self, path: Path) -> None:
+    def save(self, path: Path):
         """Save the fitted BM25 model to disk."""
         if self._model is None:
             raise RuntimeError("BM25 model not fitted. Call fit() first.")
@@ -122,7 +122,7 @@ class BM25Model:
 
         logger.info("BM25 model saved to %s", path)
 
-    def load(self, path: Path) -> None:
+    def load(self, path: Path):
         """Load a previously fitted BM25 model from disk."""
         self._model = bm25s.BM25.load(str(path / "bm25s_model"))
         self._vocab = dict(self._model.vocab_dict)

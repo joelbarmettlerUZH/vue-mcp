@@ -1,9 +1,9 @@
 """Dense embedding via Jina AI."""
 
 import logging
-from dataclasses import dataclass
+from typing import Annotated
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from vue_docs_core.clients.jina import JinaClient
 from vue_docs_core.config import EMBED_BATCH_SIZE, TASK_RETRIEVAL_PASSAGE, TASK_RETRIEVAL_QUERY
@@ -12,28 +12,38 @@ from vue_docs_core.models.chunk import Chunk
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class HypeEmbedding:
+class HypeEmbedding(BaseModel):
     """A single HyPE question embedding with its parent chunk reference."""
 
-    question: str
-    parent_chunk_id: str
-    parent_chunk: Chunk
-    embedding: list[float]
+    model_config = {"arbitrary_types_allowed": True}
+
+    question: Annotated[str, Field(description="The hypothetical developer question text")]
+    parent_chunk_id: Annotated[
+        str, Field(description="Chunk ID of the parent chunk this question was generated from")
+    ]
+    parent_chunk: Annotated[Chunk, Field(description="The parent chunk Pydantic model instance")]
+    embedding: Annotated[list[float], Field(description="Dense embedding vector for this question")]
 
 
 class EmbedResult(BaseModel):
     """Result of a dense embedding pass."""
 
-    vectors: list[list[float]]
-    total_tokens: int
+    vectors: Annotated[list[list[float]], Field(description="List of dense embedding vectors")]
+    total_tokens: Annotated[
+        int, Field(description="Total tokens consumed by the embedding request")
+    ]
 
 
 class HypeEmbedResult(BaseModel):
     """Result of embedding HyPE questions."""
 
-    embeddings: list[HypeEmbedding]
-    total_tokens: int
+    embeddings: Annotated[
+        list[HypeEmbedding],
+        Field(description="List of HyPE question embeddings with parent references"),
+    ]
+    total_tokens: Annotated[
+        int, Field(description="Total tokens consumed by the HyPE embedding request")
+    ]
 
     model_config = {"arbitrary_types_allowed": True}
 

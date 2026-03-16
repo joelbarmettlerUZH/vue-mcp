@@ -12,8 +12,9 @@ prefixed with `v-` or `<`, etc.
 """
 
 import re
-from dataclasses import dataclass, field
+from typing import Annotated
 
+from pydantic import BaseModel, Field
 from rapidfuzz import fuzz, process
 
 from vue_docs_core.config import FUZZY_MIN_SCORE
@@ -50,13 +51,19 @@ _AMBIGUOUS_NAMES: set[str] = {
 }
 
 
-@dataclass
-class EntityMatchResult:
+class EntityMatchResult(BaseModel):
     """Result of entity detection on a query."""
 
-    entities: list[str] = field(default_factory=list)
-    match_sources: dict[str, str] = field(default_factory=dict)
-    """Maps entity name -> how it was matched (exact, fuzzy, synonym, bigram)."""
+    entities: Annotated[
+        list[str], Field(description="List of matched API entity names", default_factory=list)
+    ]
+    match_sources: Annotated[
+        dict[str, str],
+        Field(
+            description="Maps entity name to how it was matched (exact, fuzzy, synonym, bigram)",
+            default_factory=dict,
+        ),
+    ]
 
 
 class EntityMatcher:
@@ -123,7 +130,7 @@ class EntityMatcher:
         query_clean: str,
         code_names: set[str],
         result: EntityMatchResult,
-    ) -> None:
+    ):
         """Case-insensitive substring match against entity names.
 
         Ambiguous names (common English words) only match if they appeared
@@ -146,7 +153,7 @@ class EntityMatcher:
             result.entities.append(name_original)
             result.match_sources[name_original] = "exact"
 
-    def _match_bigrams(self, tokens: list[str], result: EntityMatchResult) -> None:
+    def _match_bigrams(self, tokens: list[str], result: EntityMatchResult):
         """Join adjacent tokens to match camelCase/compound names.
 
         Catches queries like "watch effect" -> "watchEffect",
@@ -164,7 +171,7 @@ class EntityMatcher:
                     result.entities.append(name)
                     result.match_sources[name] = "bigram"
 
-    def _match_synonyms(self, query_clean: str, result: EntityMatchResult) -> None:
+    def _match_synonyms(self, query_clean: str, result: EntityMatchResult):
         """Match conceptual phrases from the synonym table."""
         for phrase, api_names in self.synonym_table.items():
             if phrase.lower() in query_clean:
@@ -173,7 +180,7 @@ class EntityMatcher:
                         result.entities.append(api_name)
                         result.match_sources[api_name] = "synonym"
 
-    def _match_fuzzy(self, tokens: list[str], result: EntityMatchResult) -> None:
+    def _match_fuzzy(self, tokens: list[str], result: EntityMatchResult):
         """Fuzzy match query tokens against entity names for typo tolerance.
 
         Only applied to tokens of sufficient length and entity names of

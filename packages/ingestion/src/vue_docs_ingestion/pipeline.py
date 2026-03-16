@@ -111,7 +111,7 @@ async def run_pipeline(
     *,
     full: bool = False,
     dry_run: bool = False,
-) -> None:
+):
     """Run the ingestion pipeline with incremental update support.
 
     Stages:

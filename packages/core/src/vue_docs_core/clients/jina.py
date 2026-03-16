@@ -2,9 +2,10 @@
 
 import asyncio
 import logging
-from dataclasses import dataclass
+from typing import Annotated
 
 import httpx
+from pydantic import BaseModel, Field
 
 from vue_docs_core.config import (
     JINA_EMBEDDING_URL,
@@ -17,17 +18,19 @@ from vue_docs_core.config import (
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class EmbeddingResult:
-    embeddings: list[list[float]]
-    total_tokens: int
+class EmbeddingResult(BaseModel):
+    embeddings: Annotated[list[list[float]], Field(description="List of embedding vectors")]
+    total_tokens: Annotated[
+        int, Field(description="Total tokens consumed by the embedding request")
+    ]
 
 
-@dataclass
-class RerankResult:
-    indices: list[int]
-    scores: list[float]
-    total_tokens: int
+class RerankResult(BaseModel):
+    indices: Annotated[list[int], Field(description="Reranked document indices in relevance order")]
+    scores: Annotated[list[float], Field(description="Relevance scores for each reranked document")]
+    total_tokens: Annotated[
+        int, Field(description="Total tokens consumed by the reranking request")
+    ]
 
 
 class JinaClient:
@@ -61,7 +64,7 @@ class JinaClient:
             )
         return self._client
 
-    async def close(self) -> None:
+    async def close(self):
         if self._client and not self._client.is_closed:
             await self._client.aclose()
             self._client = None

@@ -1,32 +1,32 @@
 """Async wrapper for Gemini using the official google-genai SDK."""
 
 import logging
-from dataclasses import dataclass
-from typing import Any
+from typing import Annotated, Any
 
 from google import genai
 from google.genai import types
+from pydantic import BaseModel, Field
 
 from vue_docs_core.config import settings
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class GeminiResponse:
-    text: str
-    input_tokens: int
-    output_tokens: int
+class GeminiResponse(BaseModel):
+    text: Annotated[str, Field(description="The generated text response")]
+    input_tokens: Annotated[int, Field(description="Number of input tokens consumed")]
+    output_tokens: Annotated[int, Field(description="Number of output tokens generated")]
 
 
-@dataclass
-class GeminiFunctionCallResponse:
+class GeminiFunctionCallResponse(BaseModel):
     """Response from a Gemini function calling request."""
 
-    function_name: str
-    arguments: dict[str, Any]
-    input_tokens: int
-    output_tokens: int
+    function_name: Annotated[str, Field(description="Name of the called function")]
+    arguments: Annotated[
+        dict[str, Any], Field(description="Arguments returned by the function call")
+    ]
+    input_tokens: Annotated[int, Field(description="Number of input tokens consumed")]
+    output_tokens: Annotated[int, Field(description="Number of output tokens generated")]
 
 
 class GeminiClient:
@@ -48,7 +48,7 @@ class GeminiClient:
             http_options=types.HttpOptions(timeout=int(timeout * 1000)),
         )
 
-    async def close(self) -> None:
+    async def close(self):
         """No-op for SDK client (no persistent connection to close)."""
 
     async def generate(
