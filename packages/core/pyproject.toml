@@ -8,6 +8,7 @@ dependencies = [
     "pydantic-settings>=2.13",
     "qdrant-client>=1.17",
     "httpx>=0.28",
+    "google-genai>=1.0",
     "markdown-it-py>=4.0",
     "rapidfuzz>=3.14",
     "bm25s>=0.3",

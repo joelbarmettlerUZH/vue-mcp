@@ -1,13 +1,13 @@
-"""Async wrapper for Gemini query transformation and enrichment."""
+"""Async wrapper for Gemini using the official google-genai SDK."""
 
-import asyncio
 import logging
 from dataclasses import dataclass
 from typing import Any
 
-import httpx
+from google import genai
+from google.genai import types
 
-from vue_docs_core.config import GEMINI_API_BASE, settings
+from vue_docs_core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -30,11 +30,7 @@ class GeminiFunctionCallResponse:
 
 
 class GeminiClient:
-    """Async client for Google Gemini API.
-
-    Uses the REST API directly (no SDK dependency) for contextual enrichment,
-    HyPE question generation, query transformation, and summary generation.
-    """
+    """Async client for Google Gemini API via the official google-genai SDK."""
 
     def __init__(
         self,
@@ -47,62 +43,13 @@ class GeminiClient:
         self.model = model or settings.gemini_flash_model
         self.max_retries = max_retries
         self.timeout = timeout
-        self._client: httpx.AsyncClient | None = None
-
-    async def _get_client(self) -> httpx.AsyncClient:
-        if self._client is None or self._client.is_closed:
-            self._client = httpx.AsyncClient(
-                timeout=self.timeout,
-            )
-        return self._client
+        self._client = genai.Client(
+            api_key=self.api_key,
+            http_options=types.HttpOptions(timeout=int(timeout * 1000)),
+        )
 
     async def close(self) -> None:
-        if self._client and not self._client.is_closed:
-            await self._client.aclose()
-            self._client = None
-
-    async def _request_with_retry(self, url: str, payload: dict) -> dict:
-        client = await self._get_client()
-        last_error: Exception | None = None
-
-        for attempt in range(self.max_retries):
-            try:
-                response = await client.post(url, json=payload)
-                response.raise_for_status()
-                return response.json()
-            except httpx.HTTPStatusError as e:
-                last_error = e
-                status = e.response.status_code
-                body = e.response.text
-                if status == 429 or status >= 500:
-                    wait = 2**attempt
-                    logger.warning(
-                        "Gemini API %s (attempt %d/%d), retrying in %ds: %s",
-                        status,
-                        attempt + 1,
-                        self.max_retries,
-                        wait,
-                        body,
-                    )
-                    await asyncio.sleep(wait)
-                    continue
-                logger.error("Gemini API error %s: %s", status, body)
-                raise
-            except httpx.TimeoutException as e:
-                last_error = e
-                wait = 2**attempt
-                logger.warning(
-                    "Gemini API timeout (attempt %d/%d), retrying in %ds",
-                    attempt + 1,
-                    self.max_retries,
-                    wait,
-                )
-                await asyncio.sleep(wait)
-                continue
-
-        raise RuntimeError(
-            f"Gemini API request failed after {self.max_retries} attempts"
-        ) from last_error
+        """No-op for SDK client (no persistent connection to close)."""
 
     async def generate(
         self,
@@ -119,35 +66,25 @@ class GeminiClient:
             GeminiResponse with text and token usage.
         """
         model_name = model or self.model
-        url = f"{GEMINI_API_BASE}/{model_name}:generateContent?key={self.api_key}"
 
-        payload: dict = {
-            "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {
-                "temperature": temperature,
-                "maxOutputTokens": max_output_tokens,
-                # Disable thinking for enrichment tasks — thinking tokens
-                # consume the maxOutputTokens budget, leaving truncated output.
-                "thinkingConfig": {"thinkingBudget": 0},
-            },
-        }
+        config = types.GenerateContentConfig(
+            temperature=temperature,
+            max_output_tokens=max_output_tokens,
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
+        )
         if system_instruction:
-            payload["systemInstruction"] = {"parts": [{"text": system_instruction}]}
+            config.system_instruction = system_instruction
 
-        data = await self._request_with_retry(url, payload)
+        response = await self._client.aio.models.generate_content(
+            model=model_name,
+            contents=prompt,
+            config=config,
+        )
 
-        # Extract text from response
-        text = ""
-        candidates = data.get("candidates", [])
-        if candidates:
-            parts = candidates[0].get("content", {}).get("parts", [])
-            if parts:
-                text = parts[0].get("text", "")
-
-        # Extract token usage
-        usage = data.get("usageMetadata", {})
-        input_tokens = usage.get("promptTokenCount", 0)
-        output_tokens = usage.get("candidatesTokenCount", 0)
+        text = response.text or ""
+        usage = response.usage_metadata
+        input_tokens = usage.prompt_token_count if usage else 0
+        output_tokens = usage.candidates_token_count if usage else 0
 
         return GeminiResponse(
             text=text.strip(),
@@ -176,54 +113,52 @@ class GeminiClient:
             GeminiFunctionCallResponse with parsed arguments.
         """
         model_name = model or self.model
-        url = f"{GEMINI_API_BASE}/{model_name}:generateContent?key={self.api_key}"
 
-        payload: dict = {
-            "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {
-                "temperature": temperature,
-                "maxOutputTokens": max_output_tokens,
-                "thinkingConfig": {"thinkingBudget": 0},
-            },
-            "tools": [
-                {
-                    "function_declarations": [
-                        {
-                            "name": function_name,
-                            "description": function_description,
-                            "parameters": parameters_schema,
-                        }
-                    ]
-                }
-            ],
-            "tool_config": {
-                "function_calling_config": {
-                    "mode": "ANY",
-                    "allowed_function_names": [function_name],
-                }
-            },
-        }
+        tool = types.Tool(
+            function_declarations=[
+                types.FunctionDeclaration(
+                    name=function_name,
+                    description=function_description,
+                    parameters=parameters_schema,
+                )
+            ]
+        )
+
+        config = types.GenerateContentConfig(
+            temperature=temperature,
+            max_output_tokens=max_output_tokens,
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
+            tools=[tool],
+            tool_config=types.ToolConfig(
+                function_calling_config=types.FunctionCallingConfig(
+                    mode="ANY",
+                    allowed_function_names=[function_name],
+                )
+            ),
+            automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
+        )
         if system_instruction:
-            payload["systemInstruction"] = {"parts": [{"text": system_instruction}]}
+            config.system_instruction = system_instruction
 
-        data = await self._request_with_retry(url, payload)
+        response = await self._client.aio.models.generate_content(
+            model=model_name,
+            contents=prompt,
+            config=config,
+        )
 
         # Extract function call from response
         arguments: dict = {}
         fn_name = function_name
-        candidates = data.get("candidates", [])
-        if candidates:
-            parts = candidates[0].get("content", {}).get("parts", [])
-            for part in parts:
-                if "functionCall" in part:
-                    fn_call = part["functionCall"]
-                    fn_name = fn_call.get("name", function_name)
-                    arguments = fn_call.get("args", {})
+        if response.candidates:
+            for part in response.candidates[0].content.parts:
+                if part.function_call:
+                    fn_name = part.function_call.name or function_name
+                    arguments = dict(part.function_call.args) if part.function_call.args else {}
                     break
 
-        usage = data.get("usageMetadata", {})
-        input_tokens = usage.get("promptTokenCount", 0)
-        output_tokens = usage.get("candidatesTokenCount", 0)
+        usage = response.usage_metadata
+        input_tokens = usage.prompt_token_count if usage else 0
+        output_tokens = usage.candidates_token_count if usage else 0
 
         return GeminiFunctionCallResponse(
             function_name=fn_name,
@@ -245,10 +180,7 @@ class GeminiClient:
         max_output_tokens: int = 256,
         model: str | None = None,
     ) -> GeminiFunctionCallResponse:
-        """Generate with cached prefix + function calling for structured output.
-
-        Combines the prompt caching pattern with forced function calling.
-        """
+        """Generate with cached prefix + function calling for structured output."""
         full_prompt = f"{cached_content}\n\n---\n\n{per_chunk_prompt}"
         return await self.generate_with_tool(
             full_prompt,
@@ -280,8 +212,6 @@ class GeminiClient:
         Returns:
             GeminiResponse with text and token usage.
         """
-        # Gemini automatically caches repeated prefixes in multi-turn or
-        # repeated requests. We concatenate but keep the structure clear.
         full_prompt = f"{cached_content}\n\n---\n\n{per_chunk_prompt}"
         return await self.generate(
             full_prompt,

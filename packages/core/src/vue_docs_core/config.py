@@ -37,7 +37,6 @@ settings = Settings()
 # API endpoints
 # ---------------------------------------------------------------------------
 
-GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 JINA_EMBEDDING_URL = "https://api.jina.ai/v1/embeddings"
 JINA_RERANKER_URL = "https://api.jina.ai/v1/rerank"
 VUE_DOCS_BASE_URL = "https://vuejs.org"

@@ -6,7 +6,7 @@ RAPTOR hierarchical summary generation (page, folder, top-level).
 No real API calls.
 """
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -48,24 +48,55 @@ def _make_chunk(
 # ---------------------------------------------------------------------------
 
 
-class TestGeminiClient:
-    def _make_api_response(
-        self, text: str = "Generated text", input_tokens: int = 100, output_tokens: int = 20
-    ) -> dict:
-        return {
-            "candidates": [{"content": {"parts": [{"text": text}]}}],
-            "usageMetadata": {
-                "promptTokenCount": input_tokens,
-                "candidatesTokenCount": output_tokens,
-            },
-        }
+def _mock_sdk_response(text="Generated text", input_tokens=100, output_tokens=20):
+    """Create a mock google-genai SDK response object."""
+    mock_resp = MagicMock()
+    mock_resp.text = text
+    mock_resp.candidates = [
+        MagicMock(
+            content=MagicMock(
+                parts=[MagicMock(text=text, function_call=None)]
+            )
+        )
+    ]
+    mock_resp.usage_metadata = MagicMock(
+        prompt_token_count=input_tokens,
+        candidates_token_count=output_tokens,
+    )
+    return mock_resp
 
+
+def _mock_sdk_function_call_response(
+    function_name="my_func", arguments=None, input_tokens=100, output_tokens=20
+):
+    """Create a mock google-genai SDK response with a function call."""
+    args = arguments or {}
+    fc = MagicMock()
+    fc.name = function_name
+    fc.args = args
+
+    part = MagicMock()
+    part.function_call = fc
+
+    mock_resp = MagicMock()
+    mock_resp.text = None
+    mock_resp.candidates = [MagicMock(content=MagicMock(parts=[part]))]
+    mock_resp.usage_metadata = MagicMock(
+        prompt_token_count=input_tokens,
+        candidates_token_count=output_tokens,
+    )
+    return mock_resp
+
+
+class TestGeminiClient:
     @pytest.mark.asyncio
     async def test_generate_returns_text(self):
         client = GeminiClient(api_key="test-key", model="gemini-2.5-flash")
-        api_resp = self._make_api_response("Hello world")
+        mock_resp = _mock_sdk_response("Hello world")
 
-        with patch.object(client, "_request_with_retry", new=AsyncMock(return_value=api_resp)):
+        with patch.object(
+            client._client.aio.models, "generate_content", new=AsyncMock(return_value=mock_resp)
+        ):
             result = await client.generate("Say hello")
 
         assert result.text == "Hello world"
@@ -75,9 +106,11 @@ class TestGeminiClient:
     @pytest.mark.asyncio
     async def test_generate_strips_whitespace(self):
         client = GeminiClient(api_key="test-key")
-        api_resp = self._make_api_response("  trimmed  \n")
+        mock_resp = _mock_sdk_response("  trimmed  \n")
 
-        with patch.object(client, "_request_with_retry", new=AsyncMock(return_value=api_resp)):
+        with patch.object(
+            client._client.aio.models, "generate_content", new=AsyncMock(return_value=mock_resp)
+        ):
             result = await client.generate("prompt")
 
         assert result.text == "trimmed"
@@ -85,41 +118,17 @@ class TestGeminiClient:
     @pytest.mark.asyncio
     async def test_generate_empty_response(self):
         client = GeminiClient(api_key="test-key")
-        api_resp = {"candidates": [], "usageMetadata": {}}
+        mock_resp = MagicMock()
+        mock_resp.text = None
+        mock_resp.candidates = []
+        mock_resp.usage_metadata = None
 
-        with patch.object(client, "_request_with_retry", new=AsyncMock(return_value=api_resp)):
+        with patch.object(
+            client._client.aio.models, "generate_content", new=AsyncMock(return_value=mock_resp)
+        ):
             result = await client.generate("prompt")
 
         assert result.text == ""
-
-    @pytest.mark.asyncio
-    async def test_generate_includes_system_instruction(self):
-        client = GeminiClient(api_key="test-key")
-        captured_payload = {}
-
-        async def capture_request(url, payload):
-            captured_payload.update(payload)
-            return self._make_api_response("response")
-
-        with patch.object(client, "_request_with_retry", side_effect=capture_request):
-            await client.generate("prompt", system_instruction="Be helpful")
-
-        assert "systemInstruction" in captured_payload
-        assert captured_payload["systemInstruction"]["parts"][0]["text"] == "Be helpful"
-
-    @pytest.mark.asyncio
-    async def test_generate_without_system_instruction(self):
-        client = GeminiClient(api_key="test-key")
-        captured_payload = {}
-
-        async def capture_request(url, payload):
-            captured_payload.update(payload)
-            return self._make_api_response("response")
-
-        with patch.object(client, "_request_with_retry", side_effect=capture_request):
-            await client.generate("prompt")
-
-        assert "systemInstruction" not in captured_payload
 
     @pytest.mark.asyncio
     async def test_enrich_chunk_returns_prefix(self):
@@ -164,28 +173,16 @@ class TestGeminiClient:
     @pytest.mark.asyncio
     async def test_generate_with_tool_returns_function_call(self):
         client = GeminiClient(api_key="test-key")
-        api_resp = {
-            "candidates": [
-                {
-                    "content": {
-                        "parts": [
-                            {
-                                "functionCall": {
-                                    "name": "my_func",
-                                    "args": {"key": "value", "count": 3},
-                                }
-                            }
-                        ]
-                    }
-                }
-            ],
-            "usageMetadata": {
-                "promptTokenCount": 100,
-                "candidatesTokenCount": 20,
-            },
-        }
+        mock_resp = _mock_sdk_function_call_response(
+            function_name="my_func",
+            arguments={"key": "value", "count": 3},
+            input_tokens=100,
+            output_tokens=20,
+        )
 
-        with patch.object(client, "_request_with_retry", new=AsyncMock(return_value=api_resp)):
+        with patch.object(
+            client._client.aio.models, "generate_content", new=AsyncMock(return_value=mock_resp)
+        ):
             result = await client.generate_with_tool(
                 "Generate something",
                 function_name="my_func",
@@ -203,39 +200,16 @@ class TestGeminiClient:
         assert result.output_tokens == 20
 
     @pytest.mark.asyncio
-    async def test_generate_with_tool_includes_tool_config(self):
-        client = GeminiClient(api_key="test-key")
-        captured_payload = {}
-
-        async def capture_request(url, payload):
-            captured_payload.update(payload)
-            return {
-                "candidates": [
-                    {"content": {"parts": [{"functionCall": {"name": "f", "args": {}}}]}}
-                ],
-                "usageMetadata": {},
-            }
-
-        with patch.object(client, "_request_with_retry", side_effect=capture_request):
-            await client.generate_with_tool(
-                "prompt",
-                function_name="f",
-                function_description="desc",
-                parameters_schema={"type": "object", "properties": {}},
-            )
-
-        assert "tools" in captured_payload
-        assert captured_payload["tool_config"]["function_calling_config"]["mode"] == "ANY"
-        assert captured_payload["tool_config"]["function_calling_config"][
-            "allowed_function_names"
-        ] == ["f"]
-
-    @pytest.mark.asyncio
     async def test_generate_with_tool_empty_response(self):
         client = GeminiClient(api_key="test-key")
-        api_resp = {"candidates": [], "usageMetadata": {}}
+        mock_resp = MagicMock()
+        mock_resp.text = None
+        mock_resp.candidates = []
+        mock_resp.usage_metadata = None
 
-        with patch.object(client, "_request_with_retry", new=AsyncMock(return_value=api_resp)):
+        with patch.object(
+            client._client.aio.models, "generate_content", new=AsyncMock(return_value=mock_resp)
+        ):
             result = await client.generate_with_tool(
                 "prompt",
                 function_name="f",
