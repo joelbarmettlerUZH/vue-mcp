@@ -450,9 +450,13 @@ class TestPipelineDryRun:
         mock_qdrant.close.return_value = None
 
         mock_jina = MagicMock()
-        mock_jina.embed_batched = AsyncMock(
-            return_value=EmbeddingResult(embeddings=[[0.1] * 1024] * 10, total_tokens=100)
-        )
+
+        async def dynamic_embed(texts, task, batch_size=64):
+            return EmbeddingResult(
+                embeddings=[[0.1] * 1024] * len(texts), total_tokens=100
+            )
+
+        mock_jina.embed_batched = AsyncMock(side_effect=dynamic_embed)
         mock_jina.close = AsyncMock()
 
         with (

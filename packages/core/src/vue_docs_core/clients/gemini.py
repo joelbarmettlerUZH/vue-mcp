@@ -2,7 +2,8 @@
 
 import asyncio
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Any
 
 import httpx
 
@@ -16,6 +17,15 @@ GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 @dataclass
 class GeminiResponse:
     text: str
+    input_tokens: int
+    output_tokens: int
+
+
+@dataclass
+class GeminiFunctionCallResponse:
+    """Response from a Gemini function calling request."""
+    function_name: str
+    arguments: dict[str, Any]
     input_tokens: int
     output_tokens: int
 
@@ -149,6 +159,121 @@ class GeminiClient:
             output_tokens=output_tokens,
         )
 
+    async def generate_with_tool(
+        self,
+        prompt: str,
+        *,
+        function_name: str,
+        function_description: str,
+        parameters_schema: dict,
+        system_instruction: str = "",
+        temperature: float = 0.0,
+        max_output_tokens: int = 256,
+        model: str | None = None,
+    ) -> GeminiFunctionCallResponse:
+        """Send a prompt with forced function calling for structured output.
+
+        Defines a single tool and forces Gemini to call it, ensuring the
+        response conforms to the provided JSON schema.
+
+        Args:
+            prompt: The user prompt.
+            function_name: Name of the function to define.
+            function_description: Description of what the function does.
+            parameters_schema: JSON Schema for the function parameters
+                (the structured output you want).
+            system_instruction: Optional system instruction.
+            temperature: Sampling temperature.
+            max_output_tokens: Max tokens in response.
+            model: Override model for this call.
+
+        Returns:
+            GeminiFunctionCallResponse with parsed arguments.
+        """
+        model_name = model or self.model
+        url = f"{GEMINI_API_BASE}/{model_name}:generateContent?key={self.api_key}"
+
+        payload: dict = {
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {
+                "temperature": temperature,
+                "maxOutputTokens": max_output_tokens,
+                "thinkingConfig": {"thinkingBudget": 0},
+            },
+            "tools": [{
+                "function_declarations": [{
+                    "name": function_name,
+                    "description": function_description,
+                    "parameters": parameters_schema,
+                }]
+            }],
+            "tool_config": {
+                "function_calling_config": {
+                    "mode": "ANY",
+                    "allowed_function_names": [function_name],
+                }
+            },
+        }
+        if system_instruction:
+            payload["systemInstruction"] = {
+                "parts": [{"text": system_instruction}]
+            }
+
+        data = await self._request_with_retry(url, payload)
+
+        # Extract function call from response
+        arguments: dict = {}
+        fn_name = function_name
+        candidates = data.get("candidates", [])
+        if candidates:
+            parts = candidates[0].get("content", {}).get("parts", [])
+            for part in parts:
+                if "functionCall" in part:
+                    fn_call = part["functionCall"]
+                    fn_name = fn_call.get("name", function_name)
+                    arguments = fn_call.get("args", {})
+                    break
+
+        usage = data.get("usageMetadata", {})
+        input_tokens = usage.get("promptTokenCount", 0)
+        output_tokens = usage.get("candidatesTokenCount", 0)
+
+        return GeminiFunctionCallResponse(
+            function_name=fn_name,
+            arguments=arguments,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+        )
+
+    async def generate_cached_with_tool(
+        self,
+        cached_content: str,
+        per_chunk_prompt: str,
+        *,
+        function_name: str,
+        function_description: str,
+        parameters_schema: dict,
+        system_instruction: str = "",
+        temperature: float = 0.0,
+        max_output_tokens: int = 256,
+        model: str | None = None,
+    ) -> GeminiFunctionCallResponse:
+        """Generate with cached prefix + function calling for structured output.
+
+        Combines the prompt caching pattern with forced function calling.
+        """
+        full_prompt = f"{cached_content}\n\n---\n\n{per_chunk_prompt}"
+        return await self.generate_with_tool(
+            full_prompt,
+            function_name=function_name,
+            function_description=function_description,
+            parameters_schema=parameters_schema,
+            system_instruction=system_instruction,
+            temperature=temperature,
+            max_output_tokens=max_output_tokens,
+            model=model,
+        )
+
     async def generate_cached(
         self,
         cached_content: str,
@@ -196,9 +321,8 @@ class GeminiClient:
     ) -> list[str]:
         """Generate hypothetical developer questions that a chunk would answer.
 
-        Uses the full page as context to produce questions that bridge the
-        vocabulary gap between how developers ask questions and how the
-        documentation explains concepts.
+        Uses forced function calling to get a structured list of questions,
+        avoiding brittle newline-based parsing.
 
         Args:
             page_content: The full markdown content of the page.
@@ -217,8 +341,7 @@ class GeminiClient:
             "- Cover different phrasings and angles for the same concept\n"
             "- Include questions about common problems or debugging scenarios\n"
             "- Use terminology developers would actually search for\n"
-            "- Range from beginner to intermediate level\n\n"
-            "Output ONLY the questions, one per line, no numbering or bullets."
+            "- Range from beginner to intermediate level"
         )
 
         per_chunk_prompt = (
@@ -227,19 +350,29 @@ class GeminiClient:
             f"CHUNK:\n{chunk_content}"
         )
 
-        result = await self.generate_cached(
+        result = await self.generate_cached_with_tool(
             cached_content=f"PAGE CONTENT:\n{page_content}",
             per_chunk_prompt=per_chunk_prompt,
+            function_name="save_questions",
+            function_description="Save the generated hypothetical developer questions.",
+            parameters_schema={
+                "type": "object",
+                "properties": {
+                    "questions": {
+                        "type": "array",
+                        "description": "List of hypothetical developer questions.",
+                        "items": {"type": "string"},
+                    }
+                },
+                "required": ["questions"],
+            },
             system_instruction=system_instruction,
             temperature=0.7,
             max_output_tokens=300,
         )
 
-        # Parse response: one question per line, filter empty lines
-        questions = [
-            q.strip() for q in result.text.split("\n") if q.strip()
-        ]
-        return questions[:num_questions]
+        questions = result.arguments.get("questions", [])
+        return [q for q in questions if isinstance(q, str) and q.strip()][:num_questions]
 
     async def enrich_chunk(
         self,

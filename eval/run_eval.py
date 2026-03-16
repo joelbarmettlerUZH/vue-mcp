@@ -57,10 +57,39 @@ Score the following dimensions on a scale of 1-5:
 4. **api_coverage**: Are the expected APIs mentioned or covered in the retrieved context? (1=none found, 5=all found)
 
 Also provide a brief explanation of your scoring.
-
-Return a JSON object with: "relevance", "completeness", "correctness", "api_coverage" (integers 1-5), and "explanation" (string).
-Output ONLY valid JSON, no markdown fences.
 """
+
+# Function declaration for structured judge scoring
+JUDGE_FUNCTION = {
+    "name": "submit_scores",
+    "description": "Submit the evaluation scores for the retrieval quality assessment.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "relevance": {
+                "type": "integer",
+                "description": "How relevant is the retrieved context to the question (1-5).",
+            },
+            "completeness": {
+                "type": "integer",
+                "description": "Does the retrieved context contain enough information to fully answer the question (1-5).",
+            },
+            "correctness": {
+                "type": "integer",
+                "description": "Would the answer based on retrieved context be correct (1-5).",
+            },
+            "api_coverage": {
+                "type": "integer",
+                "description": "Are the expected APIs mentioned or covered in the retrieved context (1-5).",
+            },
+            "explanation": {
+                "type": "string",
+                "description": "Brief explanation of the scoring.",
+            },
+        },
+        "required": ["relevance", "completeness", "correctness", "api_coverage", "explanation"],
+    },
+}
 
 
 def load_questions(path: Path) -> list[dict]:
@@ -175,7 +204,7 @@ def judge_result(
     retrieved_context: str,
     model: str | None = None,
 ) -> dict:
-    """Use Gemini as LLM judge to score retrieval quality."""
+    """Use Gemini as LLM judge to score retrieval quality via function calling."""
     model = model or settings.gemini_flash_lite_model
     api_key = settings.gemini_api_key
     if not api_key:
@@ -195,7 +224,13 @@ def judge_result(
         "generationConfig": {
             "temperature": 0.1,
             "maxOutputTokens": 1000,
-            "responseMimeType": "application/json",
+        },
+        "tools": [{"function_declarations": [JUDGE_FUNCTION]}],
+        "tool_config": {
+            "function_calling_config": {
+                "mode": "ANY",
+                "allowed_function_names": ["submit_scores"],
+            }
         },
     }
 
@@ -208,26 +243,19 @@ def judge_result(
     if not candidates:
         return {"relevance": 0, "completeness": 0, "correctness": 0, "api_coverage": 0, "explanation": "No response"}
 
-    text = candidates[0]["content"]["parts"][0]["text"].strip()
+    # Extract function call arguments
+    parts = candidates[0].get("content", {}).get("parts", [])
+    for part in parts:
+        if "functionCall" in part:
+            scores = part["functionCall"].get("args", {})
+            # Ensure all keys exist with defaults
+            for key in ("relevance", "completeness", "correctness", "api_coverage"):
+                scores.setdefault(key, 0)
+            scores.setdefault("explanation", "")
+            return scores
 
-    # Parse JSON
-    if text.startswith("```"):
-        text = text.split("\n", 1)[1]
-        if text.endswith("```"):
-            text = text[: text.rfind("```")]
-
-    try:
-        scores = json.loads(text)
-    except json.JSONDecodeError:
-        logger.warning("Failed to parse judge response: %s", text[:200])
-        return {"relevance": 0, "completeness": 0, "correctness": 0, "api_coverage": 0, "explanation": "Parse error"}
-
-    # Ensure all keys exist with defaults
-    for key in ("relevance", "completeness", "correctness", "api_coverage"):
-        scores.setdefault(key, 0)
-    scores.setdefault("explanation", "")
-
-    return scores
+    logger.warning("Gemini did not return a function call for judging")
+    return {"relevance": 0, "completeness": 0, "correctness": 0, "api_coverage": 0, "explanation": "No function call"}
 
 
 async def run_evaluation(

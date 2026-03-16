@@ -1,8 +1,9 @@
 """Dense embedding via Jina AI."""
 
 import logging
+from dataclasses import dataclass
 
-from vue_docs_core.clients.jina import TASK_RETRIEVAL_PASSAGE, JinaClient
+from vue_docs_core.clients.jina import TASK_RETRIEVAL_PASSAGE, TASK_RETRIEVAL_QUERY, JinaClient
 from vue_docs_core.models.chunk import Chunk
 
 logger = logging.getLogger(__name__)
@@ -10,6 +11,15 @@ logger = logging.getLogger(__name__)
 # Batch size for Jina embedding requests. With contextual prefixes the
 # per-chunk payload is larger, so we batch to avoid Cloudflare timeouts.
 _EMBED_BATCH_SIZE = 256
+
+
+@dataclass
+class HypeEmbedding:
+    """A single HyPE question embedding with its parent chunk reference."""
+    question: str
+    parent_chunk_id: str
+    parent_chunk: Chunk
+    embedding: list[float]
 
 
 async def embed_dense(
@@ -47,3 +57,54 @@ async def embed_dense(
         len(chunks), result.total_tokens,
     )
     return result.embeddings, result.total_tokens
+
+
+async def embed_hype_questions(
+    chunks: list[Chunk],
+    jina_client: JinaClient,
+) -> tuple[list[HypeEmbedding], int]:
+    """Embed HyPE questions from chunks using query-side task type.
+
+    HyPE questions are embedded with TASK_RETRIEVAL_QUERY because they
+    represent the kinds of queries users would ask, not document passages.
+
+    Args:
+        chunks: Chunks with populated hype_questions fields.
+        jina_client: Initialized Jina client.
+
+    Returns:
+        Tuple of (list of HypeEmbedding objects, total_tokens).
+    """
+    # Collect all questions with their parent references
+    questions: list[str] = []
+    parent_refs: list[tuple[str, Chunk]] = []
+
+    for chunk in chunks:
+        for question in chunk.hype_questions:
+            questions.append(question)
+            parent_refs.append((chunk.chunk_id, chunk))
+
+    if not questions:
+        return [], 0
+
+    result = await jina_client.embed_batched(
+        questions, task=TASK_RETRIEVAL_QUERY, batch_size=_EMBED_BATCH_SIZE
+    )
+
+    hype_embeddings = []
+    for i, embedding in enumerate(result.embeddings):
+        parent_id, parent_chunk = parent_refs[i]
+        hype_embeddings.append(HypeEmbedding(
+            question=questions[i],
+            parent_chunk_id=parent_id,
+            parent_chunk=parent_chunk,
+            embedding=embedding,
+        ))
+
+    logger.info(
+        "Jina HyPE embedding: %d questions from %d chunks, %d tokens used",
+        len(questions),
+        sum(1 for c in chunks if c.hype_questions),
+        result.total_tokens,
+    )
+    return hype_embeddings, result.total_tokens

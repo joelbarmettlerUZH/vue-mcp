@@ -22,9 +22,9 @@ from vue_docs_core.parsing.entities import (
 )
 from vue_docs_core.parsing.markdown import parse_markdown_file
 from vue_docs_core.parsing.sort_keys import compute_sort_key, parse_sidebar_config
-from vue_docs_ingestion.embedder import embed_dense
-from vue_docs_ingestion.enrichment import enrich_chunks_contextual
-from vue_docs_ingestion.indexer import upsert_chunks_batch
+from vue_docs_ingestion.embedder import embed_dense, embed_hype_questions
+from vue_docs_ingestion.enrichment import enrich_chunks_contextual, generate_hype_questions
+from vue_docs_ingestion.indexer import upsert_chunks_batch, upsert_hype_batch
 from vue_docs_ingestion.scanner import find_markdown_files, hash_file
 from vue_docs_ingestion.state import FileState, IndexState
 
@@ -221,9 +221,31 @@ async def run_pipeline(
             f"skipped: [dim]{skipped}[/dim], "
             f"errors: [red]{errs}[/red]"
         )
+        # ---- Step 5c: HyPE question generation (Gemini) -------------------------
+        console.print()
+        console.print("[bold]HyPE question generation (Gemini)...[/bold]")
+
+        gemini_client_hype = GeminiClient(timeout=60.0)
+        try:
+            with console.status(
+                f"Generating HyPE questions for {len(all_chunks)} chunks..."
+            ):
+                hype_gen, hype_skip, hype_errs = await generate_hype_questions(
+                    all_chunks, page_contents, gemini_client_hype,
+                )
+        finally:
+            await gemini_client_hype.close()
+
+        total_questions = sum(len(c.hype_questions) for c in all_chunks)
+        console.print(
+            f"  Generated: [green]{hype_gen}[/green] chunks, "
+            f"[green]{total_questions}[/green] total questions, "
+            f"skipped: [dim]{hype_skip}[/dim], "
+            f"errors: [red]{hype_errs}[/red]"
+        )
     else:
         console.print(
-            "\n[yellow]GEMINI_API_KEY not set — skipping contextual enrichment[/yellow]"
+            "\n[yellow]GEMINI_API_KEY not set — skipping contextual enrichment and HyPE[/yellow]"
         )
 
     # ---- Step 6: Entity extraction ------------------------------------------
@@ -319,7 +341,45 @@ async def run_pipeline(
 
     console.print(f"Indexed [green]{indexed_count}[/green] chunks")
 
-    # ---- Step 11: Update state ----------------------------------------------
+    # ---- Step 11b: Embed + upsert HyPE questions ----------------------------
+    hype_chunks = [c for c in all_chunks if c.hype_questions]
+    if hype_chunks:
+        console.print()
+        console.print("[bold]Embedding HyPE questions...[/bold]")
+        total_hype_q = sum(len(c.hype_questions) for c in hype_chunks)
+        console.print(
+            f"  Embedding [green]{total_hype_q}[/green] HyPE questions "
+            f"from [green]{len(hype_chunks)}[/green] chunks"
+        )
+
+        jina_hype = JinaClient(timeout=300.0)
+        try:
+            with console.status("Waiting for Jina HyPE embeddings..."):
+                hype_embeddings, hype_tokens = await embed_hype_questions(
+                    hype_chunks, jina_hype
+                )
+        finally:
+            await jina_hype.close()
+
+        console.print(
+            f"  HyPE embeddings received — Jina tokens: [dim]{hype_tokens:,}[/dim]"
+        )
+
+        # Generate BM25 sparse vectors for HyPE questions
+        hype_texts = [h.question for h in hype_embeddings]
+        with console.status("Computing BM25 sparse vectors for HyPE..."):
+            hype_sparse = bm25_model.get_doc_sparse_vectors(hype_texts)
+
+        # Upsert HyPE points
+        console.print(f"  Upserting [green]{len(hype_embeddings)}[/green] HyPE points...")
+        for batch_start in range(0, len(hype_embeddings), _UPSERT_BATCH):
+            batch_hype = hype_embeddings[batch_start : batch_start + _UPSERT_BATCH]
+            batch_sparse = hype_sparse[batch_start : batch_start + _UPSERT_BATCH]
+            upsert_hype_batch(batch_hype, batch_sparse, qdrant)
+
+        console.print(f"  Indexed [green]{len(hype_embeddings)}[/green] HyPE points")
+
+    # ---- Step 12: Update state ----------------------------------------------
     now = datetime.now(timezone.utc).isoformat()
     chunks_by_file: dict[str, list[str]] = {}
     for chunk in all_chunks:

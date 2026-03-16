@@ -24,16 +24,6 @@ logger = logging.getLogger(__name__)
 
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
-# Intent types from the spec
-INTENT_TYPES = [
-    "api_lookup",
-    "conceptual",
-    "howto",
-    "debugging",
-    "comparison",
-    "migration",
-]
-
 GENERATION_PROMPT = """\
 You are an expert Vue.js developer and documentation specialist. Your task is to \
 generate challenging, realistic developer questions that the Vue.js documentation \
@@ -56,20 +46,60 @@ Requirements for the questions:
 5. Include some multi-faceted questions that span multiple documentation sections.
 6. Include some questions using synonyms or informal language (e.g., "two-way binding" for v-model).
 
-For each question, provide:
-- "question": The developer's question (natural language)
-- "intent": One of {intents}
-- "difficulty": One of "easy", "medium", "hard"
-- "expected_answer": A concise answer (2-5 sentences) derived from the documentation
-- "relevant_paths": List of documentation file paths that contain the answer
-- "relevant_apis": List of Vue API names relevant to the answer (empty list if none)
-
-Return a JSON array of objects. Output ONLY valid JSON, no markdown fences or explanation.
-
 ---
 DOCUMENTATION CONTENT:
 {docs_content}
 """
+
+# Function declaration for structured question generation
+QUESTION_FUNCTION = {
+    "name": "save_questions",
+    "description": "Save the generated evaluation questions with their metadata.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "questions": {
+                "type": "array",
+                "description": "List of generated evaluation questions.",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "question": {
+                            "type": "string",
+                            "description": "The developer's question in natural language.",
+                        },
+                        "intent": {
+                            "type": "string",
+                            "enum": ["api_lookup", "conceptual", "howto", "debugging", "comparison", "migration"],
+                            "description": "The intent category of the question.",
+                        },
+                        "difficulty": {
+                            "type": "string",
+                            "enum": ["easy", "medium", "hard"],
+                            "description": "The difficulty level of the question.",
+                        },
+                        "expected_answer": {
+                            "type": "string",
+                            "description": "A concise answer (2-5 sentences) derived from the documentation.",
+                        },
+                        "relevant_paths": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "List of documentation file paths that contain the answer.",
+                        },
+                        "relevant_apis": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "List of Vue API names relevant to the answer.",
+                        },
+                    },
+                    "required": ["question", "intent", "difficulty", "expected_answer", "relevant_paths", "relevant_apis"],
+                },
+            }
+        },
+        "required": ["questions"],
+    },
+}
 
 
 def collect_doc_files(docs_path: Path) -> list[tuple[str, str]]:
@@ -126,8 +156,8 @@ def build_docs_content(files: list[tuple[str, str]], max_chars: int = 800_000) -
     return "".join(parts)
 
 
-def call_gemini(prompt: str, model: str | None = None) -> str:
-    """Call Gemini API synchronously and return the text response."""
+def call_gemini(prompt: str, model: str | None = None) -> list[dict]:
+    """Call Gemini API with function calling and return structured questions."""
     model = model or settings.gemini_flash_model
     api_key = settings.gemini_api_key
     if not api_key:
@@ -141,7 +171,13 @@ def call_gemini(prompt: str, model: str | None = None) -> str:
         "generationConfig": {
             "temperature": 0.7,
             "maxOutputTokens": 32000,
-            "responseMimeType": "application/json",
+        },
+        "tools": [{"function_declarations": [QUESTION_FUNCTION]}],
+        "tool_config": {
+            "function_calling_config": {
+                "mode": "ANY",
+                "allowed_function_names": ["save_questions"],
+            }
         },
     }
 
@@ -158,8 +194,15 @@ def call_gemini(prompt: str, model: str | None = None) -> str:
         logger.error("Gemini returned no candidates: %s", data)
         sys.exit(1)
 
-    text = candidates[0]["content"]["parts"][0]["text"]
-    return text
+    # Extract function call arguments
+    parts = candidates[0].get("content", {}).get("parts", [])
+    for part in parts:
+        if "functionCall" in part:
+            args = part["functionCall"].get("args", {})
+            return args.get("questions", [])
+
+    logger.error("Gemini did not return a function call: %s", parts)
+    sys.exit(1)
 
 
 def generate_questions(
@@ -182,30 +225,11 @@ def generate_questions(
 
     prompt = GENERATION_PROMPT.format(
         count=count,
-        intents=json.dumps(INTENT_TYPES),
         docs_content=docs_content,
     )
 
     logger.info("Generating %d questions...", count)
-    raw = call_gemini(prompt, model=model)
-
-    # Parse JSON response (strip markdown fences if present)
-    text = raw.strip()
-    if text.startswith("```"):
-        text = text.split("\n", 1)[1]
-        if text.endswith("```"):
-            text = text[: text.rfind("```")]
-
-    try:
-        questions = json.loads(text)
-    except json.JSONDecodeError as e:
-        logger.error("Failed to parse Gemini response as JSON: %s", e)
-        logger.error("Raw response (first 2000 chars): %s", text[:2000])
-        sys.exit(1)
-
-    if not isinstance(questions, list):
-        logger.error("Expected JSON array, got %s", type(questions).__name__)
-        sys.exit(1)
+    questions = call_gemini(prompt, model=model)
 
     # Validate and clean each question
     valid = []

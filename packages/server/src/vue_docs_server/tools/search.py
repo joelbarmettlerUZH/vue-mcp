@@ -82,7 +82,58 @@ async def vue_docs_search(
     if not hits:
         return f"No documentation found for: {query}"
 
+    # Resolve HyPE question hits to their parent chunks
+    hits = _resolve_hype_hits(hits)
+
     return reconstruct_results(hits, max_results=max_results)
+
+
+def _resolve_hype_hits(hits: list) -> list:
+    """Replace HyPE question hits with their parent chunks.
+
+    When a HyPE question point matches a query, we resolve it to the
+    parent chunk for inclusion in results. Deduplicates by chunk_id,
+    keeping the highest score.
+    """
+    from vue_docs_core.clients.qdrant import SearchHit
+
+    resolved: list[SearchHit] = []
+    seen_chunk_ids: dict[str, float] = {}
+    parent_ids_to_fetch: list[str] = []
+    hype_scores: dict[str, float] = {}
+
+    for hit in hits:
+        if hit.payload.get("chunk_type") == "hype_question":
+            parent_id = hit.payload.get("parent_chunk_id", "")
+            if parent_id and parent_id not in seen_chunk_ids:
+                parent_ids_to_fetch.append(parent_id)
+                hype_scores[parent_id] = hit.score
+            elif parent_id in seen_chunk_ids:
+                # Keep the highest score
+                seen_chunk_ids[parent_id] = max(seen_chunk_ids[parent_id], hit.score)
+        else:
+            chunk_id = hit.chunk_id
+            if chunk_id not in seen_chunk_ids or hit.score > seen_chunk_ids[chunk_id]:
+                seen_chunk_ids[chunk_id] = hit.score
+                resolved.append(hit)
+
+    # Fetch parent chunks for HyPE hits
+    if parent_ids_to_fetch and state.qdrant:
+        parent_payloads = state.qdrant.get_by_chunk_ids(parent_ids_to_fetch)
+        for payload in parent_payloads:
+            parent_id = payload.get("chunk_id", "")
+            if parent_id and parent_id not in seen_chunk_ids:
+                score = hype_scores.get(parent_id, 0.0)
+                resolved.append(SearchHit(
+                    chunk_id=parent_id,
+                    score=score,
+                    payload=payload,
+                ))
+                seen_chunk_ids[parent_id] = score
+
+    # Re-sort by score descending
+    resolved.sort(key=lambda h: h.score, reverse=True)
+    return resolved
 
 
 def _detect_entities(query: str) -> list[str]:
