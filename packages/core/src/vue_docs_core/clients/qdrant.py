@@ -328,6 +328,18 @@ class QdrantDocClient:
         )
         logger.info("Deleted points for file_path='%s'", file_path)
 
+    def delete_by_chunk_ids(self, chunk_ids: list[str]) -> None:
+        """Delete points matching any of the given chunk_id values."""
+        if not chunk_ids:
+            return
+        # Qdrant point IDs are derived from chunk_id hashes
+        point_ids = [_chunk_id_to_point_id(cid) for cid in chunk_ids]
+        self.client.delete(
+            collection_name=self.collection,
+            points_selector=point_ids,
+        )
+        logger.info("Deleted %d points by chunk_id", len(chunk_ids))
+
     def collection_info(self) -> dict:
         """Return collection info as a dict."""
         info = self.client.get_collection(self.collection)

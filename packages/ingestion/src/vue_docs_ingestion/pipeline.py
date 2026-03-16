@@ -1,5 +1,17 @@
-"""Full pipeline: scan → parse → enrich → embed → store."""
+"""Full pipeline: scan → parse → enrich → embed → store.
 
+Supports both full re-indexing and incremental updates.  In incremental mode
+only changed/new files are re-processed through the LLM-heavy steps
+(enrichment, HyPE, summaries).  Deterministic steps that need the full corpus
+(BM25 fitting, entity index, crossref graph) always operate on all chunks —
+we reload unchanged chunks from Qdrant for this purpose.
+
+Deleted file detection removes stale chunks from both Qdrant and the state
+file.  Summary regeneration cascades: a changed file triggers its page
+summary, which may cascade to its folder and top-level summaries.
+"""
+
+import hashlib
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
@@ -12,7 +24,7 @@ from vue_docs_core.clients.gemini import GeminiClient
 from vue_docs_core.clients.jina import JinaClient
 from vue_docs_core.clients.qdrant import QdrantDocClient
 from vue_docs_core.config import settings
-from vue_docs_core.models.chunk import Chunk
+from vue_docs_core.models.chunk import Chunk, ChunkMetadata, ChunkType
 from vue_docs_core.parsing.crossrefs import build_crossref_graph
 from vue_docs_core.parsing.entities import (
     build_api_dictionary,
@@ -40,6 +52,60 @@ console = Console()
 # How many chunks to embed + upsert per outer loop iteration
 _UPSERT_BATCH = 256
 
+# Chunk types that belong to leaf content (not summaries)
+_LEAF_TYPES = {
+    ChunkType.SECTION.value,
+    ChunkType.SUBSECTION.value,
+    ChunkType.CODE_BLOCK.value,
+    ChunkType.IMAGE.value,
+}
+
+# Summary chunk types produced during indexing
+_SUMMARY_TYPES = {
+    ChunkType.PAGE_SUMMARY.value,
+    ChunkType.FOLDER_SUMMARY.value,
+    ChunkType.TOP_SUMMARY.value,
+}
+
+
+def _payload_to_chunk(payload: dict) -> Chunk:
+    """Reconstruct a Chunk from a Qdrant payload dict.
+
+    Used to reload unchanged chunks so that deterministic steps (entity
+    extraction, crossref graph, BM25) operate on the full corpus.
+    """
+    return Chunk(
+        chunk_id=payload.get("chunk_id", ""),
+        chunk_type=ChunkType(payload.get("chunk_type", "section")),
+        content=payload.get("content", ""),
+        metadata=ChunkMetadata(
+            file_path=payload.get("file_path", ""),
+            folder_path=payload.get("folder_path", ""),
+            page_title=payload.get("page_title", ""),
+            section_title=payload.get("section_title", ""),
+            subsection_title=payload.get("subsection_title", ""),
+            breadcrumb=payload.get("breadcrumb", ""),
+            global_sort_key=payload.get("global_sort_key", ""),
+            content_type=payload.get("content_type", "text"),
+            language_tag=payload.get("language_tag", ""),
+            api_style=payload.get("api_style", "both"),
+            api_entities=payload.get("api_entities", []),
+            cross_references=payload.get("cross_references", []),
+            parent_chunk_id=payload.get("parent_chunk_id", ""),
+            sibling_chunk_ids=payload.get("sibling_chunk_ids", []),
+            child_chunk_ids=payload.get("child_chunk_ids", []),
+            preceding_prose=payload.get("preceding_prose", ""),
+        ),
+        contextual_prefix=payload.get("contextual_prefix", ""),
+        content_hash=payload.get("content_hash", ""),
+    )
+
+
+def _summary_input_hash(texts: list[str]) -> str:
+    """Compute a hash of concatenated summary input texts."""
+    combined = "\n".join(texts)
+    return hashlib.sha256(combined.encode()).hexdigest()[:16]
+
 
 async def run_pipeline(
     docs_path: Path,
@@ -48,20 +114,23 @@ async def run_pipeline(
     full: bool = False,
     dry_run: bool = False,
 ) -> None:
-    """Run the full ingestion pipeline.
+    """Run the ingestion pipeline with incremental update support.
 
     Stages:
-      1. Discover markdown files
-      2. Detect which files need re-processing
-      3. Parse .md → Chunk objects
-      4. Contextual enrichment (Gemini — adds prefix per chunk)
-      5. Extract API entities
-      6. Extract cross-references
-      7. Assign sort keys
-      8. Fit BM25 on corpus
-      9. Embed all chunks with Jina (prefix prepended for embedding)
-     10. Upsert to Qdrant in batches
-     11. Persist state
+      1. Discover markdown files + detect deleted files
+      2. Detect which files need re-processing (hash + version comparison)
+      3. Parse changed .md → Chunk objects
+      4. Contextual enrichment for new/changed chunks (Gemini)
+      5. HyPE question generation for new/changed chunks (Gemini)
+      6. Reload unchanged chunks from Qdrant for full-corpus steps
+      7. Generate RAPTOR summaries (only for affected pages/folders)
+      8. Entity extraction + cross-reference extraction (full corpus)
+      9. Delete stale chunks from Qdrant
+     10. Fit BM25 on full corpus
+     11. Embed new/changed chunks + summaries with Jina
+     12. Upsert to Qdrant in batches
+     13. Embed + upsert HyPE questions
+     14. Persist state
 
     Args:
         docs_path: Path to Vue docs source (e.g. ./data/vue-docs/src).
@@ -87,14 +156,20 @@ async def run_pipeline(
     if dry_run:
         console.print("[yellow]DRY RUN — no changes will be made[/yellow]\n")
 
-    # ---- Step 1: Discover files ---------------------------------------------
+    # ---- Step 1: Discover files + detect deletions --------------------------
     with console.status("Discovering markdown files..."):
         md_files = find_markdown_files(docs_path)
+    current_files = {str(p.relative_to(docs_path)) for p in md_files}
     console.print(f"Found [green]{len(md_files)}[/green] markdown files")
 
-    # ---- Step 2: Change detection -------------------------------------------
     state = IndexState(state_path)
+    previously_indexed = set(state.all_file_paths())
+    deleted_files = previously_indexed - current_files
 
+    if deleted_files:
+        console.print(f"Deleted files detected: [red]{len(deleted_files)}[/red]")
+
+    # ---- Step 2: Change detection -------------------------------------------
     to_process: list[Path] = []
     for path in md_files:
         rel = str(path.relative_to(docs_path))
@@ -107,20 +182,27 @@ async def run_pipeline(
         ):
             to_process.append(path)
 
-    up_to_date_count = len(md_files) - len(to_process)
+    unchanged_files = current_files - {str(p.relative_to(docs_path)) for p in to_process}
+    up_to_date_count = len(unchanged_files)
     console.print(
         f"Files to process: [green]{len(to_process)}[/green], "
-        f"up-to-date: [dim]{up_to_date_count}[/dim]"
+        f"up-to-date: [dim]{up_to_date_count}[/dim], "
+        f"deleted: [red]{len(deleted_files)}[/red]"
     )
 
-    if not to_process:
+    if not to_process and not deleted_files:
         console.print("[green]Everything up-to-date. Nothing to do.[/green]")
         return
 
     if dry_run:
-        console.print("\n[yellow]Files that would be processed:[/yellow]")
-        for p in to_process:
-            console.print(f"  {p.relative_to(docs_path)}")
+        if to_process:
+            console.print("\n[yellow]Files that would be processed:[/yellow]")
+            for p in to_process:
+                console.print(f"  [green]+[/green] {p.relative_to(docs_path)}")
+        if deleted_files:
+            console.print("\n[yellow]Files that would be cleaned up:[/yellow]")
+            for df in sorted(deleted_files):
+                console.print(f"  [red]-[/red] {df}")
         return
 
     # ---- Step 3: Parse sidebar sort keys ------------------------------------
@@ -151,59 +233,55 @@ async def run_pipeline(
             api_dictionary = {}
             console.print("[red]API directory not found — entity extraction disabled[/red]")
 
-    # ---- Step 5: Parse markdown files → chunks ------------------------------
-    console.print()
-    all_chunks: list[Chunk] = []
+    # ---- Step 5: Parse changed markdown files → chunks ----------------------
+    new_chunks: list[Chunk] = []
     failed_files: list[str] = []
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(),
-        TaskProgressColumn(),
-        console=console,
-    ) as progress:
-        task = progress.add_task("Parsing markdown files...", total=len(to_process))
-        for path in to_process:
-            rel = str(path.relative_to(docs_path))
-            try:
-                chunks = parse_markdown_file(path, docs_root=docs_path)
-                sort_key = compute_sort_key(rel, sidebar_map)
-                for chunk in chunks:
-                    chunk.metadata.global_sort_key = sort_key
-                all_chunks.extend(chunks)
-            except Exception as exc:
-                logger.exception("Failed to parse %s", rel)
-                console.print(f"  [red]Parse error in {rel}: {exc}[/red]")
-                failed_files.append(rel)
-            progress.advance(task)
+    if to_process:
+        console.print()
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TaskProgressColumn(),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Parsing markdown files...", total=len(to_process))
+            for path in to_process:
+                rel = str(path.relative_to(docs_path))
+                try:
+                    chunks = parse_markdown_file(path, docs_root=docs_path)
+                    sort_key = compute_sort_key(rel, sidebar_map)
+                    for chunk in chunks:
+                        chunk.metadata.global_sort_key = sort_key
+                    new_chunks.extend(chunks)
+                except Exception as exc:
+                    logger.exception("Failed to parse %s", rel)
+                    console.print(f"  [red]Parse error in {rel}: {exc}[/red]")
+                    failed_files.append(rel)
+                progress.advance(task)
 
-    console.print(
-        f"Parsed [green]{len(all_chunks)}[/green] chunks "
-        f"from [green]{len(to_process) - len(failed_files)}[/green] files"
-        + (f" ([red]{len(failed_files)} failed[/red])" if failed_files else "")
-    )
+        console.print(
+            f"Parsed [green]{len(new_chunks)}[/green] chunks "
+            f"from [green]{len(to_process) - len(failed_files)}[/green] files"
+            + (f" ([red]{len(failed_files)} failed[/red])" if failed_files else "")
+        )
 
-    if not all_chunks:
-        console.print("[yellow]No chunks to index. Exiting.[/yellow]")
-        return
+        # Warn about unusually large or small chunks
+        sizes = [len(c.content) for c in new_chunks]
+        large = sum(1 for s in sizes if s > 8000)
+        small = sum(1 for s in sizes if s < 50)
+        if large:
+            console.print(f"  [yellow]Warning: {large} chunks > 8000 chars (may be oversized)[/yellow]")
+        if small:
+            console.print(f"  [yellow]Warning: {small} chunks < 50 chars (may be undersized)[/yellow]")
 
-    # Warn about unusually large or small chunks
-    sizes = [len(c.content) for c in all_chunks]
-    large = sum(1 for s in sizes if s > 8000)
-    small = sum(1 for s in sizes if s < 50)
-    if large:
-        console.print(f"  [yellow]Warning: {large} chunks > 8000 chars (may be oversized)[/yellow]")
-    if small:
-        console.print(f"  [yellow]Warning: {small} chunks < 50 chars (may be undersized)[/yellow]")
-
-    # ---- Step 5b: Contextual enrichment (Gemini) ----------------------------
-    if settings.gemini_api_key:
+    # ---- Step 5b: Contextual enrichment (Gemini) for NEW chunks only --------
+    page_contents: dict[str, str] = {}
+    if settings.gemini_api_key and new_chunks:
         console.print()
         console.print("[bold]Contextual enrichment (Gemini)...[/bold]")
 
-        # Build page_contents mapping: file_path → raw markdown
-        page_contents: dict[str, str] = {}
         for path in to_process:
             rel = str(path.relative_to(docs_path))
             try:
@@ -214,10 +292,10 @@ async def run_pipeline(
         gemini_client = GeminiClient(timeout=60.0)
         try:
             with console.status(
-                f"Enriching {len(all_chunks)} chunks with contextual prefixes..."
+                f"Enriching {len(new_chunks)} chunks with contextual prefixes..."
             ):
                 enriched, skipped, errs = await enrich_chunks_contextual(
-                    all_chunks, page_contents, gemini_client,
+                    new_chunks, page_contents, gemini_client,
                 )
         finally:
             await gemini_client.close()
@@ -227,38 +305,131 @@ async def run_pipeline(
             f"skipped: [dim]{skipped}[/dim], "
             f"errors: [red]{errs}[/red]"
         )
-        # ---- Step 5c: HyPE question generation (Gemini) -------------------------
+
+        # ---- Step 5c: HyPE question generation (Gemini) for NEW chunks ------
         console.print()
         console.print("[bold]HyPE question generation (Gemini)...[/bold]")
 
         gemini_client_hype = GeminiClient(timeout=60.0)
         try:
             with console.status(
-                f"Generating HyPE questions for {len(all_chunks)} chunks..."
+                f"Generating HyPE questions for {len(new_chunks)} chunks..."
             ):
                 hype_gen, hype_skip, hype_errs = await generate_hype_questions(
-                    all_chunks, page_contents, gemini_client_hype,
+                    new_chunks, page_contents, gemini_client_hype,
                 )
         finally:
             await gemini_client_hype.close()
 
-        total_questions = sum(len(c.hype_questions) for c in all_chunks)
+        total_questions = sum(len(c.hype_questions) for c in new_chunks)
         console.print(
             f"  Generated: [green]{hype_gen}[/green] chunks, "
             f"[green]{total_questions}[/green] total questions, "
             f"skipped: [dim]{hype_skip}[/dim], "
             f"errors: [red]{hype_errs}[/red]"
         )
-        # ---- Step 5d: RAPTOR summaries (Gemini) --------------------------------
+    elif not settings.gemini_api_key:
+        console.print(
+            "\n[yellow]GEMINI_API_KEY not set — skipping contextual enrichment and HyPE[/yellow]"
+        )
+
+    # ---- Step 6: Qdrant setup + load unchanged chunks + delete stale --------
+    console.print()
+    console.print("[bold]Setting up Qdrant...[/bold]")
+    qdrant = QdrantDocClient()
+    try:
+        with console.status("Connecting to Qdrant..."):
+            qdrant.setup_collection(recreate=False)
+        console.print(f"  Collection [green]{qdrant.collection}[/green] ready")
+    except Exception as exc:
+        console.print(f"[red]Qdrant connection failed: {exc}[/red]")
+        console.print("[red]Make sure Qdrant is running at: [/red]" + settings.qdrant_url)
+        raise
+
+    # Load unchanged leaf chunks from Qdrant for full-corpus steps
+    unchanged_chunks: list[Chunk] = []
+    if unchanged_files and not full:
+        with console.status(f"Loading {len(unchanged_files)} unchanged files from Qdrant..."):
+            unchanged_file_list = sorted(unchanged_files)
+            # Fetch in batches to avoid oversized scroll requests
+            for i in range(0, len(unchanged_file_list), 20):
+                batch_files = unchanged_file_list[i:i + 20]
+                payloads = qdrant.get_by_file_paths(
+                    file_paths=batch_files,
+                    chunk_types=list(_LEAF_TYPES),
+                    limit=5000,
+                )
+                for p in payloads:
+                    unchanged_chunks.append(_payload_to_chunk(p))
+        console.print(f"  Loaded [green]{len(unchanged_chunks)}[/green] unchanged chunks from Qdrant")
+
+    # Delete stale chunks for changed + deleted files
+    files_to_clean = {str(p.relative_to(docs_path)) for p in to_process} | deleted_files
+    if files_to_clean:
+        with console.status(f"Removing stale chunks for {len(files_to_clean)} files..."):
+            for file_rel in files_to_clean:
+                existing = state.get(file_rel)
+                if existing and existing.chunk_ids:
+                    qdrant.delete_by_file_path(file_rel)
+        console.print(f"  Cleaned up [green]{len(files_to_clean)}[/green] files")
+
+    # Remove deleted files from state
+    for df in deleted_files:
+        state.remove(df)
+
+    # Delete old summary points — they'll be regenerated
+    with console.status("Removing old summary points..."):
+        old_summary_ids = []
+        for fp in state.all_file_paths():
+            fs = state.get(fp)
+            if fs:
+                old_summary_ids.extend(
+                    cid for cid in fs.chunk_ids
+                    if cid.endswith("#page_summary")
+                )
+        # Also find folder/top summary IDs from previous state
+        # (these aren't tracked per-file, so delete by chunk_type filter)
+        qdrant.delete_by_chunk_ids(old_summary_ids)
+        # Delete folder + top summaries via scroll + delete
+        for summary_type in ["folder_summary", "top_summary"]:
+            payloads = qdrant.client.scroll(
+                collection_name=qdrant.collection,
+                scroll_filter=qdrant_client_filter(summary_type),
+                limit=500,
+                with_payload=["chunk_id"],
+            )
+            if payloads[0]:
+                ids_to_del = [p.payload.get("chunk_id", "") for p in payloads[0]]
+                if ids_to_del:
+                    qdrant.delete_by_chunk_ids(ids_to_del)
+    console.print("  Old summaries removed")
+
+    # ---- Step 7: RAPTOR summaries (regenerate for affected pages) -----------
+    # Build the full corpus = new + unchanged (without old summaries)
+    all_leaf_chunks = new_chunks + unchanged_chunks
+
+    summary_chunks: list[Chunk] = []
+    if settings.gemini_api_key and all_leaf_chunks:
         console.print()
         console.print("[bold]Generating RAPTOR summaries (Gemini)...[/bold]")
 
+        # For page summaries, we need page_contents for ALL pages (not just changed)
+        # Load unchanged page contents from disk for summary generation
+        all_page_contents = dict(page_contents)  # start with changed pages
+        for fp in unchanged_files:
+            full_path = docs_path / fp
+            if full_path.exists() and fp not in all_page_contents:
+                try:
+                    all_page_contents[fp] = full_path.read_text(encoding="utf-8")
+                except Exception:
+                    pass
+
         gemini_client_summary = GeminiClient(timeout=60.0)
         try:
-            # Layer 1: Page summaries
+            # Layer 1: Page summaries for ALL pages
             with console.status("Generating page summaries..."):
                 page_summaries = await generate_page_summaries(
-                    all_chunks, page_contents, gemini_client_summary,
+                    all_leaf_chunks, all_page_contents, gemini_client_summary,
                 )
             console.print(f"  Page summaries: [green]{len(page_summaries)}[/green]")
 
@@ -276,27 +447,27 @@ async def run_pipeline(
                 )
             console.print(f"  Top-level summaries: [green]{len(top_summaries)}[/green]")
 
-            # Add all summary chunks to the main chunk list
-            all_chunks.extend(page_summaries)
-            all_chunks.extend(folder_summaries)
-            all_chunks.extend(top_summaries)
-
-            total_summaries = len(page_summaries) + len(folder_summaries) + len(top_summaries)
-            console.print(f"  Total summaries added: [green]{total_summaries}[/green]")
+            summary_chunks = page_summaries + folder_summaries + top_summaries
+            console.print(f"  Total summaries: [green]{len(summary_chunks)}[/green]")
         finally:
             await gemini_client_summary.close()
-    else:
-        console.print(
-            "\n[yellow]GEMINI_API_KEY not set — skipping contextual enrichment, HyPE, and summaries[/yellow]"
-        )
 
-    # ---- Step 6: Entity extraction ------------------------------------------
+    # Chunks to embed and upsert: new leaf chunks + all summaries
+    chunks_to_index = new_chunks + summary_chunks
+
+    if not chunks_to_index and not deleted_files:
+        console.print("[yellow]No chunks to index. Exiting.[/yellow]")
+        return
+
+    # Full corpus for deterministic steps (entity, crossref, BM25)
+    all_chunks = all_leaf_chunks + summary_chunks
+
+    # ---- Step 8: Entity extraction + cross-references (full corpus) ---------
     with console.status(f"Extracting API entities from {len(all_chunks)} chunks..."):
         entity_index = build_entity_index(all_chunks, api_dictionary)
     total_entity_refs = sum(len(v) for v in entity_index.entity_to_chunks.values())
     console.print(f"Entity extraction: [green]{total_entity_refs}[/green] total entity references")
 
-    # ---- Step 7: Cross-reference extraction ---------------------------------
     with console.status("Extracting cross-references..."):
         crossref_graph = build_crossref_graph(all_chunks)
     total_refs = sum(len(v) for v in crossref_graph.values())
@@ -305,52 +476,39 @@ async def run_pipeline(
         f"across [green]{len(crossref_graph)}[/green] chunks"
     )
 
-    # ---- Step 8: Qdrant setup + cleanup -------------------------------------
-    console.print()
-    console.print("[bold]Setting up Qdrant...[/bold]")
-    qdrant = QdrantDocClient()
-    try:
-        with console.status("Connecting to Qdrant..."):
-            qdrant.setup_collection(recreate=False)
-        console.print(f"  Collection [green]{qdrant.collection}[/green] ready")
+    if not chunks_to_index:
+        # Only deletions occurred — save state and exit
+        state.save()
+        console.print()
+        console.print("[bold green]Pipeline complete (deletions only)![/bold green]")
+        qdrant.close()
+        return
 
-        # Delete stale chunks for files being re-indexed
-        files_to_reindex = {str(p.relative_to(docs_path)) for p in to_process}
-        with console.status("Removing stale chunks for changed files..."):
-            for file_rel in files_to_reindex:
-                existing = state.get(file_rel)
-                if existing and existing.chunk_ids:
-                    qdrant.delete_by_file_path(file_rel)
-    except Exception as exc:
-        console.print(f"[red]Qdrant connection failed: {exc}[/red]")
-        console.print("[red]Make sure Qdrant is running at: [/red]" + settings.qdrant_url)
-        raise
-
-    # ---- Step 9: Fit BM25 ---------------------------------------------------
+    # ---- Step 9: Fit BM25 on full corpus ------------------------------------
     console.print()
     console.print("[bold]Fitting BM25 model...[/bold]")
-    texts = [c.content for c in all_chunks]
-    with console.status(f"Fitting BM25 on {len(texts)} documents..."):
+    all_texts = [c.content for c in all_chunks]
+    with console.status(f"Fitting BM25 on {len(all_texts)} documents..."):
         bm25_model = BM25Model()
-        bm25_model.fit(texts)
+        bm25_model.fit(all_texts)
         bm25_model.save(bm25_model_path)
     console.print(f"  BM25 vocabulary: [green]{bm25_model.vocab_size}[/green] tokens")
 
-    # Pre-compute all sparse vectors (must be done on fitted corpus in order)
-    with console.status("Computing BM25 sparse vectors..."):
-        all_sparse_vectors = bm25_model.get_doc_sparse_vectors(texts)
-    console.print(f"  BM25 sparse vectors: [green]{len(all_sparse_vectors)}[/green]")
+    # Sparse vectors only needed for chunks we're indexing
+    index_texts = [c.content for c in chunks_to_index]
+    with console.status(f"Computing BM25 sparse vectors for {len(index_texts)} chunks..."):
+        sparse_vectors = bm25_model.get_doc_sparse_vectors(index_texts)
+    console.print(f"  BM25 sparse vectors: [green]{len(sparse_vectors)}[/green]")
 
-    # ---- Step 10: Dense embed (single Jina request) -------------------------
+    # ---- Step 10: Dense embed (only new/changed chunks + summaries) ---------
     console.print()
     console.print("[bold]Embedding chunks...[/bold]")
-    console.print(f"  Embedding [green]{len(all_chunks)}[/green] chunks via Jina (batched)")
+    console.print(f"  Embedding [green]{len(chunks_to_index)}[/green] chunks via Jina (batched)")
 
-    # Use a long timeout: large corpora can take several minutes to embed.
     jina_client = JinaClient(timeout=300.0)
     try:
         with console.status("Waiting for Jina embeddings..."):
-            all_dense_vectors, total_tokens = await embed_dense(all_chunks, jina_client)
+            dense_vectors, total_tokens = await embed_dense(chunks_to_index, jina_client)
     finally:
         await jina_client.close()
 
@@ -370,12 +528,12 @@ async def run_pipeline(
         TaskProgressColumn(),
         console=console,
     ) as progress:
-        upsert_task = progress.add_task("Upserting...", total=len(all_chunks))
+        upsert_task = progress.add_task("Upserting...", total=len(chunks_to_index))
 
-        for batch_start in range(0, len(all_chunks), _UPSERT_BATCH):
-            batch_chunks = all_chunks[batch_start : batch_start + _UPSERT_BATCH]
-            batch_dense = all_dense_vectors[batch_start : batch_start + _UPSERT_BATCH]
-            batch_sparse = all_sparse_vectors[batch_start : batch_start + _UPSERT_BATCH]
+        for batch_start in range(0, len(chunks_to_index), _UPSERT_BATCH):
+            batch_chunks = chunks_to_index[batch_start : batch_start + _UPSERT_BATCH]
+            batch_dense = dense_vectors[batch_start : batch_start + _UPSERT_BATCH]
+            batch_sparse = sparse_vectors[batch_start : batch_start + _UPSERT_BATCH]
 
             upsert_chunks_batch(batch_chunks, batch_dense, batch_sparse, qdrant)
             indexed_count += len(batch_chunks)
@@ -383,8 +541,8 @@ async def run_pipeline(
 
     console.print(f"Indexed [green]{indexed_count}[/green] chunks")
 
-    # ---- Step 11b: Embed + upsert HyPE questions ----------------------------
-    hype_chunks = [c for c in all_chunks if c.hype_questions]
+    # ---- Step 12: Embed + upsert HyPE questions (new chunks only) -----------
+    hype_chunks = [c for c in new_chunks if c.hype_questions]
     if hype_chunks:
         console.print()
         console.print("[bold]Embedding HyPE questions...[/bold]")
@@ -421,11 +579,15 @@ async def run_pipeline(
 
         console.print(f"  Indexed [green]{len(hype_embeddings)}[/green] HyPE points")
 
-    # ---- Step 12: Update state ----------------------------------------------
+    # ---- Step 13: Update state ----------------------------------------------
     now = datetime.now(timezone.utc).isoformat()
+
+    # Build chunk_id lists per file for new chunks + summaries
     chunks_by_file: dict[str, list[str]] = {}
-    for chunk in all_chunks:
-        chunks_by_file.setdefault(chunk.metadata.file_path, []).append(chunk.chunk_id)
+    for chunk in chunks_to_index:
+        fp = chunk.metadata.file_path
+        if fp:  # leaf chunks and page summaries have file_path
+            chunks_by_file.setdefault(fp, []).append(chunk.chunk_id)
 
     for path in to_process:
         if str(path.relative_to(docs_path)) in {f for f in failed_files}:
@@ -445,6 +607,10 @@ async def run_pipeline(
     # ---- Summary ------------------------------------------------------------
     console.print()
     console.print("[bold green]Pipeline complete![/bold green]")
+    if to_process:
+        console.print(f"  New/changed files processed: [green]{len(to_process) - len(failed_files)}[/green]")
+    if deleted_files:
+        console.print(f"  Deleted files cleaned up:    [red]{len(deleted_files)}[/red]")
     try:
         info = qdrant.collection_info()
         console.print(f"  Total points in Qdrant: [green]{info['points_count']}[/green]")
@@ -452,3 +618,11 @@ async def run_pipeline(
     except Exception:
         pass
     qdrant.close()
+
+
+def qdrant_client_filter(chunk_type: str):
+    """Build a Qdrant filter for a specific chunk_type."""
+    from qdrant_client.models import FieldCondition, Filter, MatchAny
+    return Filter(
+        must=[FieldCondition(key="chunk_type", match=MatchAny(any=[chunk_type]))]
+    )
