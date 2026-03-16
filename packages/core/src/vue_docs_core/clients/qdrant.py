@@ -271,6 +271,48 @@ class QdrantDocClient:
 
         return [point.payload for point, _ in zip(results[0], range(len(chunk_ids)))]
 
+    def get_by_file_paths(
+        self,
+        file_paths: list[str],
+        chunk_types: list[str] | None = None,
+        limit: int = 100,
+    ) -> list[dict]:
+        """Retrieve points matching any of the given file_path values.
+
+        Args:
+            file_paths: File paths to match (e.g. ["guide/essentials/computed.md"]).
+            chunk_types: Optional filter on chunk_type (e.g. ["section", "subsection"]).
+            limit: Max points to return.
+
+        Returns:
+            List of payload dicts.
+        """
+        if not file_paths:
+            return []
+
+        conditions = [
+            FieldCondition(
+                key="file_path",
+                match=MatchAny(any=file_paths),
+            )
+        ]
+        if chunk_types:
+            conditions.append(
+                FieldCondition(
+                    key="chunk_type",
+                    match=MatchAny(any=chunk_types),
+                )
+            )
+
+        results = self.client.scroll(
+            collection_name=self.collection,
+            scroll_filter=Filter(must=conditions),
+            limit=limit,
+            with_payload=True,
+        )
+
+        return [point.payload for point in results[0]]
+
     def delete_by_file_path(self, file_path: str) -> None:
         """Delete all points originating from a given file."""
         self.client.delete(

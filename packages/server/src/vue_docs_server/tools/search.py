@@ -4,6 +4,7 @@ import logging
 
 from vue_docs_core.clients.jina import JinaClient, TASK_RETRIEVAL_QUERY
 from vue_docs_core.clients.qdrant import SearchHit
+from vue_docs_core.retrieval.expansion import expand_cross_references
 from vue_docs_core.retrieval.reconstruction import reconstruct_results
 
 from vue_docs_server.startup import state
@@ -89,6 +90,9 @@ async def vue_docs_search(
 
         # Resolve HyPE question hits to their parent chunks
         hits = _resolve_hype_hits(hits)
+
+        # Expand results via cross-references (before reranking)
+        hits = expand_cross_references(hits, state.qdrant)
 
         # Rerank candidates with Jina reranker v3
         hits = await _rerank_hits(jina, query, hits)
