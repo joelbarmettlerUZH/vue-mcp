@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     data_path: str = "./data"
 
     # Pipeline
-    pipeline_version: str = "4"  # Bumped: Day 10 HyPE + function calling
+    pipeline_version: str = "5"  # Bumped: Day 13 RAPTOR hierarchical summaries
 
 
 settings = Settings()

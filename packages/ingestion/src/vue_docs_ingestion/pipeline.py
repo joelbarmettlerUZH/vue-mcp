@@ -23,7 +23,13 @@ from vue_docs_core.parsing.entities import (
 from vue_docs_core.parsing.markdown import parse_markdown_file
 from vue_docs_core.parsing.sort_keys import compute_sort_key, parse_sidebar_config
 from vue_docs_ingestion.embedder import embed_dense, embed_hype_questions
-from vue_docs_ingestion.enrichment import enrich_chunks_contextual, generate_hype_questions
+from vue_docs_ingestion.enrichment import (
+    enrich_chunks_contextual,
+    generate_folder_summaries,
+    generate_hype_questions,
+    generate_page_summaries,
+    generate_top_summaries,
+)
 from vue_docs_ingestion.indexer import upsert_chunks_batch, upsert_hype_batch
 from vue_docs_ingestion.scanner import find_markdown_files, hash_file
 from vue_docs_ingestion.state import FileState, IndexState
@@ -243,9 +249,45 @@ async def run_pipeline(
             f"skipped: [dim]{hype_skip}[/dim], "
             f"errors: [red]{hype_errs}[/red]"
         )
+        # ---- Step 5d: RAPTOR summaries (Gemini) --------------------------------
+        console.print()
+        console.print("[bold]Generating RAPTOR summaries (Gemini)...[/bold]")
+
+        gemini_client_summary = GeminiClient(timeout=60.0)
+        try:
+            # Layer 1: Page summaries
+            with console.status("Generating page summaries..."):
+                page_summaries = await generate_page_summaries(
+                    all_chunks, page_contents, gemini_client_summary,
+                )
+            console.print(f"  Page summaries: [green]{len(page_summaries)}[/green]")
+
+            # Layer 2: Folder summaries
+            with console.status("Generating folder summaries..."):
+                folder_summaries = await generate_folder_summaries(
+                    page_summaries, gemini_client_summary,
+                )
+            console.print(f"  Folder summaries: [green]{len(folder_summaries)}[/green]")
+
+            # Layer 3: Top-level summaries
+            with console.status("Generating top-level summaries..."):
+                top_summaries = await generate_top_summaries(
+                    folder_summaries, gemini_client_summary,
+                )
+            console.print(f"  Top-level summaries: [green]{len(top_summaries)}[/green]")
+
+            # Add all summary chunks to the main chunk list
+            all_chunks.extend(page_summaries)
+            all_chunks.extend(folder_summaries)
+            all_chunks.extend(top_summaries)
+
+            total_summaries = len(page_summaries) + len(folder_summaries) + len(top_summaries)
+            console.print(f"  Total summaries added: [green]{total_summaries}[/green]")
+        finally:
+            await gemini_client_summary.close()
     else:
         console.print(
-            "\n[yellow]GEMINI_API_KEY not set — skipping contextual enrichment and HyPE[/yellow]"
+            "\n[yellow]GEMINI_API_KEY not set — skipping contextual enrichment, HyPE, and summaries[/yellow]"
         )
 
     # ---- Step 6: Entity extraction ------------------------------------------

@@ -239,6 +239,100 @@ class TestReconstruction:
         # Should NOT say "across X pages" for single page
         assert "across" not in result.split("\n")[0]
 
+    def test_page_summary_rendered_as_overview(self):
+        hits = [
+            _make_hit(
+                chunk_id="guide/essentials/computed#page_summary",
+                chunk_type="page_summary",
+                content="This page covers computed properties in Vue 3.",
+                section_title="",
+            ),
+        ]
+        result = reconstruct_results(hits)
+        assert "**Overview:**" in result
+        assert "computed properties in Vue 3" in result
+
+    def test_folder_summary_rendered_as_section_overview(self):
+        hits = [
+            SearchHit(
+                chunk_id="guide/essentials#folder_summary",
+                score=0.7,
+                payload={
+                    "chunk_id": "guide/essentials#folder_summary",
+                    "file_path": "",
+                    "folder_path": "guide/essentials",
+                    "page_title": "Guide > Essentials",
+                    "section_title": "",
+                    "subsection_title": "",
+                    "breadcrumb": "Guide > Essentials",
+                    "global_sort_key": "02_guide/01_essentials",
+                    "chunk_type": "folder_summary",
+                    "content_type": "text",
+                    "language_tag": "",
+                    "preceding_prose": "",
+                    "api_entities": [],
+                    "content": "This section covers Vue essentials.",
+                },
+            ),
+        ]
+        result = reconstruct_results(hits)
+        assert "**Section Overview:**" in result
+        assert "Vue essentials" in result
+
+    def test_page_summary_placed_before_detail_chunks(self):
+        hits = [
+            _make_hit(
+                chunk_id="guide/essentials/computed#section1",
+                chunk_type="section",
+                content="Detail about caching",
+                global_sort_key="02_guide/01_essentials/03_computed/01",
+            ),
+            _make_hit(
+                chunk_id="guide/essentials/computed#page_summary",
+                chunk_type="page_summary",
+                content="This page covers computed properties.",
+                section_title="",
+                global_sort_key="02_guide/01_essentials/03_computed",
+            ),
+        ]
+        result = reconstruct_results(hits, max_results=5)
+        overview_pos = result.index("**Overview:**")
+        detail_pos = result.index("Detail about caching")
+        assert overview_pos < detail_pos
+
+    def test_top_summary_rendered_before_page_results(self):
+        hits = [
+            SearchHit(
+                chunk_id="guide#top_summary",
+                score=0.6,
+                payload={
+                    "chunk_id": "guide#top_summary",
+                    "file_path": "",
+                    "folder_path": "guide",
+                    "page_title": "Guide",
+                    "section_title": "",
+                    "subsection_title": "",
+                    "breadcrumb": "Guide",
+                    "global_sort_key": "02_guide",
+                    "chunk_type": "top_summary",
+                    "content_type": "text",
+                    "language_tag": "",
+                    "preceding_prose": "",
+                    "api_entities": [],
+                    "content": "The guide covers all core Vue concepts.",
+                },
+            ),
+            _make_hit(
+                chunk_id="guide/essentials/computed#section1",
+                content="Detail content here",
+                global_sort_key="02_guide/01_essentials/03_computed/01",
+            ),
+        ]
+        result = reconstruct_results(hits, max_results=5)
+        top_pos = result.index("**Topic Overview:**")
+        detail_pos = result.index("Detail content here")
+        assert top_pos < detail_pos
+
 
 class TestAdjacentMerging:
     def test_adjacent_same_section(self):

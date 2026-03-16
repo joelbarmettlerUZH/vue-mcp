@@ -131,7 +131,7 @@ def expand_cross_references(
     if final_page_paths:
         payloads = qdrant.get_by_file_paths(
             file_paths=final_page_paths,
-            chunk_types=["section", "subsection"],
+            chunk_types=["section", "subsection", "page_summary"],
         )
         for payload in payloads:
             chunk_id = payload.get("chunk_id", "")

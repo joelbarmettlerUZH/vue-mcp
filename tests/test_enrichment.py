@@ -1,7 +1,8 @@
-"""Tests for Day 9-10: Gemini client, contextual enrichment, and HyPE.
+"""Tests for Day 9-10-13: Gemini client, contextual enrichment, HyPE, and RAPTOR summaries.
 
 Covers GeminiClient (mocked HTTP), enrichment orchestration, HyPE question
-generation, HyPE embedding, HyPE indexing, and HyPE search resolution.
+generation, HyPE embedding, HyPE indexing, HyPE search resolution, and
+RAPTOR hierarchical summary generation (page, folder, top-level).
 No real API calls.
 """
 
@@ -847,3 +848,369 @@ class TestHypeSearchResolution:
 
         assert len(result) == 1
         assert result[0].chunk_id == "guide/ref#intro"
+
+
+# ---------------------------------------------------------------------------
+# Day 13: RAPTOR hierarchical summaries
+# ---------------------------------------------------------------------------
+
+
+class TestGeminiGenerateSummary:
+    @pytest.mark.asyncio
+    async def test_generate_page_summary(self):
+        client = GeminiClient(api_key="test-key")
+
+        with patch.object(
+            client, "generate",
+            new=AsyncMock(return_value=GeminiResponse(
+                text="This page covers computed properties in Vue 3.",
+                input_tokens=500, output_tokens=30,
+            )),
+        ):
+            result = await client.generate_summary(
+                "# Computed\n\nFull page content...",
+                level="page",
+                title="Computed Properties",
+            )
+
+        assert "computed" in result.lower()
+
+    @pytest.mark.asyncio
+    async def test_generate_folder_summary(self):
+        client = GeminiClient(api_key="test-key")
+
+        with patch.object(
+            client, "generate",
+            new=AsyncMock(return_value=GeminiResponse(
+                text="This section covers Vue essentials.",
+                input_tokens=300, output_tokens=20,
+            )),
+        ):
+            result = await client.generate_summary(
+                "**Reactivity:** ...\n\n**Computed:** ...",
+                level="folder",
+                title="Guide > Essentials",
+            )
+
+        assert "essentials" in result.lower()
+
+    @pytest.mark.asyncio
+    async def test_generate_top_summary(self):
+        client = GeminiClient(api_key="test-key")
+
+        with patch.object(
+            client, "generate",
+            new=AsyncMock(return_value=GeminiResponse(
+                text="The guide covers all core Vue concepts.",
+                input_tokens=200, output_tokens=15,
+            )),
+        ):
+            result = await client.generate_summary(
+                "**Essentials:** ...\n\n**Components:** ...",
+                level="top",
+                title="Guide",
+            )
+
+        assert len(result) > 0
+
+
+class TestGeneratePageSummaries:
+    @pytest.mark.asyncio
+    async def test_generates_one_summary_per_page(self):
+        from vue_docs_ingestion.enrichment import generate_page_summaries
+
+        chunks = [
+            _make_chunk(chunk_id="page#s1", file_path="guide/a.md", page_title="Page A"),
+            _make_chunk(chunk_id="page#s2", file_path="guide/a.md", page_title="Page A"),
+            _make_chunk(chunk_id="page2#s1", file_path="guide/b.md", page_title="Page B",
+                        folder_path="guide"),
+        ]
+        page_contents = {
+            "guide/a.md": "# Page A content",
+            "guide/b.md": "# Page B content",
+        }
+
+        client = GeminiClient(api_key="test-key")
+
+        async def fake_summary(content, *, level="page", title=""):
+            return f"Summary of {title}"
+
+        with patch.object(client, "generate_summary", side_effect=fake_summary):
+            summaries = await generate_page_summaries(chunks, page_contents, client)
+
+        assert len(summaries) == 2
+        assert all(s.chunk_type == ChunkType.PAGE_SUMMARY for s in summaries)
+        ids = {s.chunk_id for s in summaries}
+        assert "guide/a#page_summary" in ids
+        assert "guide/b#page_summary" in ids
+
+    @pytest.mark.asyncio
+    async def test_page_summary_inherits_metadata(self):
+        from vue_docs_ingestion.enrichment import generate_page_summaries
+
+        chunk = _make_chunk(
+            chunk_id="guide/essentials/computed#s1",
+            file_path="guide/essentials/computed.md",
+            folder_path="guide/essentials",
+            page_title="Computed Properties",
+        )
+        chunk.metadata.api_entities = ["computed"]
+        chunk.metadata.api_style = "composition"
+
+        page_contents = {"guide/essentials/computed.md": "# Computed"}
+        client = GeminiClient(api_key="test-key")
+
+        async def fake_summary(content, *, level="page", title=""):
+            return "Summary text"
+
+        with patch.object(client, "generate_summary", side_effect=fake_summary):
+            summaries = await generate_page_summaries([chunk], page_contents, client)
+
+        assert len(summaries) == 1
+        s = summaries[0]
+        assert s.metadata.folder_path == "guide/essentials"
+        assert s.metadata.page_title == "Computed Properties"
+        assert s.metadata.api_style == "composition"
+        assert "computed" in s.metadata.api_entities
+
+    @pytest.mark.asyncio
+    async def test_skips_pages_without_content(self):
+        from vue_docs_ingestion.enrichment import generate_page_summaries
+
+        chunks = [_make_chunk(file_path="guide/missing.md")]
+        page_contents = {}  # No content
+
+        client = GeminiClient(api_key="test-key")
+        summaries = await generate_page_summaries(chunks, page_contents, client)
+
+        assert len(summaries) == 0
+
+    @pytest.mark.asyncio
+    async def test_handles_llm_errors_gracefully(self):
+        from vue_docs_ingestion.enrichment import generate_page_summaries
+
+        chunks = [
+            _make_chunk(chunk_id="p1#s1", file_path="guide/a.md", page_title="A"),
+            _make_chunk(chunk_id="p2#s1", file_path="guide/b.md", page_title="B",
+                        folder_path="guide"),
+        ]
+        page_contents = {"guide/a.md": "# A", "guide/b.md": "# B"}
+        client = GeminiClient(api_key="test-key")
+
+        call_count = 0
+
+        async def flaky_summary(content, *, level="page", title=""):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                raise RuntimeError("API error")
+            return "Summary"
+
+        with patch.object(client, "generate_summary", side_effect=flaky_summary):
+            summaries = await generate_page_summaries(chunks, page_contents, client)
+
+        # One succeeds, one fails — should get 1 summary
+        assert len(summaries) == 1
+
+
+class TestGenerateFolderSummaries:
+    @pytest.mark.asyncio
+    async def test_generates_one_summary_per_folder(self):
+        from vue_docs_ingestion.enrichment import generate_folder_summaries
+
+        page_summaries = [
+            Chunk(
+                chunk_id="guide/essentials/computed#page_summary",
+                chunk_type=ChunkType.PAGE_SUMMARY,
+                content="Summary of computed",
+                metadata=ChunkMetadata(
+                    file_path="guide/essentials/computed.md",
+                    folder_path="guide/essentials",
+                    page_title="Computed Properties",
+                    global_sort_key="02_guide/01_essentials/03_computed",
+                ),
+            ),
+            Chunk(
+                chunk_id="guide/essentials/reactivity#page_summary",
+                chunk_type=ChunkType.PAGE_SUMMARY,
+                content="Summary of reactivity",
+                metadata=ChunkMetadata(
+                    file_path="guide/essentials/reactivity.md",
+                    folder_path="guide/essentials",
+                    page_title="Reactivity Fundamentals",
+                    global_sort_key="02_guide/01_essentials/02_reactivity",
+                ),
+            ),
+            Chunk(
+                chunk_id="guide/components/props#page_summary",
+                chunk_type=ChunkType.PAGE_SUMMARY,
+                content="Summary of props",
+                metadata=ChunkMetadata(
+                    file_path="guide/components/props.md",
+                    folder_path="guide/components",
+                    page_title="Props",
+                    global_sort_key="02_guide/02_components/01_props",
+                ),
+            ),
+        ]
+
+        client = GeminiClient(api_key="test-key")
+
+        async def fake_summary(content, *, level="folder", title=""):
+            return f"Folder summary for {title}"
+
+        with patch.object(client, "generate_summary", side_effect=fake_summary):
+            summaries = await generate_folder_summaries(page_summaries, client)
+
+        assert len(summaries) == 2
+        assert all(s.chunk_type == ChunkType.FOLDER_SUMMARY for s in summaries)
+        ids = {s.chunk_id for s in summaries}
+        assert "guide/essentials#folder_summary" in ids
+        assert "guide/components#folder_summary" in ids
+
+    @pytest.mark.asyncio
+    async def test_folder_summary_aggregates_entities(self):
+        from vue_docs_ingestion.enrichment import generate_folder_summaries
+
+        ps1 = Chunk(
+            chunk_id="g/e/a#page_summary",
+            chunk_type=ChunkType.PAGE_SUMMARY,
+            content="Summary A",
+            metadata=ChunkMetadata(
+                file_path="g/e/a.md", folder_path="g/e",
+                page_title="A", api_entities=["ref", "computed"],
+                global_sort_key="01",
+            ),
+        )
+        ps2 = Chunk(
+            chunk_id="g/e/b#page_summary",
+            chunk_type=ChunkType.PAGE_SUMMARY,
+            content="Summary B",
+            metadata=ChunkMetadata(
+                file_path="g/e/b.md", folder_path="g/e",
+                page_title="B", api_entities=["reactive", "ref"],
+                global_sort_key="02",
+            ),
+        )
+
+        client = GeminiClient(api_key="test-key")
+
+        async def fake_summary(content, *, level="folder", title=""):
+            return "Folder summary"
+
+        with patch.object(client, "generate_summary", side_effect=fake_summary):
+            summaries = await generate_folder_summaries([ps1, ps2], client)
+
+        assert len(summaries) == 1
+        entities = summaries[0].metadata.api_entities
+        assert "ref" in entities
+        assert "computed" in entities
+        assert "reactive" in entities
+
+
+class TestGenerateTopSummaries:
+    @pytest.mark.asyncio
+    async def test_generates_one_summary_per_top_level(self):
+        from vue_docs_ingestion.enrichment import generate_top_summaries
+
+        folder_summaries = [
+            Chunk(
+                chunk_id="guide/essentials#folder_summary",
+                chunk_type=ChunkType.FOLDER_SUMMARY,
+                content="Essentials summary",
+                metadata=ChunkMetadata(
+                    file_path="", folder_path="guide/essentials",
+                    page_title="Guide > Essentials",
+                    global_sort_key="02_guide/01_essentials",
+                ),
+            ),
+            Chunk(
+                chunk_id="guide/components#folder_summary",
+                chunk_type=ChunkType.FOLDER_SUMMARY,
+                content="Components summary",
+                metadata=ChunkMetadata(
+                    file_path="", folder_path="guide/components",
+                    page_title="Guide > Components",
+                    global_sort_key="02_guide/02_components",
+                ),
+            ),
+            Chunk(
+                chunk_id="api#folder_summary",
+                chunk_type=ChunkType.FOLDER_SUMMARY,
+                content="API summary",
+                metadata=ChunkMetadata(
+                    file_path="", folder_path="api",
+                    page_title="Api",
+                    global_sort_key="05_api",
+                ),
+            ),
+        ]
+
+        client = GeminiClient(api_key="test-key")
+
+        async def fake_summary(content, *, level="top", title=""):
+            return f"Top summary for {title}"
+
+        with patch.object(client, "generate_summary", side_effect=fake_summary):
+            summaries = await generate_top_summaries(folder_summaries, client)
+
+        assert len(summaries) == 2
+        assert all(s.chunk_type == ChunkType.TOP_SUMMARY for s in summaries)
+        ids = {s.chunk_id for s in summaries}
+        assert "guide#top_summary" in ids
+        assert "api#top_summary" in ids
+
+    @pytest.mark.asyncio
+    async def test_handles_single_level_folder_path(self):
+        from vue_docs_ingestion.enrichment import generate_top_summaries
+
+        folder_summaries = [
+            Chunk(
+                chunk_id="tutorial#folder_summary",
+                chunk_type=ChunkType.FOLDER_SUMMARY,
+                content="Tutorial summary",
+                metadata=ChunkMetadata(
+                    file_path="", folder_path="tutorial",
+                    page_title="Tutorial",
+                    global_sort_key="06_tutorial",
+                ),
+            ),
+        ]
+
+        client = GeminiClient(api_key="test-key")
+
+        async def fake_summary(content, *, level="top", title=""):
+            return "Top summary"
+
+        with patch.object(client, "generate_summary", side_effect=fake_summary):
+            summaries = await generate_top_summaries(folder_summaries, client)
+
+        assert len(summaries) == 1
+        assert summaries[0].chunk_id == "tutorial#top_summary"
+
+    @pytest.mark.asyncio
+    async def test_handles_llm_error(self):
+        from vue_docs_ingestion.enrichment import generate_top_summaries
+
+        folder_summaries = [
+            Chunk(
+                chunk_id="guide/essentials#folder_summary",
+                chunk_type=ChunkType.FOLDER_SUMMARY,
+                content="Essentials",
+                metadata=ChunkMetadata(
+                    file_path="", folder_path="guide/essentials",
+                    page_title="Essentials",
+                    global_sort_key="01",
+                ),
+            ),
+        ]
+
+        client = GeminiClient(api_key="test-key")
+
+        async def fail_summary(content, *, level="top", title=""):
+            raise RuntimeError("API down")
+
+        with patch.object(client, "generate_summary", side_effect=fail_summary):
+            summaries = await generate_top_summaries(folder_summaries, client)
+
+        assert len(summaries) == 0

@@ -127,6 +127,17 @@ def _render_hit(hit: SearchHit, show_heading: bool = True) -> list[str]:
     api_entities = payload.get("api_entities", [])
     cross_references = payload.get("cross_references", [])
 
+    # Summary chunks are rendered as blockquote introductions
+    if chunk_type in ("page_summary", "folder_summary", "top_summary"):
+        label = {
+            "page_summary": "Overview",
+            "folder_summary": "Section Overview",
+            "top_summary": "Topic Overview",
+        }[chunk_type]
+        parts.append(f"**{label}:** {content}")
+        parts.append("")
+        return parts
+
     # Section/subsection heading
     if show_heading:
         if subsection_title:
@@ -203,15 +214,33 @@ def reconstruct_results(
     # Build summary
     summary = _build_summary_line(selected)
 
+    # Separate folder/top summaries (no file_path) from page-level results
+    _SUMMARY_TYPES = {"folder_summary", "top_summary"}
+    high_level_summaries = [
+        h for h in selected if h.payload.get("chunk_type") in _SUMMARY_TYPES
+    ]
+    page_level_hits = [
+        h for h in selected if h.payload.get("chunk_type") not in _SUMMARY_TYPES
+    ]
+
     # Group by file_path (source page)
     sections: list[str] = []
 
+    # Render high-level summaries first (top > folder ordering)
+    if high_level_summaries:
+        for hl in high_level_summaries:
+            sections.append("\n".join(_render_hit(hl, show_heading=True)))
+
     for file_path, group in groupby(
-        selected, key=lambda h: h.payload.get("file_path", "")
+        page_level_hits, key=lambda h: h.payload.get("file_path", "")
     ):
         page_hits = list(group)
         if not page_hits:
             continue
+
+        # Place page_summary hits first, then the rest in sort key order
+        summaries = [h for h in page_hits if h.payload.get("chunk_type") == "page_summary"]
+        detail_hits = [h for h in page_hits if h.payload.get("chunk_type") != "page_summary"]
 
         page_title = page_hits[0].payload.get("page_title", file_path)
         url = _file_path_to_url(file_path)
@@ -221,8 +250,12 @@ def reconstruct_results(
         page_parts.append(f"Source: {url}")
         page_parts.append("")
 
-        # Merge adjacent hits
-        merged_groups = _merge_adjacent_hits(page_hits)
+        # Render page summary as introduction
+        for s in summaries:
+            page_parts.extend(_render_hit(s, show_heading=True))
+
+        # Merge adjacent detail hits
+        merged_groups = _merge_adjacent_hits(detail_hits)
 
         for merged in merged_groups:
             # First hit in group gets full heading

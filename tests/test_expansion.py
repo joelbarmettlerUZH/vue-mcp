@@ -102,7 +102,7 @@ class TestExpandCrossReferences:
         assert len(result) == 2
         qdrant.get_by_file_paths.assert_called_once_with(
             file_paths=["guide/essentials/forms.md"],
-            chunk_types=["section", "subsection"],
+            chunk_types=["section", "subsection", "page_summary"],
         )
 
     def test_mixed_targeted_and_page_level(self):

@@ -9,6 +9,11 @@ Day 10: HyPE (Hypothetical Question Generation) — for each chunk, generate
 3-5 hypothetical developer questions that the chunk would answer. These are
 embedded and stored as separate Qdrant points with parent_chunk_id references,
 bridging the vocabulary gap between developer queries and documentation text.
+
+Day 13: RAPTOR-inspired hierarchical summaries — generate page summaries
+(Layer 1) from leaf chunks, folder summaries (Layer 2) from page summaries,
+and top-level summaries (Layer 3) from folder summaries. All stored as chunks
+in the same Qdrant collection for unified retrieval.
 """
 
 import asyncio
@@ -16,7 +21,7 @@ import logging
 from collections import defaultdict
 
 from vue_docs_core.clients.gemini import GeminiClient
-from vue_docs_core.models.chunk import Chunk, ChunkType
+from vue_docs_core.models.chunk import Chunk, ChunkMetadata, ChunkType
 
 logger = logging.getLogger(__name__)
 
@@ -235,6 +240,261 @@ async def _generate_hype_page_chunks(
             errors += 1
 
     return generated, skipped, errors
+
+
+async def generate_page_summaries(
+    chunks: list[Chunk],
+    page_contents: dict[str, str],
+    gemini_client: GeminiClient,
+    *,
+    max_concurrent: int = 5,
+) -> list[Chunk]:
+    """Generate page-level summaries (RAPTOR Layer 1).
+
+    For each unique page in the chunk set, generates a 3-5 sentence summary
+    capturing what the page teaches, which APIs it covers, and what a developer
+    would learn from reading it.
+
+    Args:
+        chunks: All leaf chunks (used to derive page metadata).
+        page_contents: Mapping of file_path → full raw markdown content.
+        gemini_client: Initialized Gemini client.
+        max_concurrent: Max concurrent Gemini requests.
+
+    Returns:
+        List of page summary Chunk objects.
+    """
+    # Collect metadata per page from the first chunk of each file
+    page_meta: dict[str, Chunk] = {}
+    page_entities: dict[str, set[str]] = defaultdict(set)
+    for chunk in chunks:
+        fp = chunk.metadata.file_path
+        if fp not in page_meta and chunk.chunk_type in _ENRICHABLE_TYPES:
+            page_meta[fp] = chunk
+        for entity in chunk.metadata.api_entities:
+            page_entities[fp].add(entity)
+
+    sem = asyncio.Semaphore(max_concurrent)
+    summaries: list[Chunk] = []
+    errors = 0
+
+    async def summarize_page(file_path: str) -> Chunk | None:
+        nonlocal errors
+        content = page_contents.get(file_path, "")
+        if not content:
+            logger.warning("No page content for %s, skipping summary", file_path)
+            return None
+
+        ref_chunk = page_meta[file_path]
+        page_title = ref_chunk.metadata.page_title
+
+        async with sem:
+            try:
+                summary_text = await gemini_client.generate_summary(
+                    content, level="page", title=page_title,
+                )
+            except Exception as exc:
+                logger.warning("Failed to generate page summary for %s: %s", file_path, exc)
+                errors += 1
+                return None
+
+        # Build chunk ID: strip .md and append #page_summary
+        chunk_id = file_path.removesuffix(".md") + "#page_summary"
+        return Chunk(
+            chunk_id=chunk_id,
+            chunk_type=ChunkType.PAGE_SUMMARY,
+            content=summary_text,
+            metadata=ChunkMetadata(
+                file_path=file_path,
+                folder_path=ref_chunk.metadata.folder_path,
+                page_title=page_title,
+                section_title="",
+                breadcrumb=page_title,
+                global_sort_key=ref_chunk.metadata.global_sort_key,
+                api_style=ref_chunk.metadata.api_style,
+                api_entities=sorted(page_entities.get(file_path, set())),
+            ),
+        )
+
+    tasks = [summarize_page(fp) for fp in page_meta]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    for result in results:
+        if isinstance(result, Exception):
+            logger.error("Page summary task failed: %s", result)
+            errors += 1
+        elif result is not None:
+            summaries.append(result)
+
+    logger.info(
+        "Generated %d page summaries (%d errors)", len(summaries), errors,
+    )
+    return summaries
+
+
+async def generate_folder_summaries(
+    page_summaries: list[Chunk],
+    gemini_client: GeminiClient,
+    *,
+    max_concurrent: int = 5,
+) -> list[Chunk]:
+    """Generate folder-level summaries (RAPTOR Layer 2).
+
+    For each unique folder, concatenates all page summaries within it and
+    generates a 3-5 sentence summary capturing the section's theme.
+
+    Args:
+        page_summaries: Page summary Chunk objects from Layer 1.
+        gemini_client: Initialized Gemini client.
+        max_concurrent: Max concurrent Gemini requests.
+
+    Returns:
+        List of folder summary Chunk objects.
+    """
+    # Group page summaries by folder
+    by_folder: dict[str, list[Chunk]] = defaultdict(list)
+    for ps in page_summaries:
+        by_folder[ps.metadata.folder_path].append(ps)
+
+    sem = asyncio.Semaphore(max_concurrent)
+    summaries: list[Chunk] = []
+    errors = 0
+
+    async def summarize_folder(folder_path: str, folder_pages: list[Chunk]) -> Chunk | None:
+        nonlocal errors
+        # Sort by sort key for logical ordering
+        folder_pages.sort(key=lambda c: c.metadata.global_sort_key)
+
+        # Concatenate page summaries with titles
+        parts = []
+        for ps in folder_pages:
+            parts.append(f"**{ps.metadata.page_title}:** {ps.content}")
+        combined = "\n\n".join(parts)
+
+        # Derive folder title from folder path
+        folder_title = folder_path.replace("/", " > ").title()
+
+        async with sem:
+            try:
+                summary_text = await gemini_client.generate_summary(
+                    combined, level="folder", title=folder_title,
+                )
+            except Exception as exc:
+                logger.warning("Failed to generate folder summary for %s: %s", folder_path, exc)
+                errors += 1
+                return None
+
+        # Aggregate entities from all pages in folder
+        all_entities: set[str] = set()
+        for ps in folder_pages:
+            all_entities.update(ps.metadata.api_entities)
+
+        # Use first page's sort key prefix for folder-level ordering
+        sort_key = folder_pages[0].metadata.global_sort_key if folder_pages else folder_path
+
+        chunk_id = f"{folder_path}#folder_summary"
+        return Chunk(
+            chunk_id=chunk_id,
+            chunk_type=ChunkType.FOLDER_SUMMARY,
+            content=summary_text,
+            metadata=ChunkMetadata(
+                file_path="",
+                folder_path=folder_path,
+                page_title=folder_title,
+                section_title="",
+                breadcrumb=folder_title,
+                global_sort_key=sort_key,
+                api_entities=sorted(all_entities),
+            ),
+        )
+
+    tasks = [summarize_folder(fp, pages) for fp, pages in by_folder.items()]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    for result in results:
+        if isinstance(result, Exception):
+            logger.error("Folder summary task failed: %s", result)
+            errors += 1
+        elif result is not None:
+            summaries.append(result)
+
+    logger.info(
+        "Generated %d folder summaries (%d errors)", len(summaries), errors,
+    )
+    return summaries
+
+
+async def generate_top_summaries(
+    folder_summaries: list[Chunk],
+    gemini_client: GeminiClient,
+) -> list[Chunk]:
+    """Generate top-level summaries (RAPTOR Layer 3).
+
+    For each top-level documentation area (guide, api, tutorial, examples),
+    generates a 2-3 sentence summary from the folder summaries.
+
+    Args:
+        folder_summaries: Folder summary Chunk objects from Layer 2.
+        gemini_client: Initialized Gemini client.
+
+    Returns:
+        List of top-level summary Chunk objects.
+    """
+    # Group folder summaries by top-level path segment
+    by_top: dict[str, list[Chunk]] = defaultdict(list)
+    for fs in folder_summaries:
+        top = fs.metadata.folder_path.split("/")[0] if "/" in fs.metadata.folder_path else fs.metadata.folder_path
+        by_top[top].append(fs)
+
+    summaries: list[Chunk] = []
+    errors = 0
+
+    for top_path, top_folders in by_top.items():
+        top_folders.sort(key=lambda c: c.metadata.global_sort_key)
+
+        parts = []
+        for fs in top_folders:
+            parts.append(f"**{fs.metadata.page_title}:** {fs.content}")
+        combined = "\n\n".join(parts)
+
+        top_title = top_path.replace("/", " > ").title()
+
+        try:
+            summary_text = await gemini_client.generate_summary(
+                combined, level="top", title=top_title,
+            )
+        except Exception as exc:
+            logger.warning("Failed to generate top summary for %s: %s", top_path, exc)
+            errors += 1
+            continue
+
+        # Aggregate entities
+        all_entities: set[str] = set()
+        for fs in top_folders:
+            all_entities.update(fs.metadata.api_entities)
+
+        sort_key = top_folders[0].metadata.global_sort_key if top_folders else top_path
+
+        chunk_id = f"{top_path}#top_summary"
+        summaries.append(Chunk(
+            chunk_id=chunk_id,
+            chunk_type=ChunkType.TOP_SUMMARY,
+            content=summary_text,
+            metadata=ChunkMetadata(
+                file_path="",
+                folder_path=top_path,
+                page_title=top_title,
+                section_title="",
+                breadcrumb=top_title,
+                global_sort_key=sort_key,
+                api_entities=sorted(all_entities),
+            ),
+        ))
+
+    logger.info(
+        "Generated %d top summaries (%d errors)", len(summaries), errors,
+    )
+    return summaries
 
 
 async def _enrich_page_chunks(

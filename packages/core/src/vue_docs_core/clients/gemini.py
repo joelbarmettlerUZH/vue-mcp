@@ -374,6 +374,64 @@ class GeminiClient:
         questions = result.arguments.get("questions", [])
         return [q for q in questions if isinstance(q, str) and q.strip()][:num_questions]
 
+    async def generate_summary(
+        self,
+        content: str,
+        *,
+        level: str = "page",
+        title: str = "",
+    ) -> str:
+        """Generate a summary for a page, folder, or top-level section.
+
+        Args:
+            content: The content to summarize. For pages, this is the full
+                markdown. For folders, concatenated page summaries. For
+                top-level, concatenated folder summaries.
+            level: One of "page", "folder", or "top".
+            title: The title of the page/folder/section being summarized.
+
+        Returns:
+            A 3-5 sentence summary string.
+        """
+        level_instructions = {
+            "page": (
+                "Generate a 3-5 sentence summary of this Vue.js documentation page. "
+                "The summary should capture what the page teaches, which APIs it covers, "
+                "and what a developer would learn from reading it. Be specific about "
+                "Vue concepts and API names mentioned."
+            ),
+            "folder": (
+                "Generate a 3-5 sentence summary of this Vue.js documentation section. "
+                "You are given summaries of all pages within this section. "
+                "Capture the overall theme, the key concepts taught, and the progression "
+                "of topics. Mention the most important APIs and patterns covered."
+            ),
+            "top": (
+                "Generate a 2-3 sentence summary of this top-level Vue.js documentation area. "
+                "You are given summaries of all sub-sections. Capture the overall purpose "
+                "and scope of this documentation area at a high level."
+            ),
+        }
+
+        system_instruction = (
+            "You are a Vue.js documentation expert. "
+            + level_instructions.get(level, level_instructions["page"])
+            + "\n\nOutput ONLY the summary, nothing else."
+        )
+
+        title_prefix = f'Summary for "{title}":\n\n' if title else ""
+        prompt = f"{title_prefix}CONTENT:\n{content}"
+
+        max_tokens = 200 if level == "top" else 300
+
+        result = await self.generate(
+            prompt,
+            system_instruction=system_instruction,
+            temperature=0.0,
+            max_output_tokens=max_tokens,
+        )
+        return result.text
+
     async def enrich_chunk(
         self,
         page_content: str,
