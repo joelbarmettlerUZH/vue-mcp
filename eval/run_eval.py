@@ -1,8 +1,8 @@
 """Run evaluation: query the search pipeline and judge results with an LLM.
 
-Loads questions from questions.json, runs each through the MCP server's search
-pipeline, then uses Gemini as an LLM judge to score retrieval quality and
-answer correctness.
+Loads questions from questions.json, runs each through the MCP server's
+actual search pipeline (vue_docs_search), then uses Gemini as an LLM judge
+to score retrieval quality and answer correctness.
 
 Usage:
     uv run python eval/run_eval.py
@@ -23,12 +23,8 @@ from pathlib import Path
 import httpx
 
 from vue_docs_core.config import settings
-from vue_docs_core.clients.jina import JinaClient, TASK_RETRIEVAL_QUERY
-from vue_docs_core.clients.bm25 import BM25Model
-from vue_docs_core.clients.qdrant import QdrantDocClient
-from vue_docs_core.models.entity import EntityIndex, ApiEntity
-from vue_docs_core.retrieval.entity_matcher import EntityMatcher
-from vue_docs_core.retrieval.reconstruction import reconstruct_results
+from vue_docs_server.startup import startup, shutdown
+from vue_docs_server.tools.search import vue_docs_search
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -106,93 +102,13 @@ def load_questions(path: Path) -> list[dict]:
     return questions
 
 
-def load_server_state() -> tuple[QdrantDocClient, BM25Model, EntityMatcher]:
-    """Load server state for running searches."""
-    data_path = Path(settings.data_path)
-
-    # Entity index
-    dict_path = data_path / "entity_dictionary.json"
-    entity_index = EntityIndex()
-    if dict_path.exists():
-        with open(dict_path) as f:
-            raw = json.load(f)
-        entities = {}
-        for name, info in raw.items():
-            entities[name] = ApiEntity(
-                name=name,
-                entity_type=info.get("entity_type", "other"),
-                page_path=info.get("page_path", ""),
-                section=info.get("section", ""),
-                related=info.get("related", []),
-            )
-        entity_index = EntityIndex(entities=entities)
-        logger.info("Loaded %d API entities", len(entities))
-
-    # Synonym table
-    syn_path = data_path / "synonym_table.json"
-    synonym_table: dict[str, list[str]] = {}
-    if syn_path.exists():
-        with open(syn_path) as f:
-            synonym_table = json.load(f)
-
-    # BM25
-    bm25 = BM25Model()
-    bm25_path = data_path / "bm25_model"
-    if bm25_path.exists():
-        bm25.load(bm25_path)
-        logger.info("BM25 model loaded")
-
-    # Entity matcher
-    matcher = EntityMatcher(entity_index=entity_index, synonym_table=synonym_table)
-
-    # Qdrant
-    qdrant = QdrantDocClient()
-    info = qdrant.collection_info()
-    logger.info("Qdrant connected: %d points", info["points_count"])
-
-    return qdrant, bm25, matcher
-
-
 async def run_search(
     query: str,
-    qdrant: QdrantDocClient,
-    bm25: BM25Model,
-    matcher: EntityMatcher,
-    max_results: int = 3,
-    retrieval_limit: int = 50,
+    max_results: int = 10,
 ) -> tuple[str, float]:
-    """Run a single search query and return (results_text, latency_seconds)."""
+    """Run a single search query through the actual server pipeline."""
     start = time.monotonic()
-
-    # Embed query
-    jina = JinaClient()
-    try:
-        embed_result = await jina.embed([query], task=TASK_RETRIEVAL_QUERY)
-        if not embed_result.embeddings:
-            return "Error: embedding failed", time.monotonic() - start
-        dense_vector = embed_result.embeddings[0]
-    finally:
-        await jina.close()
-
-    # BM25 sparse vector
-    sparse_vector = bm25.get_query_sparse_vector(query)
-
-    # Entity detection for boosting
-    match_result = matcher.match(query)
-    entity_boost = match_result.entities if match_result.entities else None
-
-    # Hybrid search — retrieve wide candidate pool for reranking
-    hits = qdrant.hybrid_search(
-        dense_vector=dense_vector,
-        sparse_vector=sparse_vector,
-        limit=retrieval_limit,
-        entity_boost=entity_boost,
-    )
-
-    if not hits:
-        return "No results found.", time.monotonic() - start
-
-    result_text = reconstruct_results(hits, max_results=max_results)
+    result_text = await vue_docs_search(query, max_results=max_results)
     latency = time.monotonic() - start
     return result_text, latency
 
@@ -208,8 +124,7 @@ def judge_result(
     model = model or settings.gemini_flash_lite_model
     api_key = settings.gemini_api_key
     if not api_key:
-        logger.error("GEMINI_API_KEY not set")
-        return {"relevance": 0, "completeness": 0, "correctness": 0, "api_coverage": 0, "explanation": "No API key"}
+        raise RuntimeError("GEMINI_API_KEY not set")
 
     prompt = JUDGE_PROMPT.format(
         question=question,
@@ -222,7 +137,7 @@ def judge_result(
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
-            "temperature": 0.1,
+            "temperature": 0.0,
             "maxOutputTokens": 1000,
         },
         "tools": [{"function_declarations": [JUDGE_FUNCTION]}],
@@ -236,12 +151,18 @@ def judge_result(
 
     with httpx.Client(timeout=60.0) as client:
         response = client.post(url, json=payload)
+        if response.status_code >= 500:
+            raise httpx.HTTPStatusError(
+                f"Server error {response.status_code}",
+                request=response.request,
+                response=response,
+            )
         response.raise_for_status()
 
     data = response.json()
     candidates = data.get("candidates", [])
     if not candidates:
-        return {"relevance": 0, "completeness": 0, "correctness": 0, "api_coverage": 0, "explanation": "No response"}
+        raise RuntimeError("Gemini returned no candidates for judging")
 
     # Extract function call arguments
     parts = candidates[0].get("content", {}).get("parts", [])
@@ -254,15 +175,37 @@ def judge_result(
             scores.setdefault("explanation", "")
             return scores
 
-    logger.warning("Gemini did not return a function call for judging")
-    return {"relevance": 0, "completeness": 0, "correctness": 0, "api_coverage": 0, "explanation": "No function call"}
+    # Fallback: parse scores from text response if no function call
+    for part in parts:
+        if "text" in part:
+            return _parse_scores_from_text(part["text"])
+
+    # Fallback: parse from MALFORMED_FUNCTION_CALL finishMessage
+    finish_msg = candidates[0].get("finishMessage", "")
+    if finish_msg:
+        return _parse_scores_from_text(finish_msg)
+
+    raise RuntimeError(f"Gemini returned no usable content: {json.dumps(candidates[0])[:300]}")
+
+
+def _parse_scores_from_text(text: str) -> dict:
+    """Best-effort extraction of scores from a text response."""
+    import re
+
+    scores: dict = {"explanation": text[:200]}
+    for dim in ("relevance", "completeness", "correctness", "api_coverage"):
+        # Match patterns like "relevance=4", "relevance: 4", "**relevance**: 3/5"
+        match = re.search(rf"{dim}\s*[=:]\s*(\d)", text.lower())
+        scores[dim] = int(match.group(1)) if match else 0
+
+    if all(scores.get(d, 0) == 0 for d in ("relevance", "completeness", "correctness", "api_coverage")):
+        raise RuntimeError(f"Could not parse scores from text response: {text[:100]}")
+
+    return scores
 
 
 async def run_evaluation(
     questions: list[dict],
-    qdrant: QdrantDocClient,
-    bm25: BM25Model,
-    matcher: EntityMatcher,
     judge_model: str | None = None,
     max_results: int = 10,
 ) -> list[dict]:
@@ -284,7 +227,7 @@ async def run_evaluation(
         # Run search
         try:
             retrieved_context, latency = await run_search(
-                question, qdrant, bm25, matcher, max_results=max_results
+                question, max_results=max_results
             )
         except Exception as e:
             logger.error("Search failed for '%s': %s", question[:50], e)
@@ -298,18 +241,24 @@ async def run_evaluation(
             })
             continue
 
-        # Judge with LLM
-        try:
-            scores = judge_result(
-                question=question,
-                expected_answer=expected_answer,
-                relevant_apis=relevant_apis,
-                retrieved_context=retrieved_context,
-                model=judge_model,
-            )
-        except Exception as e:
-            logger.error("Judging failed for '%s': %s", question[:50], e)
-            scores = {"relevance": 0, "completeness": 0, "correctness": 0, "api_coverage": 0, "explanation": str(e)}
+        # Judge with LLM (retry up to 5 times on transient errors)
+        scores = None
+        for attempt in range(5):
+            try:
+                scores = judge_result(
+                    question=question,
+                    expected_answer=expected_answer,
+                    relevant_apis=relevant_apis,
+                    retrieved_context=retrieved_context,
+                    model=judge_model,
+                )
+                break
+            except Exception as e:
+                logger.warning("Judging attempt %d failed for '%s': %s", attempt + 1, question[:50], e)
+                if attempt < 4:
+                    await asyncio.sleep(2 ** attempt)
+                else:
+                    raise
 
         results.append({
             "question": question,
@@ -463,19 +412,16 @@ async def main_async(args: argparse.Namespace) -> None:
         questions = questions[: args.max_questions]
         logger.info("Limited to %d questions", len(questions))
 
-    qdrant, bm25, matcher = load_server_state()
+    startup()
 
     try:
         results = await run_evaluation(
             questions=questions,
-            qdrant=qdrant,
-            bm25=bm25,
-            matcher=matcher,
             judge_model=args.judge_model,
             max_results=args.max_results,
         )
     finally:
-        qdrant.close()
+        shutdown()
 
     metrics = compute_metrics(results)
 
@@ -498,6 +444,7 @@ async def main_async(args: argparse.Namespace) -> None:
                     "max_results": args.max_results,
                     "judge_model": args.judge_model or settings.gemini_flash_lite_model,
                     "embedding_model": settings.jina_embedding_model,
+                    "reranker_model": settings.jina_reranker_model,
                     "total_questions": len(questions),
                 },
                 "metrics": metrics,

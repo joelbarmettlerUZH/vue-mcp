@@ -3,6 +3,7 @@
 import logging
 
 from vue_docs_core.clients.jina import JinaClient, TASK_RETRIEVAL_QUERY
+from vue_docs_core.clients.qdrant import SearchHit
 from vue_docs_core.retrieval.reconstruction import reconstruct_results
 
 from vue_docs_server.startup import state
@@ -14,6 +15,11 @@ logger = logging.getLogger(__name__)
 # This should be large enough to give the reranker a good candidate pool.
 _RETRIEVAL_LIMIT = 50
 
+# Minimum reranker relevance score to include a result.
+# Based on observed score distributions: relevant chunks score > 0,
+# irrelevant ones go negative.
+_RERANK_MIN_SCORE = 0.01
+
 
 async def vue_docs_search(
     query: str,
@@ -23,8 +29,9 @@ async def vue_docs_search(
     """Search the Vue.js documentation.
 
     Performs hybrid dense+sparse search over the indexed Vue documentation,
-    returning reconstructed, readable documentation fragments ordered by
-    the documentation's natural reading flow.
+    reranks candidates with Jina reranker v3, and returns reconstructed,
+    readable documentation fragments ordered by the documentation's natural
+    reading flow.
 
     Args:
         query: The search query — a developer question or topic.
@@ -42,50 +49,122 @@ async def vue_docs_search(
 
     max_results = max(1, min(20, max_results))
 
-    # Embed the query
     jina = JinaClient()
     try:
+        # Embed the query
         embed_result = await jina.embed([query], task=TASK_RETRIEVAL_QUERY)
         if not embed_result.embeddings:
             return "Error: Failed to generate query embedding."
         dense_vector = embed_result.embeddings[0]
+
+        # Generate BM25 sparse vector
+        sparse_vector = state.bm25.get_query_sparse_vector(query)
+
+        # Detect API entities in query for boosting
+        entity_boost = _detect_entities(query)
+
+        # Run hybrid search — retrieve a wide candidate pool for reranking
+        scope_filter = scope if scope != "all" else None
+        hits = state.qdrant.hybrid_search(
+            dense_vector=dense_vector,
+            sparse_vector=sparse_vector,
+            limit=_RETRIEVAL_LIMIT,
+            scope_filter=scope_filter,
+            entity_boost=entity_boost if entity_boost else None,
+        )
+
+        if not hits:
+            # Retry with broader scope if scoped search yielded nothing
+            if scope_filter:
+                logger.info("No results for scope '%s', retrying with all", scope)
+                hits = state.qdrant.hybrid_search(
+                    dense_vector=dense_vector,
+                    sparse_vector=sparse_vector,
+                    limit=_RETRIEVAL_LIMIT,
+                    entity_boost=entity_boost if entity_boost else None,
+                )
+
+        if not hits:
+            return f"No documentation found for: {query}"
+
+        # Resolve HyPE question hits to their parent chunks
+        hits = _resolve_hype_hits(hits)
+
+        # Rerank candidates with Jina reranker v3
+        hits = await _rerank_hits(jina, query, hits)
     finally:
         await jina.close()
 
-    # Generate BM25 sparse vector
-    sparse_vector = state.bm25.get_query_sparse_vector(query)
-
-    # Detect API entities in query for boosting
-    entity_boost = _detect_entities(query)
-
-    # Run hybrid search — retrieve a wide candidate pool for reranking
-    scope_filter = scope if scope != "all" else None
-    hits = state.qdrant.hybrid_search(
-        dense_vector=dense_vector,
-        sparse_vector=sparse_vector,
-        limit=_RETRIEVAL_LIMIT,
-        scope_filter=scope_filter,
-        entity_boost=entity_boost if entity_boost else None,
-    )
-
-    if not hits:
-        # Retry with broader scope if scoped search yielded nothing
-        if scope_filter:
-            logger.info("No results for scope '%s', retrying with all", scope)
-            hits = state.qdrant.hybrid_search(
-                dense_vector=dense_vector,
-                sparse_vector=sparse_vector,
-                limit=_RETRIEVAL_LIMIT,
-                entity_boost=entity_boost if entity_boost else None,
-            )
+    # Discard low-relevance results after reranking
+    hits = [h for h in hits if h.score >= _RERANK_MIN_SCORE]
 
     if not hits:
         return f"No documentation found for: {query}"
 
-    # Resolve HyPE question hits to their parent chunks
-    hits = _resolve_hype_hits(hits)
-
     return reconstruct_results(hits, max_results=max_results)
+
+
+async def _rerank_hits(
+    jina: JinaClient,
+    query: str,
+    hits: list[SearchHit],
+) -> list[SearchHit]:
+    """Rerank candidate hits using Jina reranker v3.
+
+    Sends all candidates through the listwise reranker and returns hits
+    reordered by reranker relevance. Falls back to the original ordering
+    on failure.
+
+    Args:
+        jina: Active JinaClient instance.
+        query: The original search query.
+        hits: Candidate hits after HyPE resolution, sorted by fusion score.
+
+    Returns:
+        Reranked hits.
+    """
+    if not hits:
+        return hits
+
+    # Build document texts for the reranker — use content with breadcrumb context
+    documents = []
+    for hit in hits:
+        payload = hit.payload
+        breadcrumb = payload.get("breadcrumb", "")
+        content = payload.get("content", "")
+        preceding_prose = payload.get("preceding_prose", "")
+
+        # For code blocks, include the preceding prose for context
+        if payload.get("chunk_type") == "code_block" and preceding_prose:
+            doc_text = f"{breadcrumb}\n{preceding_prose}\n{content}"
+        elif breadcrumb:
+            doc_text = f"{breadcrumb}\n{content}"
+        else:
+            doc_text = content
+        documents.append(doc_text)
+
+    try:
+        result = await jina.rerank(query=query, documents=documents)
+
+        # Rebuild hits list in reranked order with reranker scores
+        reranked: list[SearchHit] = []
+        for idx, score in zip(result.indices, result.scores):
+            hit = hits[idx]
+            reranked.append(SearchHit(
+                chunk_id=hit.chunk_id,
+                score=score,
+                payload=hit.payload,
+            ))
+
+        logger.info(
+            "Reranked %d candidates (tokens: %d)",
+            len(hits), result.total_tokens,
+        )
+        return reranked
+
+    except Exception:
+        logger.warning("Reranking failed, falling back to fusion scores", exc_info=True)
+        return hits
 
 
 def _resolve_hype_hits(hits: list) -> list:
@@ -95,8 +174,6 @@ def _resolve_hype_hits(hits: list) -> list:
     parent chunk for inclusion in results. Deduplicates by chunk_id,
     keeping the highest score.
     """
-    from vue_docs_core.clients.qdrant import SearchHit
-
     resolved: list[SearchHit] = []
     seen_chunk_ids: dict[str, float] = {}
     parent_ids_to_fetch: list[str] = []

@@ -15,6 +15,7 @@ import pytest
 from fastmcp import Client
 from qdrant_client.models import SparseVector
 
+from vue_docs_core.clients.jina import RerankResult
 from vue_docs_core.clients.qdrant import SearchHit
 from vue_docs_core.models.entity import ApiEntity, EntityIndex, EntityType
 from vue_docs_core.retrieval.reconstruction import (
@@ -765,6 +766,9 @@ class TestSearchTool:
         with patch("vue_docs_server.tools.search.JinaClient") as MockJina:
             mock_jina_instance = AsyncMock()
             mock_jina_instance.embed.return_value = mock_embed_result
+            mock_jina_instance.rerank.return_value = RerankResult(
+                indices=[0], scores=[0.9], total_tokens=100,
+            )
             mock_jina_instance.close = AsyncMock()
             MockJina.return_value = mock_jina_instance
 
@@ -816,6 +820,9 @@ class TestSearchTool:
         with patch("vue_docs_server.tools.search.JinaClient") as MockJina:
             mock_jina_instance = AsyncMock()
             mock_jina_instance.embed.return_value = mock_embed_result
+            mock_jina_instance.rerank.return_value = RerankResult(
+                indices=[0], scores=[0.9], total_tokens=100,
+            )
             mock_jina_instance.close = AsyncMock()
             MockJina.return_value = mock_jina_instance
 
@@ -974,6 +981,9 @@ class TestMCPIntegration:
         ):
             mock_jina = AsyncMock()
             mock_jina.embed.return_value = mock_embed_result
+            mock_jina.rerank.return_value = RerankResult(
+                indices=[0], scores=[0.9], total_tokens=100,
+            )
             mock_jina.close = AsyncMock()
             MockJina.return_value = mock_jina
 
