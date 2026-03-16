@@ -173,11 +173,7 @@ def _entity_type_for_file(file_stem: str, name: str) -> EntityType:
 
 
 def build_api_dictionary(api_dir: Path) -> dict[str, ApiEntity]:
-    """Scan H2 headings in all API markdown files to build the entity dictionary.
-
-    Returns:
-        Dict mapping normalized API names to :class:`ApiEntity` objects.
-    """
+    """Scan H2 headings in all API markdown files to build the entity dictionary."""
     md = MarkdownIt()
     dictionary: dict[str, ApiEntity] = {}
 

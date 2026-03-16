@@ -94,9 +94,6 @@ class EntityMatcher:
         2. Bigram matching for compound camelCase names
         3. Synonym/alias table lookup
         4. Fuzzy matching (Levenshtein) for typo tolerance
-
-        Returns:
-            EntityMatchResult with deduplicated entity names and match sources.
         """
         result = EntityMatchResult()
 

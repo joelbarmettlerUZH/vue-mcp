@@ -20,9 +20,20 @@ import asyncio
 import logging
 from collections import defaultdict
 
+from pydantic import BaseModel
+
 from vue_docs_core.clients.gemini import GeminiClient
 from vue_docs_core.config import PAGE_CONCURRENCY
 from vue_docs_core.models.chunk import Chunk, ChunkMetadata, ChunkType
+
+
+class EnrichmentResult(BaseModel):
+    """Result counts from an enrichment or HyPE generation pass."""
+
+    enriched: int
+    skipped: int
+    errors: int
+
 
 logger = logging.getLogger(__name__)
 
@@ -41,15 +52,12 @@ async def enrich_chunks_contextual(
     gemini_client: GeminiClient,
     *,
     max_concurrent_pages: int = 3,
-) -> tuple[int, int, int]:
+) -> EnrichmentResult:
     """Add contextual prefixes to all enrichable chunks.
 
     Groups chunks by page, then for each page sends the full page content
     as context to Gemini along with each chunk. Gemini's implicit caching
     benefits from the repeated page prefix across chunks from the same page.
-
-    Returns:
-        Tuple of (enriched_count, skipped_count, error_count).
     """
     # Group chunks by source file
     chunks_by_file: dict[str, list[Chunk]] = defaultdict(list)
@@ -64,11 +72,11 @@ async def enrich_chunks_contextual(
     # Use a semaphore to limit concurrent page processing
     page_sem = asyncio.Semaphore(max_concurrent_pages)
 
-    async def process_page(file_path: str, page_chunks: list[Chunk]) -> tuple[int, int, int]:
+    async def process_page(file_path: str, page_chunks: list[Chunk]) -> EnrichmentResult:
         page_content = page_contents.get(file_path, "")
         if not page_content:
             logger.warning("No page content for %s, skipping enrichment", file_path)
-            return 0, len(page_chunks), 0
+            return EnrichmentResult(enriched=0, skipped=len(page_chunks), errors=0)
 
         page_title = page_chunks[0].metadata.page_title if page_chunks else file_path
 
@@ -91,16 +99,15 @@ async def enrich_chunks_contextual(
             logger.error("Page enrichment failed: %s", result)
             errors += 1
         else:
-            e, s, err = result
-            enriched += e
-            skipped += s
-            errors += err
+            enriched += result.enriched
+            skipped += result.skipped
+            errors += result.errors
 
     # Count non-enrichable chunks as skipped
     non_enrichable = sum(1 for c in chunks if c.chunk_type not in _ENRICHABLE_TYPES)
     skipped += non_enrichable
 
-    return enriched, skipped, errors
+    return EnrichmentResult(enriched=enriched, skipped=skipped, errors=errors)
 
 
 async def generate_hype_questions(
@@ -110,14 +117,11 @@ async def generate_hype_questions(
     *,
     max_concurrent_pages: int = 3,
     num_questions: int = 5,
-) -> tuple[int, int, int]:
+) -> EnrichmentResult:
     """Generate hypothetical questions for all enrichable chunks.
 
     Groups chunks by page, then for each page generates HyPE questions
     using Gemini. Questions are stored in chunk.hype_questions.
-
-    Returns:
-        Tuple of (generated_count, skipped_count, error_count).
     """
     chunks_by_file: dict[str, list[Chunk]] = defaultdict(list)
     for chunk in chunks:
@@ -130,11 +134,11 @@ async def generate_hype_questions(
 
     page_sem = asyncio.Semaphore(max_concurrent_pages)
 
-    async def process_page(file_path: str, page_chunks: list[Chunk]) -> tuple[int, int, int]:
+    async def process_page(file_path: str, page_chunks: list[Chunk]) -> EnrichmentResult:
         page_content = page_contents.get(file_path, "")
         if not page_content:
             logger.warning("No page content for %s, skipping HyPE", file_path)
-            return 0, len(page_chunks), 0
+            return EnrichmentResult(enriched=0, skipped=len(page_chunks), errors=0)
 
         page_title = page_chunks[0].metadata.page_title if page_chunks else file_path
 
@@ -157,15 +161,14 @@ async def generate_hype_questions(
             logger.error("Page HyPE generation failed: %s", result)
             errors += 1
         else:
-            g, s, err = result
-            generated += g
-            skipped += s
-            errors += err
+            generated += result.enriched
+            skipped += result.skipped
+            errors += result.errors
 
     non_enrichable = sum(1 for c in chunks if c.chunk_type not in _ENRICHABLE_TYPES)
     skipped += non_enrichable
 
-    return generated, skipped, errors
+    return EnrichmentResult(enriched=generated, skipped=skipped, errors=errors)
 
 
 async def _generate_hype_page_chunks(
@@ -174,7 +177,7 @@ async def _generate_hype_page_chunks(
     page_chunks: list[Chunk],
     gemini_client: GeminiClient,
     num_questions: int = 5,
-) -> tuple[int, int, int]:
+) -> EnrichmentResult:
     """Generate HyPE questions for all chunks from a single page."""
     generated = 0
     skipped = 0
@@ -217,7 +220,7 @@ async def _generate_hype_page_chunks(
         else:
             errors += 1
 
-    return generated, skipped, errors
+    return EnrichmentResult(enriched=generated, skipped=skipped, errors=errors)
 
 
 async def generate_page_summaries(
@@ -232,9 +235,6 @@ async def generate_page_summaries(
     For each unique page in the chunk set, generates a 3-5 sentence summary
     capturing what the page teaches, which APIs it covers, and what a developer
     would learn from reading it.
-
-    Returns:
-        List of page summary Chunk objects.
     """
     # Collect metadata per page from the first chunk of each file
     page_meta: dict[str, Chunk] = {}
@@ -318,9 +318,6 @@ async def generate_folder_summaries(
 
     For each unique folder, concatenates all page summaries within it and
     generates a 3-5 sentence summary capturing the section's theme.
-
-    Returns:
-        List of folder summary Chunk objects.
     """
     # Group page summaries by folder
     by_folder: dict[str, list[Chunk]] = defaultdict(list)
@@ -407,9 +404,6 @@ async def generate_top_summaries(
 
     For each top-level documentation area (guide, api, tutorial, examples),
     generates a 2-3 sentence summary from the folder summaries.
-
-    Returns:
-        List of top-level summary Chunk objects.
     """
     # Group folder summaries by top-level path segment
     by_top: dict[str, list[Chunk]] = defaultdict(list)
@@ -483,7 +477,7 @@ async def _enrich_page_chunks(
     page_title: str,
     page_chunks: list[Chunk],
     gemini_client: GeminiClient,
-) -> tuple[int, int, int]:
+) -> EnrichmentResult:
     """Enrich all chunks from a single page.
 
     Processes chunks with bounded concurrency within the page to benefit
@@ -532,4 +526,4 @@ async def _enrich_page_chunks(
         else:
             errors += 1
 
-    return enriched, skipped, errors
+    return EnrichmentResult(enriched=enriched, skipped=skipped, errors=errors)

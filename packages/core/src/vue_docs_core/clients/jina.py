@@ -114,11 +114,7 @@ class JinaClient:
         texts: list[str],
         task: str = TASK_RETRIEVAL_PASSAGE,
     ) -> EmbeddingResult:
-        """Embed a list of text strings.
-
-        Returns:
-            EmbeddingResult with embeddings and token usage.
-        """
+        """Embed a list of text strings."""
         if not texts:
             return EmbeddingResult(embeddings=[], total_tokens=0)
 
@@ -153,11 +149,7 @@ class JinaClient:
         task: str = TASK_RETRIEVAL_PASSAGE,
         batch_size: int = 64,
     ) -> EmbeddingResult:
-        """Embed texts in batches to respect API limits.
-
-        Returns:
-            Combined EmbeddingResult.
-        """
+        """Embed texts in batches to respect API limits."""
         if not texts:
             return EmbeddingResult(embeddings=[], total_tokens=0)
 
@@ -178,11 +170,7 @@ class JinaClient:
         documents: list[str],
         top_n: int | None = None,
     ) -> RerankResult:
-        """Rerank documents against a query.
-
-        Returns:
-            RerankResult with reranked indices, scores, and token usage.
-        """
+        """Rerank documents against a query."""
         if not documents:
             return RerankResult(indices=[], scores=[], total_tokens=0)
 

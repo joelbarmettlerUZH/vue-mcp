@@ -187,9 +187,6 @@ def reconstruct_results(
     Groups results by source page, orders by global sort key (documentation
     reading order), merges adjacent chunks from the same section, and formats
     with breadcrumbs, code blocks, and cross-references.
-
-    Returns:
-        Formatted markdown string with structured results.
     """
     if not hits:
         return "No results found."

@@ -67,9 +67,8 @@ def parse_sidebar_config(config_path: Path) -> dict[str, str]:
 def compute_sort_key(file_path: str, sidebar_map: dict[str, str]) -> str:
     """Return the sort key for a documentation file.
 
-    Returns:
-        Sort key string.  Files not in the sidebar get a ``99_`` prefixed
-        fallback that sorts after all sidebar-listed pages.
+    Files not in the sidebar get a ``99_`` prefixed fallback that sorts
+    after all sidebar-listed pages.
     """
     # Normalize: strip .md extension
     normalized = re.sub(r"\.md$", "", file_path)

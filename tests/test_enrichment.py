@@ -53,11 +53,7 @@ def _mock_sdk_response(text="Generated text", input_tokens=100, output_tokens=20
     mock_resp = MagicMock()
     mock_resp.text = text
     mock_resp.candidates = [
-        MagicMock(
-            content=MagicMock(
-                parts=[MagicMock(text=text, function_call=None)]
-            )
-        )
+        MagicMock(content=MagicMock(parts=[MagicMock(text=text, function_call=None)]))
     ]
     mock_resp.usage_metadata = MagicMock(
         prompt_token_count=input_tokens,
@@ -243,12 +239,10 @@ class TestEnrichChunksContextual:
             return f"Context for: {chunk_content[:20]}"
 
         with patch.object(client, "enrich_chunk", side_effect=fake_enrich):
-            enriched, skipped, errors = await enrich_chunks_contextual(
-                chunks, page_contents, client
-            )
+            _result = await enrich_chunks_contextual(chunks, page_contents, client)
 
-        assert enriched == 2
-        assert errors == 0
+        assert _result.enriched == 2
+        assert _result.errors == 0
         assert chunks[0].contextual_prefix == "Context for: Section 1 content"
         assert chunks[1].contextual_prefix == "Context for: Section 2 content"
 
@@ -267,13 +261,11 @@ class TestEnrichChunksContextual:
             return "enriched"
 
         with patch.object(client, "enrich_chunk", side_effect=fake_enrich):
-            enriched, skipped, errors = await enrich_chunks_contextual(
-                chunks, page_contents, client
-            )
+            _result = await enrich_chunks_contextual(chunks, page_contents, client)
 
         # Only SECTION should be enriched; PAGE_SUMMARY and HYPE_QUESTION are non-enrichable
-        assert enriched == 1
-        assert skipped == 2
+        assert _result.enriched == 1
+        assert _result.skipped == 2
 
     @pytest.mark.asyncio
     async def test_skips_already_enriched_chunks(self):
@@ -287,14 +279,12 @@ class TestEnrichChunksContextual:
 
         client = GeminiClient(api_key="test-key")
         with patch.object(client, "enrich_chunk", new=AsyncMock()) as mock_enrich:
-            enriched, skipped, errors = await enrich_chunks_contextual(
-                chunks, page_contents, client
-            )
+            _result = await enrich_chunks_contextual(chunks, page_contents, client)
 
         # Should not call enrich_chunk for already-enriched chunk
         mock_enrich.assert_not_called()
-        assert enriched == 0
-        assert skipped == 1
+        assert _result.enriched == 0
+        assert _result.skipped == 1
 
     @pytest.mark.asyncio
     async def test_handles_missing_page_content(self):
@@ -302,10 +292,10 @@ class TestEnrichChunksContextual:
         page_contents = {}  # No page content available
 
         client = GeminiClient(api_key="test-key")
-        enriched, skipped, errors = await enrich_chunks_contextual(chunks, page_contents, client)
+        _result = await enrich_chunks_contextual(chunks, page_contents, client)
 
-        assert enriched == 0
-        assert skipped >= 1
+        assert _result.enriched == 0
+        assert _result.skipped >= 1
 
     @pytest.mark.asyncio
     async def test_handles_enrichment_errors_gracefully(self):
@@ -323,13 +313,11 @@ class TestEnrichChunksContextual:
             return "enriched successfully"
 
         with patch.object(client, "enrich_chunk", side_effect=flaky_enrich):
-            enriched, skipped, errors = await enrich_chunks_contextual(
-                chunks, page_contents, client
-            )
+            _result = await enrich_chunks_contextual(chunks, page_contents, client)
 
         # One should succeed, one should fail gracefully
-        assert enriched == 1
-        assert errors >= 1
+        assert _result.enriched == 1
+        assert _result.errors >= 1
         assert chunks[0].contextual_prefix == "enriched successfully"
         assert chunks[1].contextual_prefix == ""  # Failed chunk keeps empty prefix
 
@@ -348,11 +336,9 @@ class TestEnrichChunksContextual:
             return "enriched"
 
         with patch.object(client, "enrich_chunk", side_effect=fake_enrich):
-            enriched, skipped, errors = await enrich_chunks_contextual(
-                chunks, page_contents, client
-            )
+            _result = await enrich_chunks_contextual(chunks, page_contents, client)
 
-        assert enriched == 3  # All three types are enrichable
+        assert _result.enriched == 3  # All three types are enrichable
 
     @pytest.mark.asyncio
     async def test_groups_chunks_by_file(self):
@@ -374,11 +360,9 @@ class TestEnrichChunksContextual:
             return "enriched"
 
         with patch.object(client, "enrich_chunk", side_effect=fake_enrich):
-            enriched, skipped, errors = await enrich_chunks_contextual(
-                chunks, page_contents, client
-            )
+            _result = await enrich_chunks_contextual(chunks, page_contents, client)
 
-        assert enriched == 3
+        assert _result.enriched == 3
         assert pages_seen == {"# Page A", "# Page B"}
 
 
@@ -577,12 +561,10 @@ class TestHypeQuestionOrchestration:
             return [f"Q about {chunk_content[:10]}?"]
 
         with patch.object(client, "generate_hype_questions", side_effect=fake_hype):
-            generated, skipped, errors = await generate_hype_questions(
-                chunks, page_contents, client
-            )
+            _hype_result = await generate_hype_questions(chunks, page_contents, client)
 
-        assert generated == 2
-        assert errors == 0
+        assert _hype_result.enriched == 2
+        assert _hype_result.errors == 0
         assert len(chunks[0].hype_questions) == 1
         assert len(chunks[1].hype_questions) == 1
 
@@ -600,12 +582,10 @@ class TestHypeQuestionOrchestration:
             return ["Q?"]
 
         with patch.object(client, "generate_hype_questions", side_effect=fake_hype):
-            generated, skipped, errors = await generate_hype_questions(
-                chunks, page_contents, client
-            )
+            _hype_result = await generate_hype_questions(chunks, page_contents, client)
 
-        assert generated == 1
-        assert skipped == 1  # PAGE_SUMMARY is non-enrichable
+        assert _hype_result.enriched == 1
+        assert _hype_result.skipped == 1  # PAGE_SUMMARY is non-enrichable
 
     @pytest.mark.asyncio
     async def test_skips_already_generated(self):
@@ -616,13 +596,11 @@ class TestHypeQuestionOrchestration:
 
         client = GeminiClient(api_key="test-key")
         with patch.object(client, "generate_hype_questions", new=AsyncMock()) as mock:
-            generated, skipped, errors = await generate_hype_questions(
-                chunks, page_contents, client
-            )
+            _hype_result = await generate_hype_questions(chunks, page_contents, client)
 
         mock.assert_not_called()
-        assert generated == 0
-        assert skipped == 1
+        assert _hype_result.enriched == 0
+        assert _hype_result.skipped == 1
 
     @pytest.mark.asyncio
     async def test_handles_errors_gracefully(self):
@@ -640,12 +618,10 @@ class TestHypeQuestionOrchestration:
             return ["Q?"]
 
         with patch.object(client, "generate_hype_questions", side_effect=flaky_hype):
-            generated, skipped, errors = await generate_hype_questions(
-                chunks, page_contents, client
-            )
+            _hype_result = await generate_hype_questions(chunks, page_contents, client)
 
-        assert generated == 1
-        assert errors >= 1
+        assert _hype_result.enriched == 1
+        assert _hype_result.errors >= 1
         assert chunks[0].hype_questions == ["Q?"]
         assert chunks[1].hype_questions == []
 
@@ -676,13 +652,13 @@ class TestHypeEmbedding:
 
         client = JinaClient(api_key="test")
         with patch.object(client, "embed", side_effect=fake_embed):
-            hype_embeddings, tokens = await embed_hype_questions([chunk], client)
+            hype_result = await embed_hype_questions([chunk], client)
 
-        assert len(hype_embeddings) == 2
+        assert len(hype_result.embeddings) == 2
         assert all(t == TASK_RETRIEVAL_QUERY for t in captured_tasks)
-        assert hype_embeddings[0].parent_chunk_id == "page#s1"
-        assert hype_embeddings[0].question == "Q1?"
-        assert hype_embeddings[1].question == "Q2?"
+        assert hype_result.embeddings[0].parent_chunk_id == "page#s1"
+        assert hype_result.embeddings[0].question == "Q1?"
+        assert hype_result.embeddings[1].question == "Q2?"
 
     @pytest.mark.asyncio
     async def test_skips_chunks_without_questions(self):
@@ -693,10 +669,10 @@ class TestHypeEmbedding:
         # No hype_questions set
 
         client = JinaClient(api_key="test")
-        hype_embeddings, tokens = await embed_hype_questions([chunk], client)
+        hype_result = await embed_hype_questions([chunk], client)
 
-        assert len(hype_embeddings) == 0
-        assert tokens == 0
+        assert len(hype_result.embeddings) == 0
+        assert hype_result.total_tokens == 0
 
 
 # ---------------------------------------------------------------------------

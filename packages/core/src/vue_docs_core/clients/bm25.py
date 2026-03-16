@@ -46,9 +46,6 @@ class BM25Model:
 
         The texts must be the same corpus used in fit(), in the same order.
         This extracts per-document BM25 score vectors from the fitted model.
-
-        Returns:
-            List of SparseVector for each document.
         """
         if self._model is None:
             raise RuntimeError("BM25 model not fitted. Call fit() first.")
@@ -82,9 +79,6 @@ class BM25Model:
         Maps query tokens to the model vocabulary and creates a sparse vector
         with value 1.0 for each matched token. The dot product with document
         vectors then sums the BM25 scores for matching tokens.
-
-        Returns:
-            SparseVector for the query.
         """
         if self._model is None:
             raise RuntimeError("BM25 model not fitted. Call fit() first.")

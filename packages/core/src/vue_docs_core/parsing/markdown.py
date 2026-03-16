@@ -21,6 +21,7 @@ Design (Option A — section-only chunking):
 import hashlib
 import re
 from pathlib import Path
+from typing import NamedTuple
 
 from markdown_it import MarkdownIt
 
@@ -39,6 +40,13 @@ _API_DIV_OPEN_RE = re.compile(r'^\s*<div\s+class="(options-api|composition-api)"
 # ---------------------------------------------------------------------------
 
 
+class HeadingSlug(NamedTuple):
+    """Cleaned heading text and its URL slug."""
+
+    clean_text: str
+    slug: str
+
+
 class _Heading:
     __slots__ = ("level", "line", "slug", "text")
 
@@ -49,14 +57,14 @@ class _Heading:
         self.line = line
 
 
-def _extract_slug(heading_text: str) -> tuple[str, str]:
+def _extract_slug(heading_text: str) -> HeadingSlug:
     """Return *(clean_title, slug)* from text like ``'Title {#my-slug}'``."""
     m = _SLUG_RE.search(heading_text)
     if m:
-        return heading_text[: m.start()].strip(), m.group(1)
+        return HeadingSlug(heading_text[: m.start()].strip(), m.group(1))
     slug = re.sub(r"[^\w\s-]", "", heading_text.lower())
     slug = re.sub(r"[\s_]+", "-", slug).strip("-")
-    return heading_text.strip(), slug
+    return HeadingSlug(heading_text.strip(), slug)
 
 
 def _extract_headings(tokens: list) -> list[_Heading]:
@@ -182,9 +190,6 @@ def parse_markdown_file(file_path: Path, docs_root: Path) -> list[Chunk]:
     Images are extracted as separate chunks.
 
     Large sections (>{MAX_SECTION_CHARS} chars) are split at H3 boundaries.
-
-    Returns:
-        List of chunks in document order.
     """
     raw = file_path.read_text(encoding="utf-8")
     lines = raw.split("\n")

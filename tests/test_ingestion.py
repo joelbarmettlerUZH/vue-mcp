@@ -219,19 +219,19 @@ class TestEmbedder:
 
         with patch.object(JinaClient, "embed", new=AsyncMock(return_value=fake_result)):
             client = JinaClient(api_key="test")
-            vectors, tokens = await embed_dense(chunks, client)
+            result = await embed_dense(chunks, client)
 
-        assert len(vectors) == 5
-        assert tokens == 250
+        assert len(result.vectors) == 5
+        assert result.total_tokens == 250
 
     @pytest.mark.asyncio
     async def test_embed_dense_empty_input(self):
         from vue_docs_core.clients.jina import JinaClient
 
         client = JinaClient(api_key="test")
-        vectors, tokens = await embed_dense([], client)
-        assert vectors == []
-        assert tokens == 0
+        result = await embed_dense([], client)
+        assert result.vectors == []
+        assert result.total_tokens == 0
 
     @pytest.mark.asyncio
     async def test_embed_dense_passes_chunk_content(self):
@@ -265,10 +265,10 @@ class TestEmbedder:
 
         client = JinaClient(api_key="test")
         with patch.object(client, "embed_batched", side_effect=fake_embed_batched):
-            vectors, tokens = await embed_dense(chunks, client)
+            result = await embed_dense(chunks, client)
 
-        assert len(vectors) == 10
-        assert tokens == 50
+        assert len(result.vectors) == 10
+        assert result.total_tokens == 50
 
 
 # ---------------------------------------------------------------------------

@@ -60,11 +60,7 @@ class GeminiClient:
         max_output_tokens: int = 256,
         model: str | None = None,
     ) -> GeminiResponse:
-        """Send a prompt to Gemini and return the response text.
-
-        Returns:
-            GeminiResponse with text and token usage.
-        """
+        """Send a prompt to Gemini and return the response text."""
         model_name = model or self.model
 
         config = types.GenerateContentConfig(
@@ -108,9 +104,6 @@ class GeminiClient:
 
         Defines a single tool and forces Gemini to call it, ensuring the
         response conforms to the provided JSON schema.
-
-        Returns:
-            GeminiFunctionCallResponse with parsed arguments.
         """
         model_name = model or self.model
 
@@ -208,9 +201,6 @@ class GeminiClient:
         Gemini's implicit prompt caching automatically caches repeated prefixes.
         We structure the prompt so the page content is the stable prefix and the
         chunk-specific part varies.
-
-        Returns:
-            GeminiResponse with text and token usage.
         """
         full_prompt = f"{cached_content}\n\n---\n\n{per_chunk_prompt}"
         return await self.generate(
@@ -232,9 +222,6 @@ class GeminiClient:
 
         Uses forced function calling to get a structured list of questions,
         avoiding brittle newline-based parsing.
-
-        Returns:
-            A list of hypothetical developer questions.
         """
         system_instruction = (
             "You are a Vue.js documentation expert. Your task is to generate "
@@ -284,11 +271,7 @@ class GeminiClient:
         level: str = "page",
         title: str = "",
     ) -> str:
-        """Generate a summary for a page, folder, or top-level section.
-
-        Returns:
-            A 3-5 sentence summary string.
-        """
+        """Generate a summary for a page, folder, or top-level section."""
         level_instructions = {
             "page": (
                 "Generate a 3-5 sentence summary of this Vue.js documentation page. "
@@ -339,9 +322,6 @@ class GeminiClient:
         Uses the full page as context to produce 2-3 sentences that situate
         the chunk within the page's topic, mentioning relevant Vue concepts
         and API names.
-
-        Returns:
-            A 2-3 sentence contextual prefix string.
         """
         system_instruction = (
             "You are a technical documentation expert. Your task is to generate "

@@ -3,6 +3,8 @@
 import logging
 from dataclasses import dataclass
 
+from pydantic import BaseModel
+
 from vue_docs_core.clients.jina import JinaClient
 from vue_docs_core.config import EMBED_BATCH_SIZE, TASK_RETRIEVAL_PASSAGE, TASK_RETRIEVAL_QUERY
 from vue_docs_core.models.chunk import Chunk
@@ -20,17 +22,29 @@ class HypeEmbedding:
     embedding: list[float]
 
 
+class EmbedResult(BaseModel):
+    """Result of a dense embedding pass."""
+
+    vectors: list[list[float]]
+    total_tokens: int
+
+
+class HypeEmbedResult(BaseModel):
+    """Result of embedding HyPE questions."""
+
+    embeddings: list[HypeEmbedding]
+    total_tokens: int
+
+    model_config = {"arbitrary_types_allowed": True}
+
+
 async def embed_dense(
     chunks: list[Chunk],
     jina_client: JinaClient,
-) -> tuple[list[list[float]], int]:
-    """Embed chunks with Jina dense vectors in batches.
-
-    Returns:
-        Tuple of (dense_vectors, total_tokens).
-    """
+) -> EmbedResult:
+    """Embed chunks with Jina dense vectors in batches."""
     if not chunks:
-        return [], 0
+        return EmbedResult(vectors=[], total_tokens=0)
 
     # Prepend contextual prefix to content before embedding (Anthropic's
     # contextual retrieval technique). The prefix situates the chunk within
@@ -51,20 +65,17 @@ async def embed_dense(
         len(chunks),
         result.total_tokens,
     )
-    return result.embeddings, result.total_tokens
+    return EmbedResult(vectors=result.embeddings, total_tokens=result.total_tokens)
 
 
 async def embed_hype_questions(
     chunks: list[Chunk],
     jina_client: JinaClient,
-) -> tuple[list[HypeEmbedding], int]:
+) -> HypeEmbedResult:
     """Embed HyPE questions from chunks using query-side task type.
 
     HyPE questions are embedded with TASK_RETRIEVAL_QUERY because they
     represent the kinds of queries users would ask, not document passages.
-
-    Returns:
-        Tuple of (list of HypeEmbedding objects, total_tokens).
     """
     # Collect all questions with their parent references
     questions: list[str] = []
@@ -76,7 +87,7 @@ async def embed_hype_questions(
             parent_refs.append((chunk.chunk_id, chunk))
 
     if not questions:
-        return [], 0
+        return HypeEmbedResult(embeddings=[], total_tokens=0)
 
     result = await jina_client.embed_batched(
         questions, task=TASK_RETRIEVAL_QUERY, batch_size=EMBED_BATCH_SIZE
@@ -100,4 +111,4 @@ async def embed_hype_questions(
         sum(1 for c in chunks if c.hype_questions),
         result.total_tokens,
     )
-    return hype_embeddings, result.total_tokens
+    return HypeEmbedResult(embeddings=hype_embeddings, total_tokens=result.total_tokens)

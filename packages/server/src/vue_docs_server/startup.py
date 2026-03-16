@@ -4,11 +4,21 @@ import json
 import logging
 from pathlib import Path
 
+from pydantic import BaseModel
+
 from vue_docs_core.clients.bm25 import BM25Model
 from vue_docs_core.clients.qdrant import QdrantDocClient
 from vue_docs_core.config import settings
 from vue_docs_core.models.entity import ApiEntity, EntityIndex
 from vue_docs_core.retrieval.entity_matcher import EntityMatcher
+
+
+class IndexStateInfo(BaseModel):
+    """Page listing and folder structure loaded from index_state.json."""
+
+    page_paths: list[str]
+    folder_structure: dict[str, list[str]]
+
 
 logger = logging.getLogger(__name__)
 
@@ -86,12 +96,12 @@ def load_bm25_model(data_path: Path) -> BM25Model:
     return model
 
 
-def load_index_state(data_path: Path) -> tuple[list[str], dict[str, list[str]]]:
+def load_index_state(data_path: Path) -> IndexStateInfo:
     """Load page listing and folder structure from index_state.json."""
     state_path = data_path / "state" / "index_state.json"
     if not state_path.exists():
         logger.warning("Index state not found at %s", state_path)
-        return [], {}
+        return IndexStateInfo(page_paths=[], folder_structure={})
 
     with open(state_path) as f:
         raw = json.load(f)
@@ -103,7 +113,7 @@ def load_index_state(data_path: Path) -> tuple[list[str], dict[str, list[str]]]:
         folder_structure.setdefault(folder, []).append(fp)
 
     logger.info("Loaded %d page paths across %d folders", len(page_paths), len(folder_structure))
-    return page_paths, folder_structure
+    return IndexStateInfo(page_paths=page_paths, folder_structure=folder_structure)
 
 
 def startup() -> None:
@@ -115,7 +125,9 @@ def startup() -> None:
     state.synonym_table = load_synonym_table(data_path)
 
     # Load page listing for resources
-    state.page_paths, state.folder_structure = load_index_state(data_path)
+    index_state_info = load_index_state(data_path)
+    state.page_paths = index_state_info.page_paths
+    state.folder_structure = index_state_info.folder_structure
     state.vue_docs_path = Path(settings.vue_docs_path).resolve()
     state.bm25 = load_bm25_model(data_path)
     state.qdrant = QdrantDocClient()

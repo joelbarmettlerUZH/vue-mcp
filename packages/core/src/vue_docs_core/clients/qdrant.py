@@ -160,11 +160,7 @@ class QdrantDocClient:
         scope_filter: str | None = None,
         entity_boost: list[str] | None = None,
     ) -> list[SearchHit]:
-        """Run hybrid dense+sparse search with RRF fusion.
-
-        Returns:
-            List of SearchHit results.
-        """
+        """Run hybrid dense+sparse search with RRF fusion."""
         # Build optional filter
         must_conditions = []
         should_conditions = []
@@ -256,11 +252,7 @@ class QdrantDocClient:
         chunk_types: list[str] | None = None,
         limit: int = 100,
     ) -> list[dict]:
-        """Retrieve points matching any of the given file_path values.
-
-        Returns:
-            List of payload dicts.
-        """
+        """Retrieve points matching any of the given file_path values."""
         if not file_paths:
             return []
 

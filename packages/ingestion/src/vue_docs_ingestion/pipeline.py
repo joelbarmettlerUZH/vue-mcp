@@ -288,7 +288,7 @@ async def run_pipeline(
         gemini_client = GeminiClient(timeout=60.0)
         try:
             with console.status(f"Enriching {len(new_chunks)} chunks with contextual prefixes..."):
-                enriched, skipped, errs = await enrich_chunks_contextual(
+                enrich_result = await enrich_chunks_contextual(
                     new_chunks,
                     page_contents,
                     gemini_client,
@@ -297,9 +297,9 @@ async def run_pipeline(
             await gemini_client.close()
 
         console.print(
-            f"  Enriched: [green]{enriched}[/green], "
-            f"skipped: [dim]{skipped}[/dim], "
-            f"errors: [red]{errs}[/red]"
+            f"  Enriched: [green]{enrich_result.enriched}[/green], "
+            f"skipped: [dim]{enrich_result.skipped}[/dim], "
+            f"errors: [red]{enrich_result.errors}[/red]"
         )
 
         # ---- Step 5c: HyPE question generation (Gemini) for NEW chunks ------
@@ -309,7 +309,7 @@ async def run_pipeline(
         gemini_client_hype = GeminiClient(timeout=60.0)
         try:
             with console.status(f"Generating HyPE questions for {len(new_chunks)} chunks..."):
-                hype_gen, hype_skip, hype_errs = await generate_hype_questions(
+                hype_result = await generate_hype_questions(
                     new_chunks,
                     page_contents,
                     gemini_client_hype,
@@ -319,10 +319,10 @@ async def run_pipeline(
 
         total_questions = sum(len(c.hype_questions) for c in new_chunks)
         console.print(
-            f"  Generated: [green]{hype_gen}[/green] chunks, "
+            f"  Generated: [green]{hype_result.enriched}[/green] chunks, "
             f"[green]{total_questions}[/green] total questions, "
-            f"skipped: [dim]{hype_skip}[/dim], "
-            f"errors: [red]{hype_errs}[/red]"
+            f"skipped: [dim]{hype_result.skipped}[/dim], "
+            f"errors: [red]{hype_result.errors}[/red]"
         )
     elif not settings.gemini_api_key:
         console.print(
@@ -505,11 +505,14 @@ async def run_pipeline(
     jina_client = JinaClient(timeout=300.0)
     try:
         with console.status("Waiting for Jina embeddings..."):
-            dense_vectors, total_tokens = await embed_dense(chunks_to_index, jina_client)
+            embed_result = await embed_dense(chunks_to_index, jina_client)
     finally:
         await jina_client.close()
 
-    console.print(f"  Embeddings received — Jina tokens used: [dim]{total_tokens:,}[/dim]")
+    dense_vectors = embed_result.vectors
+    console.print(
+        f"  Embeddings received — Jina tokens used: [dim]{embed_result.total_tokens:,}[/dim]"
+    )
 
     # ---- Step 11: Upsert to Qdrant in batches -------------------------------
     console.print()
@@ -550,11 +553,14 @@ async def run_pipeline(
         jina_hype = JinaClient(timeout=300.0)
         try:
             with console.status("Waiting for Jina HyPE embeddings..."):
-                hype_embeddings, hype_tokens = await embed_hype_questions(hype_chunks, jina_hype)
+                hype_embed_result = await embed_hype_questions(hype_chunks, jina_hype)
         finally:
             await jina_hype.close()
 
-        console.print(f"  HyPE embeddings received — Jina tokens: [dim]{hype_tokens:,}[/dim]")
+        hype_embeddings = hype_embed_result.embeddings
+        console.print(
+            f"  HyPE embeddings received — Jina tokens: [dim]{hype_embed_result.total_tokens:,}[/dim]"
+        )
 
         # Generate BM25 sparse vectors for HyPE questions
         hype_texts = [h.question for h in hype_embeddings]

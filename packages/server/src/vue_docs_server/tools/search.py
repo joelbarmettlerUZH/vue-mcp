@@ -116,9 +116,6 @@ async def _rerank_hits(
     Sends all candidates through the listwise reranker and returns hits
     reordered by reranker relevance. Falls back to the original ordering
     on failure.
-
-    Returns:
-        Reranked hits.
     """
     if not hits:
         return hits

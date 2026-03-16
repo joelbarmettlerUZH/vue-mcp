@@ -41,9 +41,6 @@ def expand_cross_references(
     from Qdrant and merge them into the result set. Targeted references
     (with anchors) fetch a single chunk; page-level references fetch all
     sections from that page.
-
-    Returns:
-        Expanded hit list with new chunks appended, deduplicated.
     """
     if not hits:
         return hits
