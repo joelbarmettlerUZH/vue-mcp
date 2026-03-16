@@ -32,6 +32,7 @@ def _chunk_payload(chunk: Chunk) -> dict:
         "child_chunk_ids": m.child_chunk_ids,
         "preceding_prose": m.preceding_prose,
         "content": chunk.content,
+        "contextual_prefix": chunk.contextual_prefix,
         "content_hash": chunk.content_hash,
     }
 

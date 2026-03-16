@@ -178,7 +178,7 @@ def _render_hit(hit: SearchHit, show_heading: bool = True) -> list[str]:
 
 def reconstruct_results(
     hits: list[SearchHit],
-    max_results: int = 10,
+    max_results: int = 3,
 ) -> str:
     """Reconstruct search hits into a readable, structured response.
 

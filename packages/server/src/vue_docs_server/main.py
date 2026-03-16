@@ -42,7 +42,7 @@ mcp = FastMCP(
 async def vue_docs_search_tool(
     query: str,
     scope: str = "all",
-    max_results: int = 10,
+    max_results: int = 3,
 ) -> str:
     """Search the Vue.js documentation for answers to developer questions.
 
@@ -58,7 +58,7 @@ async def vue_docs_search_tool(
         scope: Documentation section to search. Use "all" (default) for
                full documentation, or narrow with: "guide", "guide/essentials",
                "guide/components", "api", "tutorial", "examples".
-        max_results: Number of documentation sections to return (1-20, default 10).
+        max_results: Number of documentation sections to return (1-20, default 3).
     """
     return await vue_docs_search(query=query, scope=scope, max_results=max_results)
 

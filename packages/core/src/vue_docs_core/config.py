@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     data_path: str = "./data"
 
     # Pipeline
-    pipeline_version: str = "2"
+    pipeline_version: str = "3"
 
 
 settings = Settings()

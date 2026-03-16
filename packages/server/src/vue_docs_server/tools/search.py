@@ -10,10 +10,15 @@ from vue_docs_server.startup import state
 logger = logging.getLogger(__name__)
 
 
+# Number of candidates to retrieve from Qdrant per prefetch arm.
+# This should be large enough to give the reranker a good candidate pool.
+_RETRIEVAL_LIMIT = 50
+
+
 async def vue_docs_search(
     query: str,
     scope: str = "all",
-    max_results: int = 10,
+    max_results: int = 3,
 ) -> str:
     """Search the Vue.js documentation.
 
@@ -53,12 +58,12 @@ async def vue_docs_search(
     # Detect API entities in query for boosting
     entity_boost = _detect_entities(query)
 
-    # Run hybrid search
+    # Run hybrid search — retrieve a wide candidate pool for reranking
     scope_filter = scope if scope != "all" else None
     hits = state.qdrant.hybrid_search(
         dense_vector=dense_vector,
         sparse_vector=sparse_vector,
-        limit=max_results * 3,  # Fetch extra for filtering
+        limit=_RETRIEVAL_LIMIT,
         scope_filter=scope_filter,
         entity_boost=entity_boost if entity_boost else None,
     )
@@ -70,7 +75,7 @@ async def vue_docs_search(
             hits = state.qdrant.hybrid_search(
                 dense_vector=dense_vector,
                 sparse_vector=sparse_vector,
-                limit=max_results * 3,
+                limit=_RETRIEVAL_LIMIT,
                 entity_boost=entity_boost if entity_boost else None,
             )
 

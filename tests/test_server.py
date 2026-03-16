@@ -1041,7 +1041,7 @@ class TestMCPIntegration:
         # Verify Qdrant was called with the scope filter
         call_kwargs = server_state.qdrant.hybrid_search.call_args
         assert call_kwargs.kwargs.get("scope_filter") == "guide/essentials"
-        assert call_kwargs.kwargs.get("limit") == 15  # max_results * 3
+        assert call_kwargs.kwargs.get("limit") == 50  # _RETRIEVAL_LIMIT
 
     @pytest.mark.asyncio
     async def test_call_search_tool_entity_boost(self):

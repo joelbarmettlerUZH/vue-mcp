@@ -129,7 +129,8 @@ async def run_search(
     qdrant: QdrantDocClient,
     bm25: BM25Model,
     matcher: EntityMatcher,
-    max_results: int = 10,
+    max_results: int = 3,
+    retrieval_limit: int = 50,
 ) -> tuple[str, float]:
     """Run a single search query and return (results_text, latency_seconds)."""
     start = time.monotonic()
@@ -151,11 +152,11 @@ async def run_search(
     match_result = matcher.match(query)
     entity_boost = match_result.entities if match_result.entities else None
 
-    # Hybrid search
+    # Hybrid search — retrieve wide candidate pool for reranking
     hits = qdrant.hybrid_search(
         dense_vector=dense_vector,
         sparse_vector=sparse_vector,
-        limit=max_results * 3,
+        limit=retrieval_limit,
         entity_boost=entity_boost,
     )
 

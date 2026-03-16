@@ -8,6 +8,7 @@ from rich.console import Console
 from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn
 
 from vue_docs_core.clients.bm25 import BM25Model
+from vue_docs_core.clients.gemini import GeminiClient
 from vue_docs_core.clients.jina import JinaClient
 from vue_docs_core.clients.qdrant import QdrantDocClient
 from vue_docs_core.config import settings
@@ -22,6 +23,7 @@ from vue_docs_core.parsing.entities import (
 from vue_docs_core.parsing.markdown import parse_markdown_file
 from vue_docs_core.parsing.sort_keys import compute_sort_key, parse_sidebar_config
 from vue_docs_ingestion.embedder import embed_dense
+from vue_docs_ingestion.enrichment import enrich_chunks_contextual
 from vue_docs_ingestion.indexer import upsert_chunks_batch
 from vue_docs_ingestion.scanner import find_markdown_files, hash_file
 from vue_docs_ingestion.state import FileState, IndexState
@@ -42,17 +44,18 @@ async def run_pipeline(
 ) -> None:
     """Run the full ingestion pipeline.
 
-    Stages (Day 5 MVP — no enrichment, HyPE, or summaries):
+    Stages:
       1. Discover markdown files
       2. Detect which files need re-processing
       3. Parse .md → Chunk objects
-      4. Extract API entities
-      5. Extract cross-references
-      6. Assign sort keys
-      7. Fit BM25 on corpus
-      8. Embed all chunks with Jina in one request (no per-batch limit)
-      9. Upsert to Qdrant in batches
-     10. Persist state
+      4. Contextual enrichment (Gemini — adds prefix per chunk)
+      5. Extract API entities
+      6. Extract cross-references
+      7. Assign sort keys
+      8. Fit BM25 on corpus
+      9. Embed all chunks with Jina (prefix prepended for embedding)
+     10. Upsert to Qdrant in batches
+     11. Persist state
 
     Args:
         docs_path: Path to Vue docs source (e.g. ./data/vue-docs/src).
@@ -188,6 +191,41 @@ async def run_pipeline(
     if small:
         console.print(f"  [yellow]Warning: {small} chunks < 50 chars (may be undersized)[/yellow]")
 
+    # ---- Step 5b: Contextual enrichment (Gemini) ----------------------------
+    if settings.gemini_api_key:
+        console.print()
+        console.print("[bold]Contextual enrichment (Gemini)...[/bold]")
+
+        # Build page_contents mapping: file_path → raw markdown
+        page_contents: dict[str, str] = {}
+        for path in to_process:
+            rel = str(path.relative_to(docs_path))
+            try:
+                page_contents[rel] = path.read_text(encoding="utf-8")
+            except Exception as exc:
+                logger.warning("Could not read %s for enrichment: %s", rel, exc)
+
+        gemini_client = GeminiClient(timeout=60.0)
+        try:
+            with console.status(
+                f"Enriching {len(all_chunks)} chunks with contextual prefixes..."
+            ):
+                enriched, skipped, errs = await enrich_chunks_contextual(
+                    all_chunks, page_contents, gemini_client,
+                )
+        finally:
+            await gemini_client.close()
+
+        console.print(
+            f"  Enriched: [green]{enriched}[/green], "
+            f"skipped: [dim]{skipped}[/dim], "
+            f"errors: [red]{errs}[/red]"
+        )
+    else:
+        console.print(
+            "\n[yellow]GEMINI_API_KEY not set — skipping contextual enrichment[/yellow]"
+        )
+
     # ---- Step 6: Entity extraction ------------------------------------------
     with console.status(f"Extracting API entities from {len(all_chunks)} chunks..."):
         entity_index = build_entity_index(all_chunks, api_dictionary)
@@ -242,7 +280,7 @@ async def run_pipeline(
     # ---- Step 10: Dense embed (single Jina request) -------------------------
     console.print()
     console.print("[bold]Embedding chunks...[/bold]")
-    console.print(f"  Sending all [green]{len(all_chunks)}[/green] chunks in one Jina request")
+    console.print(f"  Embedding [green]{len(all_chunks)}[/green] chunks via Jina (batched)")
 
     # Use a long timeout: large corpora can take several minutes to embed.
     jina_client = JinaClient(timeout=300.0)

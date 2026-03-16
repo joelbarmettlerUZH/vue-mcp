@@ -1,13 +1,25 @@
 """Markdown file parser — converts .md files into structured Chunks.
 
 Walks the markdown-it-py token stream to decompose a Vue documentation page
-into section (H2), subsection (H3/H4), code-block, and image chunks, each
-carrying full metadata for downstream retrieval and reconstruction.
+into **section-level** chunks (one per H2), each carrying full metadata for
+downstream retrieval and reconstruction.
+
+Design (Option A — section-only chunking):
+  - The H2 section is the primary and *only* retrieval unit for text content.
+  - Code blocks, subsection headings, tips, and warnings are kept inline in
+    the section content — they are part of the narrative.
+  - ``<div class="options-api/composition-api">`` wrapper divs and
+    ``</div>`` closing tags are stripped from the content so the embedding
+    sees clean prose + code without rendering directives.
+  - Playground links are stripped (noise for retrieval).
+  - Image references are extracted as separate chunks (they need special
+    handling for multimodal search).
+  - If a section exceeds ``_MAX_SECTION_CHARS``, it is split at H3
+    boundaries, with the section intro paragraph prepended for context.
 """
 
 import hashlib
 import re
-from dataclasses import dataclass
 from pathlib import Path
 
 from markdown_it import MarkdownIt
@@ -17,6 +29,13 @@ from vue_docs_core.models.chunk import Chunk, ChunkMetadata, ChunkType
 _SLUG_RE = re.compile(r"\{#([\w-]+)\}\s*$")
 _API_STYLE_OPEN_RE = re.compile(r'<div\s+class="(options-api|composition-api)"')
 _DIV_CLOSE_RE = re.compile(r"^\s*</div>\s*$")
+_PLAYGROUND_RE = re.compile(r"\[Try it in the Playground\]\([^)]+\)\s*")
+_API_DIV_OPEN_RE = re.compile(
+    r'^\s*<div\s+class="(options-api|composition-api)">\s*$'
+)
+
+# Sections larger than this are split at H3 boundaries
+_MAX_SECTION_CHARS = 3000
 
 
 # ---------------------------------------------------------------------------
@@ -24,12 +43,14 @@ _DIV_CLOSE_RE = re.compile(r"^\s*</div>\s*$")
 # ---------------------------------------------------------------------------
 
 
-@dataclass
 class _Heading:
-    level: int
-    text: str
-    slug: str
-    line: int  # 0-indexed
+    __slots__ = ("level", "text", "slug", "line")
+
+    def __init__(self, level: int, text: str, slug: str, line: int):
+        self.level = level
+        self.text = text
+        self.slug = slug
+        self.line = line
 
 
 def _extract_slug(heading_text: str) -> tuple[str, str]:
@@ -101,22 +122,59 @@ def _breadcrumb(*parts: str) -> str:
     return " > ".join(p for p in parts if p)
 
 
-def _find_preceding_prose(lines: list[str], fence_line: int, boundary: int) -> str:
-    """Collect the prose paragraph immediately before a code fence."""
-    collected: list[str] = []
-    i = fence_line - 1
-    while i >= boundary:
-        stripped = lines[i].strip()
-        if not stripped:
-            if collected:
-                break
-            i -= 1
+def _clean_section_content(lines: list[str], start: int, end: int) -> str:
+    """Clean a section's raw lines for embedding.
+
+    Strips:
+      - ``<div class="options-api/composition-api">`` lines
+      - Standalone ``</div>`` lines that close API divs
+      - Playground links
+      - Leading/trailing blank lines
+
+    Keeps:
+      - All prose, headings, code fences, tips/warnings, images
+    """
+    cleaned: list[str] = []
+    api_div_depth = 0
+
+    for i in range(start, end):
+        line = lines[i]
+        stripped = line.strip()
+
+        # Track and remove API-style div wrappers
+        if _API_DIV_OPEN_RE.match(stripped):
+            api_div_depth += 1
             continue
-        if stripped.startswith(("#", "```", "<div", "</div")):
-            break
-        collected.insert(0, lines[i].rstrip())
-        i -= 1
-    return "\n".join(collected).strip()
+        if _DIV_CLOSE_RE.match(stripped) and api_div_depth > 0:
+            api_div_depth -= 1
+            continue
+
+        # Remove playground links
+        if _PLAYGROUND_RE.search(line):
+            line = _PLAYGROUND_RE.sub("", line)
+            if not line.strip():
+                continue
+
+        cleaned.append(line)
+
+    result = "\n".join(cleaned).strip()
+
+    # Collapse runs of 3+ blank lines into 2
+    result = re.sub(r"\n{3,}", "\n\n", result)
+
+    return result
+
+
+def _extract_section_code_langs(lines: list[str], start: int, end: int) -> list[str]:
+    """Extract language tags from all fenced code blocks in a line range."""
+    langs: list[str] = []
+    for i in range(start, end):
+        stripped = lines[i].strip()
+        if stripped.startswith("```") and len(stripped) > 3:
+            lang = stripped[3:].strip().split()[0] if stripped[3:].strip() else ""
+            if lang:
+                langs.append(lang)
+    return langs
 
 
 # ---------------------------------------------------------------------------
@@ -127,9 +185,11 @@ def _find_preceding_prose(lines: list[str], fence_line: int, boundary: int) -> s
 def parse_markdown_file(file_path: Path, docs_root: Path) -> list[Chunk]:
     """Parse a markdown file into structured :class:`Chunk` objects.
 
-    Produces section chunks (H2), subsection chunks (H3/H4), code-block
-    chunks, and image chunks — each with metadata for retrieval and
-    reconstruction.
+    Produces section chunks (H2) as the primary retrieval unit. Code blocks,
+    subsection headings, and other content are kept inline within sections.
+    Images are extracted as separate chunks.
+
+    Large sections (>{_MAX_SECTION_CHARS} chars) are split at H3 boundaries.
 
     Args:
         file_path: Absolute path to the ``.md`` file.
@@ -162,20 +222,9 @@ def parse_markdown_file(file_path: Path, docs_root: Path) -> list[Chunk]:
     if not page_title:
         page_title = file_path.stem.replace("-", " ").title()
 
-    # --- code blocks & images from token stream ---
-    code_blocks: list[dict] = []
+    # --- images from token stream ---
     image_refs: list[dict] = []
-
     for tok in tokens:
-        if tok.type == "fence" and tok.map:
-            code_blocks.append(
-                {
-                    "lang": tok.info.strip(),
-                    "content": tok.content,
-                    "start": tok.map[0],
-                    "end": tok.map[1],
-                }
-            )
         if tok.type == "inline" and tok.children:
             for child in tok.children:
                 if child.type == "image":
@@ -195,89 +244,15 @@ def parse_markdown_file(file_path: Path, docs_root: Path) -> list[Chunk]:
     for idx, h2 in enumerate(h2s):
         sec_start = h2.line
         sec_end = h2s[idx + 1].line if idx + 1 < len(h2s) else total
-        sec_content = "\n".join(lines[sec_start:sec_end]).strip()
         sec_id = f"{file_stem}#{h2.slug}"
         sec_style = _section_api_style(api_map, sec_start, sec_end)
         sec_bc = _breadcrumb(page_title, h2.text)
 
-        child_ids: list[str] = []
+        # Collect code languages present in this section
+        code_langs = _extract_section_code_langs(lines, sec_start, sec_end)
 
-        # ---- subsection chunks (H3/H4 inside this H2) ----
-        subs = [
-            h for h in headings if h.level in (3, 4) and sec_start < h.line < sec_end
-        ]
-        for si, sh in enumerate(subs):
-            sub_start = sh.line
-            sub_end = sec_end
-            for nxt in subs[si + 1 :]:
-                if nxt.level <= sh.level:
-                    sub_end = nxt.line
-                    break
-
-            sub_content = "\n".join(lines[sub_start:sub_end]).strip()
-            sub_id = f"{file_stem}#{sh.slug}"
-            sub_style = _section_api_style(api_map, sub_start, sub_end)
-            sub_bc = _breadcrumb(page_title, h2.text, sh.text)
-            sibs = [f"{file_stem}#{s.slug}" for s in subs if s is not sh]
-
-            chunks.append(
-                Chunk(
-                    chunk_id=sub_id,
-                    chunk_type=ChunkType.SUBSECTION,
-                    content=sub_content,
-                    metadata=ChunkMetadata(
-                        file_path=str(rel),
-                        folder_path=folder,
-                        page_title=page_title,
-                        section_title=h2.text,
-                        subsection_title=sh.text,
-                        breadcrumb=sub_bc,
-                        content_type="text",
-                        api_style=sub_style,
-                        parent_chunk_id=sec_id,
-                        sibling_chunk_ids=sibs,
-                    ),
-                    content_hash=_content_hash(sub_content),
-                )
-            )
-            child_ids.append(sub_id)
-
-        # ---- code-block chunks ----
-        code_idx = 0
-        for cb in code_blocks:
-            if sec_start <= cb["start"] < sec_end:
-                cb_id = f"{file_stem}#{h2.slug}-code-{code_idx}"
-                cb_style = (
-                    api_map[cb["start"]]
-                    if cb["start"] < len(api_map)
-                    else "both"
-                )
-                prose = _find_preceding_prose(lines, cb["start"], sec_start)
-
-                chunks.append(
-                    Chunk(
-                        chunk_id=cb_id,
-                        chunk_type=ChunkType.CODE_BLOCK,
-                        content=cb["content"],
-                        metadata=ChunkMetadata(
-                            file_path=str(rel),
-                            folder_path=folder,
-                            page_title=page_title,
-                            section_title=h2.text,
-                            breadcrumb=sec_bc,
-                            content_type="code",
-                            language_tag=cb["lang"],
-                            api_style=cb_style,
-                            parent_chunk_id=sec_id,
-                            preceding_prose=prose,
-                        ),
-                        content_hash=_content_hash(cb["content"]),
-                    )
-                )
-                child_ids.append(cb_id)
-                code_idx += 1
-
-        # ---- image chunks ----
+        # ---- image chunks (extracted separately) ----
+        sec_image_ids: list[str] = []
         img_idx = 0
         for img in image_refs:
             if sec_start <= img["line"] < sec_end:
@@ -304,35 +279,64 @@ def parse_markdown_file(file_path: Path, docs_root: Path) -> list[Chunk]:
                         content_hash=_content_hash(img["src"]),
                     )
                 )
-                child_ids.append(img_id)
+                sec_image_ids.append(img_id)
                 img_idx += 1
 
-        # ---- the H2 section chunk itself ----
-        sibling_ids = [f"{file_stem}#{s.slug}" for s in h2s if s is not h2]
+        # ---- clean section content ----
+        sec_content = _clean_section_content(lines, sec_start, sec_end)
 
-        chunks.append(
-            Chunk(
-                chunk_id=sec_id,
-                chunk_type=ChunkType.SECTION,
-                content=sec_content,
-                metadata=ChunkMetadata(
-                    file_path=str(rel),
-                    folder_path=folder,
-                    page_title=page_title,
-                    section_title=h2.text,
-                    breadcrumb=sec_bc,
-                    content_type="text",
-                    api_style=sec_style,
-                    child_chunk_ids=child_ids,
-                    sibling_chunk_ids=sibling_ids,
-                ),
-                content_hash=_content_hash(sec_content),
+        # ---- H3 subsections within this H2 (for splitting large sections) ---
+        # Only split at H3 level, not H4 — H4s stay inline within their H3
+        h3s = [
+            h for h in headings
+            if h.level == 3 and sec_start < h.line < sec_end
+        ]
+
+        # ---- decide whether to split ----
+        if len(sec_content) > _MAX_SECTION_CHARS and h3s:
+            # Split at H3 boundaries
+            _emit_split_sections(
+                chunks=chunks,
+                lines=lines,
+                sec_content=sec_content,
+                h2=h2,
+                h3s=h3s,
+                sec_start=sec_start,
+                sec_end=sec_end,
+                file_stem=file_stem,
+                folder=folder,
+                rel=str(rel),
+                page_title=page_title,
+                api_map=api_map,
+                sec_image_ids=sec_image_ids,
             )
-        )
+        else:
+            # Single section chunk
+            sibling_ids = [f"{file_stem}#{s.slug}" for s in h2s if s is not h2]
+            chunks.append(
+                Chunk(
+                    chunk_id=sec_id,
+                    chunk_type=ChunkType.SECTION,
+                    content=sec_content,
+                    metadata=ChunkMetadata(
+                        file_path=str(rel),
+                        folder_path=folder,
+                        page_title=page_title,
+                        section_title=h2.text,
+                        breadcrumb=sec_bc,
+                        content_type="text",
+                        language_tag=",".join(sorted(set(code_langs))) if code_langs else "",
+                        api_style=sec_style,
+                        child_chunk_ids=sec_image_ids,
+                        sibling_chunk_ids=sibling_ids,
+                    ),
+                    content_hash=_content_hash(sec_content),
+                )
+            )
 
     # --- fallback: files without H2 headings ---
     if not h2s:
-        content = raw.strip()
+        content = _clean_section_content(lines, 0, total)
         slug = headings[0].slug if headings else file_path.stem
         chunk_id = f"{file_stem}#{slug}"
         chunks.append(
@@ -354,3 +358,104 @@ def parse_markdown_file(file_path: Path, docs_root: Path) -> list[Chunk]:
         )
 
     return chunks
+
+
+def _emit_split_sections(
+    *,
+    chunks: list[Chunk],
+    lines: list[str],
+    sec_content: str,
+    h2: _Heading,
+    h3s: list[_Heading],
+    sec_start: int,
+    sec_end: int,
+    file_stem: str,
+    folder: str,
+    rel: str,
+    page_title: str,
+    api_map: list[str],
+    sec_image_ids: list[str],
+) -> None:
+    """Split a large section at H3 boundaries and emit subsection chunks.
+
+    Each subsection gets the intro paragraph (text between the H2 heading
+    and the first H3) prepended for context, so it can stand alone.
+    """
+    sec_id = f"{file_stem}#{h2.slug}"
+    sec_bc = _breadcrumb(page_title, h2.text)
+
+    # Intro: content between H2 and first H3
+    intro_content = _clean_section_content(lines, sec_start, h3s[0].line)
+
+    all_sub_ids: list[str] = []
+
+    for si, h3 in enumerate(h3s):
+        sub_start = h3.line
+        sub_end = sec_end
+        # Find the next heading at same or higher level
+        for nxt in h3s[si + 1:]:
+            if nxt.level <= h3.level:
+                sub_end = nxt.line
+                break
+
+        sub_content = _clean_section_content(lines, sub_start, sub_end)
+        sub_id = f"{file_stem}#{h3.slug}"
+        sub_style = _section_api_style(api_map, sub_start, sub_end)
+        sub_bc = _breadcrumb(page_title, h2.text, h3.text)
+
+        # Prepend intro for context
+        if intro_content:
+            full_content = f"{intro_content}\n\n{sub_content}"
+        else:
+            full_content = sub_content
+
+        code_langs = _extract_section_code_langs(lines, sub_start, sub_end)
+        sibs = [f"{file_stem}#{s.slug}" for s in h3s if s is not h3]
+
+        chunks.append(
+            Chunk(
+                chunk_id=sub_id,
+                chunk_type=ChunkType.SUBSECTION,
+                content=full_content,
+                metadata=ChunkMetadata(
+                    file_path=rel,
+                    folder_path=folder,
+                    page_title=page_title,
+                    section_title=h2.text,
+                    subsection_title=h3.text,
+                    breadcrumb=sub_bc,
+                    content_type="text",
+                    language_tag=",".join(sorted(set(code_langs))) if code_langs else "",
+                    api_style=sub_style,
+                    parent_chunk_id=sec_id,
+                    sibling_chunk_ids=sibs,
+                ),
+                content_hash=_content_hash(full_content),
+            )
+        )
+        all_sub_ids.append(sub_id)
+
+    # Emit the parent section chunk if it has meaningful intro content.
+    # If the intro is tiny (just heading + a line or two), the subsections
+    # already carry the intro prepended, so a near-empty parent adds no value.
+    _MIN_INTRO_CHARS = 100
+    parent_content = intro_content if intro_content else sec_content
+    if len(parent_content) >= _MIN_INTRO_CHARS:
+        chunks.append(
+            Chunk(
+                chunk_id=sec_id,
+                chunk_type=ChunkType.SECTION,
+                content=parent_content,
+                metadata=ChunkMetadata(
+                    file_path=rel,
+                    folder_path=folder,
+                    page_title=page_title,
+                    section_title=h2.text,
+                    breadcrumb=sec_bc,
+                    content_type="text",
+                    api_style=_section_api_style(api_map, sec_start, sec_end),
+                    child_chunk_ids=all_sub_ids + sec_image_ids,
+                ),
+                content_hash=_content_hash(parent_content),
+            )
+        )

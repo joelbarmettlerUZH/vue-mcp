@@ -242,37 +242,35 @@ class TestEmbedder:
         chunks = [_make_chunk(content="special content")]
         captured_texts = []
 
-        async def fake_embed(texts, task):
+        async def fake_embed_batched(texts, task, batch_size=256):
             captured_texts.extend(texts)
             return EmbeddingResult(embeddings=[[0.0] * 1024], total_tokens=5)
 
         client = JinaClient(api_key="test")
-        with patch.object(client, "embed", side_effect=fake_embed):
+        with patch.object(client, "embed_batched", side_effect=fake_embed_batched):
             await embed_dense(chunks, client)
 
         assert captured_texts == ["special content"]
 
     @pytest.mark.asyncio
-    async def test_embed_dense_single_api_call(self):
-        """All chunks must be sent in a single embed() call, not batched."""
+    async def test_embed_dense_uses_batched(self):
+        """embed_dense should use embed_batched, not embed."""
         from vue_docs_core.clients.jina import EmbeddingResult, JinaClient
 
-        chunks = [_make_chunk(chunk_id=f"chunk#{i}") for i in range(100)]
-        call_count = 0
+        chunks = [_make_chunk(chunk_id=f"chunk#{i}") for i in range(10)]
 
-        async def fake_embed(texts, task):
-            nonlocal call_count
-            call_count += 1
+        async def fake_embed_batched(texts, task, batch_size=256):
             return EmbeddingResult(
                 embeddings=[[0.1] * 1024] * len(texts),
                 total_tokens=len(texts) * 5,
             )
 
         client = JinaClient(api_key="test")
-        with patch.object(client, "embed", side_effect=fake_embed):
-            await embed_dense(chunks, client)
+        with patch.object(client, "embed_batched", side_effect=fake_embed_batched):
+            vectors, tokens = await embed_dense(chunks, client)
 
-        assert call_count == 1
+        assert len(vectors) == 10
+        assert tokens == 50
 
 
 # ---------------------------------------------------------------------------
@@ -452,7 +450,7 @@ class TestPipelineDryRun:
         mock_qdrant.close.return_value = None
 
         mock_jina = MagicMock()
-        mock_jina.embed = AsyncMock(
+        mock_jina.embed_batched = AsyncMock(
             return_value=EmbeddingResult(embeddings=[[0.1] * 1024] * 10, total_tokens=100)
         )
         mock_jina.close = AsyncMock()
@@ -464,7 +462,7 @@ class TestPipelineDryRun:
             await run_pipeline(docs_path=docs, data_path=data, full=True)
 
         # With --full, Jina should have been called (file was re-processed)
-        mock_jina.embed.assert_called()
+        mock_jina.embed_batched.assert_called()
 
 
 # ---------------------------------------------------------------------------
