@@ -228,8 +228,11 @@ class TestResolveTargetPath:
     def test_strip_html_extension(self):
         assert _resolve_target_path("/guide/computed.html", "api/core.md") == "guide/computed"
 
-    def test_strip_anchor(self):
-        assert _resolve_target_path("/api/reactivity-core#ref", "guide/test.md") == "api/reactivity-core"
+    def test_preserve_anchor(self):
+        assert _resolve_target_path("/api/reactivity-core#ref", "guide/test.md") == "api/reactivity-core#ref"
+
+    def test_no_anchor(self):
+        assert _resolve_target_path("/api/reactivity-core", "guide/test.md") == "api/reactivity-core"
 
     def test_skip_external(self):
         assert _resolve_target_path("https://vuejs.org", "guide/test.md") is None

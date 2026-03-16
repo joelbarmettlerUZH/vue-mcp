@@ -17,6 +17,9 @@ _LINK_RE = re.compile(r"\[([^\]]*)\]\(([^)]+)\)")
 def _resolve_target_path(raw_link: str, source_file: str) -> str | None:
     """Resolve a markdown link to a normalized doc-relative path.
 
+    Preserves the anchor fragment (e.g. ``guide/components/v-model#basic-usage``)
+    so that cross-reference expansion can target specific sections.
+
     Returns ``None`` for external links and same-page anchors.
     """
     # Skip external
@@ -27,8 +30,13 @@ def _resolve_target_path(raw_link: str, source_file: str) -> str | None:
     if raw_link.startswith("#"):
         return None
 
-    # Strip anchor portion
-    path = raw_link.split("#")[0]
+    # Separate anchor from path
+    anchor = ""
+    if "#" in raw_link:
+        path_part, anchor = raw_link.split("#", 1)
+    else:
+        path_part = raw_link
+    path = path_part
 
     # Resolve relative links
     if path.startswith("/"):
@@ -58,7 +66,13 @@ def _resolve_target_path(raw_link: str, source_file: str) -> str | None:
     # Strip trailing slash
     path = path.rstrip("/")
 
-    return path if path else None
+    if not path:
+        return None
+
+    # Re-attach anchor if present
+    if anchor:
+        return f"{path}#{anchor}"
+    return path
 
 
 def _top_folder(path: str) -> str:

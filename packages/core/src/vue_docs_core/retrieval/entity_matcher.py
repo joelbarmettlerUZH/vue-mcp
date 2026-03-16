@@ -5,6 +5,10 @@ Provides fast, deterministic entity extraction from user queries:
 - Bigram matching for compound names (e.g., "watchEffect", "defineProps")
 - Fuzzy matching via rapidfuzz (Levenshtein distance <= 2) for typo tolerance
 - Synonym/alias table lookup for conceptual phrases
+
+Ambiguous entity names (common English words like "component", "template",
+"key") only match when they appear in code context: wrapped in backticks,
+prefixed with `v-` or `<`, etc.
 """
 
 import re
@@ -16,13 +20,26 @@ from vue_docs_core.models.entity import EntityIndex
 
 
 # Minimum fuzzy match score (0-100) to accept a match.
-# rapidfuzz uses ratio scoring; 80 roughly corresponds to Levenshtein distance <= 2
-# for typical API name lengths (5-15 chars).
-FUZZY_MIN_SCORE = 80
+# 85 catches typos like "definProps" → "defineProps" (score ~91)
+# but rejects loose matches like "custom" → "customRef" (score ~80).
+FUZZY_MIN_SCORE = 85
+
+# Minimum token length for fuzzy matching — avoids false positives
+# on common short words. Tokens shorter than this are exact-only.
+FUZZY_MIN_TOKEN_LENGTH = 6
 
 # Minimum entity name length for fuzzy matching — avoids false positives
 # on very short names like "h", "is", "key", "ref".
-FUZZY_MIN_LENGTH = 5
+FUZZY_MIN_LENGTH = 6
+
+# Entity names that are common English words. These only match when they
+# appear in code context (backticks, v- prefix, < prefix, etc.), not as
+# bare words in natural language queries.
+_AMBIGUOUS_NAMES: set[str] = {
+    "$options", "component", "components", "data", "h", "inject", "is",
+    "key", "methods", "name", "props", "provide", "render", "slot",
+    "template", "watch",
+}
 
 
 @dataclass
@@ -54,10 +71,14 @@ class EntityMatcher:
         self._name_lower_map: dict[str, str] = {
             name.lower(): name for name in self._entity_names
         }
-        # Separate short names (exact only) from long names (fuzzy eligible)
-        self._fuzzy_candidates: list[str] = [
-            name for name in self._entity_names if len(name) >= FUZZY_MIN_LENGTH
+        # Separate short names (exact only) from long names (fuzzy eligible).
+        # Store lowercased for case-insensitive comparison, map back to original.
+        self._fuzzy_candidates_lower: list[str] = [
+            name.lower() for name in self._entity_names if len(name) >= FUZZY_MIN_LENGTH
         ]
+        self._fuzzy_lower_to_original: dict[str, str] = {
+            name.lower(): name for name in self._entity_names if len(name) >= FUZZY_MIN_LENGTH
+        }
 
     def match(self, query: str) -> EntityMatchResult:
         """Detect API entity names in a query string.
@@ -72,11 +93,16 @@ class EntityMatcher:
             EntityMatchResult with deduplicated entity names and match sources.
         """
         result = EntityMatchResult()
+
+        # Extract code-context names from the raw query before normalizing.
+        # These are names that appear in backticks, after v-, <, or .
+        code_names = _extract_code_context_names(query)
+
         query_clean = _normalize_query(query)
         query_tokens = _tokenize(query_clean)
 
         # 1. Exact matching — check each entity name against query
-        self._match_exact(query_clean, result)
+        self._match_exact(query_clean, code_names, result)
 
         # 2. Bigram matching — join adjacent tokens to catch compound names
         self._match_bigrams(query_tokens, result)
@@ -89,17 +115,30 @@ class EntityMatcher:
 
         return result
 
-    def _match_exact(self, query_clean: str, result: EntityMatchResult) -> None:
-        """Case-insensitive substring match against entity names."""
+    def _match_exact(
+        self, query_clean: str, code_names: set[str], result: EntityMatchResult,
+    ) -> None:
+        """Case-insensitive substring match against entity names.
+
+        Ambiguous names (common English words) only match if they appeared
+        in code context in the original query.
+        """
         for name_lower, name_original in self._name_lower_map.items():
             if name_original in result.match_sources:
                 continue
-            if name_lower in query_clean:
-                # Verify it's not a substring of a longer word for short names
-                if len(name_lower) <= 3 and not _is_word_boundary(query_clean, name_lower):
-                    continue
-                result.entities.append(name_original)
-                result.match_sources[name_original] = "exact"
+            if name_lower not in query_clean:
+                continue
+
+            # Short names: require word boundary
+            if len(name_lower) <= 3 and not _is_word_boundary(query_clean, name_lower):
+                continue
+
+            # Ambiguous names: require code context
+            if name_lower in _AMBIGUOUS_NAMES and name_lower not in code_names:
+                continue
+
+            result.entities.append(name_original)
+            result.match_sources[name_original] = "exact"
 
     def _match_bigrams(self, tokens: list[str], result: EntityMatchResult) -> None:
         """Join adjacent tokens to match camelCase/compound names.
@@ -134,30 +173,34 @@ class EntityMatcher:
         Only applied to tokens of sufficient length and entity names of
         sufficient length to avoid false positives.
         """
-        if not self._fuzzy_candidates:
+        if not self._fuzzy_candidates_lower:
             return
 
         for token in tokens:
-            if len(token) < FUZZY_MIN_LENGTH:
+            if len(token) < FUZZY_MIN_TOKEN_LENGTH:
                 continue
 
             matches = process.extract(
                 token,
-                self._fuzzy_candidates,
+                self._fuzzy_candidates_lower,
                 scorer=fuzz.ratio,
                 limit=3,
                 score_cutoff=FUZZY_MIN_SCORE,
             )
 
-            for match_name, score, _ in matches:
+            for match_lower, score, _ in matches:
+                original_name = self._fuzzy_lower_to_original[match_lower]
                 # Skip if already matched by a higher-priority method
-                if match_name in result.match_sources:
+                if original_name in result.match_sources:
                     continue
                 # Skip exact matches (already handled)
-                if match_name.lower() == token:
+                if match_lower == token:
                     continue
-                result.entities.append(match_name)
-                result.match_sources[match_name] = "fuzzy"
+                # Skip ambiguous names — fuzzy should not promote common words
+                if match_lower in _AMBIGUOUS_NAMES:
+                    continue
+                result.entities.append(original_name)
+                result.match_sources[original_name] = "fuzzy"
 
 
 def _normalize_query(query: str) -> str:
@@ -176,3 +219,40 @@ def _is_word_boundary(text: str, term: str) -> bool:
     """Check that term appears at word boundaries in text (not as substring of larger word)."""
     pattern = r"(?:^|[\s\-_.,;:!?()`]){}(?:$|[\s\-_.,;:!?()`])".format(re.escape(term))
     return bool(re.search(pattern, text))
+
+
+def _extract_code_context_names(raw_query: str) -> set[str]:
+    """Extract entity names that appear in code context in the raw query.
+
+    Code context means:
+    - Wrapped in backticks: `component`, `v-model`
+    - Prefixed with v-: v-model, v-if
+    - Prefixed with <: <component>, <slot>
+    - Prefixed with .: .component, .provide (method chaining)
+
+    Returns lowercased names for comparison.
+    """
+    names: set[str] = set()
+
+    # Backtick-wrapped: `component`, `v-model`, `defineProps`
+    for m in re.finditer(r"`([^`]+)`", raw_query):
+        content = m.group(1).strip().lower()
+        # Strip v- prefix for directive matching
+        names.add(content)
+        if content.startswith("v-"):
+            names.add(content[2:])
+
+    # v- prefixed (without backticks): v-model, v-if
+    for m in re.finditer(r"\bv-(\w+)", raw_query, re.IGNORECASE):
+        names.add(m.group(1).lower())
+        names.add(f"v-{m.group(1).lower()}")
+
+    # < prefixed: <component>, <Transition>
+    for m in re.finditer(r"<(\w+)", raw_query):
+        names.add(m.group(1).lower())
+
+    # . prefixed: .component(), .provide()
+    for m in re.finditer(r"\.(\w+)", raw_query):
+        names.add(m.group(1).lower())
+
+    return names

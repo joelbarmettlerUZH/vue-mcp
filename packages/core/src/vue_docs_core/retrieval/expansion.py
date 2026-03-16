@@ -4,6 +4,10 @@ For top-ranked search results, follow outgoing cross-references to pull in
 related chunks that the user didn't directly search for. This is especially
 valuable for multi-hop questions where the answer spans multiple doc pages.
 
+Cross-references can be:
+  - Targeted: "guide/components/v-model#basic-usage" → fetch that specific chunk
+  - Page-level: "guide/essentials/forms" → fetch all sections from that page
+
 Expansion rules by cross-reference priority:
   HIGH  (guide <-> api): always follow, for all expanded hits
   MEDIUM (same-folder):  follow for top-10 candidates only
@@ -29,8 +33,8 @@ _MEDIUM_CUTOFF = 10
 # How many top hits to consider for LOW-priority expansion.
 _LOW_CUTOFF = 5
 
-# Maximum number of target pages to expand (limits Qdrant fetch size).
-_MAX_TARGET_PAGES = 5
+# Maximum number of cross-reference targets to expand.
+_MAX_TARGETS = 10
 
 
 def expand_cross_references(
@@ -40,9 +44,10 @@ def expand_cross_references(
 ) -> list[SearchHit]:
     """Expand search results by following cross-references.
 
-    For each hit's outgoing cross-references (stored as target paths in
-    the payload), fetch the referenced chunks from Qdrant and merge them
-    into the result set. Deduplicates by chunk_id.
+    For each hit's outgoing cross-references, fetch the referenced chunks
+    from Qdrant and merge them into the result set. Targeted references
+    (with anchors) fetch a single chunk; page-level references fetch all
+    sections from that page.
 
     Args:
         hits: Candidate hits sorted by score descending.
@@ -59,18 +64,20 @@ def expand_cross_references(
     # Collect existing chunk IDs to avoid duplicates
     seen_ids: set[str] = {h.chunk_id for h in hits}
 
-    # Collect target paths to expand, respecting priority cutoffs.
-    # Track by priority so we can cap to _MAX_TARGET_PAGES, keeping HIGH first.
+    # Collect targets to expand, separated into targeted (with anchor) and page-level.
     _PRIORITY_ORDER = {CrossRefType.HIGH: 0, CrossRefType.MEDIUM: 1, CrossRefType.LOW: 2}
-    targets: dict[str, int] = {}  # file_path -> best priority (lower = higher)
+    # targeted_ids: chunk_id (path#anchor) -> best priority
+    targeted_ids: dict[str, int] = {}
+    # page_paths: file_path -> best priority (for refs without anchors)
+    page_paths: dict[str, int] = {}
 
     for rank, hit in enumerate(hits):
         xrefs = hit.payload.get("cross_references", [])
         if not xrefs:
             continue
 
-        for target_path in xrefs:
-            ref_type = _get_ref_type(hit.chunk_id, target_path, crossref_types)
+        for target in xrefs:
+            ref_type = _get_ref_type(hit.chunk_id, target, crossref_types)
 
             # Apply priority cutoffs
             if ref_type == CrossRefType.LOW and rank >= _LOW_CUTOFF:
@@ -78,43 +85,69 @@ def expand_cross_references(
             if ref_type == CrossRefType.MEDIUM and rank >= _MEDIUM_CUTOFF:
                 continue
 
-            file_path = target_path if target_path.endswith(".md") else f"{target_path}.md"
             prio = _PRIORITY_ORDER[ref_type]
-            if file_path not in targets or prio < targets[file_path]:
-                targets[file_path] = prio
 
-    if not targets:
+            if "#" in target:
+                # Targeted reference — fetch specific chunk by ID
+                # Target is already in chunk_id format: "path/to/page#section-slug"
+                if target not in targeted_ids or prio < targeted_ids[target]:
+                    targeted_ids[target] = prio
+            else:
+                # Page-level reference — fetch all sections
+                file_path = target if target.endswith(".md") else f"{target}.md"
+                if file_path not in page_paths or prio < page_paths[file_path]:
+                    page_paths[file_path] = prio
+
+    if not targeted_ids and not page_paths:
         return hits
 
-    # Cap to _MAX_TARGET_PAGES, keeping highest-priority targets first
-    sorted_targets = sorted(targets.items(), key=lambda kv: kv[1])
-    target_paths = [fp for fp, _ in sorted_targets[:_MAX_TARGET_PAGES]]
-
-    # Fetch section-level chunks for the target pages
-    payloads = qdrant.get_by_file_paths(
-        file_paths=target_paths,
-        chunk_types=["section", "subsection"],
+    # Cap total targets, prioritizing targeted (specific) over page-level
+    all_targets = (
+        [(tid, prio, "targeted") for tid, prio in targeted_ids.items()]
+        + [(fp, prio, "page") for fp, prio in page_paths.items()]
     )
+    all_targets.sort(key=lambda t: (t[1], 0 if t[2] == "targeted" else 1))
+    selected = all_targets[:_MAX_TARGETS]
 
-    # Add expanded chunks that aren't already in results
+    final_chunk_ids = [t[0] for t in selected if t[2] == "targeted"]
+    final_page_paths = [t[0] for t in selected if t[2] == "page"]
+
+    # Fetch targeted chunks by chunk_id
     expanded_count = 0
-    for payload in payloads:
-        chunk_id = payload.get("chunk_id", "")
-        if not chunk_id or chunk_id in seen_ids:
-            continue
+    if final_chunk_ids:
+        payloads = qdrant.get_by_chunk_ids(final_chunk_ids)
+        for payload in payloads:
+            chunk_id = payload.get("chunk_id", "")
+            if chunk_id and chunk_id not in seen_ids:
+                hits.append(SearchHit(
+                    chunk_id=chunk_id,
+                    score=_EXPANSION_SCORE,
+                    payload=payload,
+                ))
+                seen_ids.add(chunk_id)
+                expanded_count += 1
 
-        hits.append(SearchHit(
-            chunk_id=chunk_id,
-            score=_EXPANSION_SCORE,
-            payload=payload,
-        ))
-        seen_ids.add(chunk_id)
-        expanded_count += 1
+    # Fetch page-level chunks by file_path
+    if final_page_paths:
+        payloads = qdrant.get_by_file_paths(
+            file_paths=final_page_paths,
+            chunk_types=["section", "subsection"],
+        )
+        for payload in payloads:
+            chunk_id = payload.get("chunk_id", "")
+            if chunk_id and chunk_id not in seen_ids:
+                hits.append(SearchHit(
+                    chunk_id=chunk_id,
+                    score=_EXPANSION_SCORE,
+                    payload=payload,
+                ))
+                seen_ids.add(chunk_id)
+                expanded_count += 1
 
     if expanded_count:
         logger.info(
-            "Expanded %d cross-ref targets → %d new chunks",
-            len(target_paths), expanded_count,
+            "Expanded %d targeted + %d page-level refs → %d new chunks",
+            len(final_chunk_ids), len(final_page_paths), expanded_count,
         )
 
     return hits
