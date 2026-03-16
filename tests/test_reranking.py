@@ -12,6 +12,19 @@ from vue_docs_core.clients.jina import JinaClient, RerankResult
 from vue_docs_core.clients.qdrant import SearchHit
 from vue_docs_server.tools.search import _rerank_hits
 
+
+def _mock_ctx():
+    """Create a mock MCP Context for direct tool function calls."""
+    ctx = AsyncMock()
+    ctx.report_progress = AsyncMock()
+    ctx.info = AsyncMock()
+    ctx.warning = AsyncMock()
+    ctx.error = AsyncMock()
+    ctx.debug = AsyncMock()
+    ctx.get_state = AsyncMock(return_value=None)
+    ctx.set_state = AsyncMock()
+    return ctx
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -62,7 +75,7 @@ class TestRerankHits:
 
         jina = JinaClient(api_key="test")
         with patch.object(jina, "rerank", new=AsyncMock(return_value=fake_rerank)):
-            result = await _rerank_hits(jina, "test query", hits)
+            result = await _rerank_hits(jina, "test query", hits, _mock_ctx())
 
         assert len(result) == 3
         assert result[0].chunk_id == "chunk-c"
@@ -85,7 +98,7 @@ class TestRerankHits:
 
         jina = JinaClient(api_key="test")
         with patch.object(jina, "rerank", new=AsyncMock(return_value=fake_rerank)):
-            result = await _rerank_hits(jina, "query", hits)
+            result = await _rerank_hits(jina, "query", hits, _mock_ctx())
 
         assert result[0].score == pytest.approx(0.99)
         assert result[1].score == pytest.approx(0.10)
@@ -96,7 +109,7 @@ class TestRerankHits:
         jina = JinaClient(api_key="test")
         mock_rerank = AsyncMock()
         with patch.object(jina, "rerank", new=mock_rerank):
-            result = await _rerank_hits(jina, "query", [])
+            result = await _rerank_hits(jina, "query", [], _mock_ctx())
 
         assert result == []
         mock_rerank.assert_not_called()
@@ -108,7 +121,7 @@ class TestRerankHits:
 
         jina = JinaClient(api_key="test")
         with patch.object(jina, "rerank", new=AsyncMock(side_effect=RuntimeError("API down"))):
-            result = await _rerank_hits(jina, "query", hits)
+            result = await _rerank_hits(jina, "query", hits, _mock_ctx())
 
         # Should fall back to original hits, trimmed
         assert len(result) == 5
@@ -132,7 +145,7 @@ class TestRerankHits:
 
         jina = JinaClient(api_key="test")
         with patch.object(jina, "rerank", side_effect=fake_rerank):
-            await _rerank_hits(jina, "query", hits)
+            await _rerank_hits(jina, "query", hits, _mock_ctx())
 
         assert "Guide > Essentials > Computed" in captured_docs[0]
         assert "Computed properties cache their results." in captured_docs[0]
@@ -157,7 +170,7 @@ class TestRerankHits:
 
         jina = JinaClient(api_key="test")
         with patch.object(jina, "rerank", side_effect=fake_rerank):
-            await _rerank_hits(jina, "query", hits)
+            await _rerank_hits(jina, "query", hits, _mock_ctx())
 
         doc = captured_docs[0]
         assert "Here is an example of using ref:" in doc
@@ -181,7 +194,7 @@ class TestRerankHits:
 
         jina = JinaClient(api_key="test")
         with patch.object(jina, "rerank", side_effect=fake_rerank):
-            result = await _rerank_hits(jina, "query", hits)
+            result = await _rerank_hits(jina, "query", hits, _mock_ctx())
 
         assert len(captured_docs) == 30
         assert len(result) == 30

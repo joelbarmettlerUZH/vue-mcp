@@ -8,6 +8,9 @@ dependencies = [
     "fastmcp>=3.1",
 ]
 
+[project.optional-dependencies]
+telemetry = ["opentelemetry-distro", "opentelemetry-exporter-otlp"]
+
 [tool.uv.sources]
 vue-docs-core = { workspace = true }
 

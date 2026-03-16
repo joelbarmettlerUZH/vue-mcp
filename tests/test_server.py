@@ -43,6 +43,19 @@ from vue_docs_server.tools.search import _detect_entities, vue_docs_search
 # ---------------------------------------------------------------------------
 
 
+def _mock_ctx():
+    """Create a mock MCP Context for direct tool function calls."""
+    ctx = AsyncMock()
+    ctx.report_progress = AsyncMock()
+    ctx.info = AsyncMock()
+    ctx.warning = AsyncMock()
+    ctx.error = AsyncMock()
+    ctx.debug = AsyncMock()
+    ctx.get_state = AsyncMock(return_value=None)
+    ctx.set_state = AsyncMock()
+    return ctx
+
+
 def _make_hit(
     chunk_id: str = "guide/essentials/computed#computed-caching",
     score: float = 0.85,
@@ -764,7 +777,7 @@ class TestApiLookup:
 
     @pytest.mark.asyncio
     async def test_lookup_exact(self):
-        result = await vue_api_lookup("ref")
+        result = await vue_api_lookup("ref", ctx=_mock_ctx())
         assert "# `ref`" in result
         assert "Composable" in result
         assert "vuejs.org/api/reactivity-core" in result
@@ -773,30 +786,30 @@ class TestApiLookup:
 
     @pytest.mark.asyncio
     async def test_lookup_case_insensitive(self):
-        result = await vue_api_lookup("REF")
+        result = await vue_api_lookup("REF", ctx=_mock_ctx())
         assert "# `ref`" in result
 
     @pytest.mark.asyncio
     async def test_lookup_with_backticks(self):
-        result = await vue_api_lookup("`defineProps`")
+        result = await vue_api_lookup("`defineProps`", ctx=_mock_ctx())
         assert "# `defineProps`" in result
         assert "Compiler Macro" in result
 
     @pytest.mark.asyncio
     async def test_lookup_hyphenated(self):
-        result = await vue_api_lookup("v-model")
+        result = await vue_api_lookup("v-model", ctx=_mock_ctx())
         assert "# `v-model`" in result
         assert "Directive" in result
 
     @pytest.mark.asyncio
     async def test_lookup_fuzzy_fallback(self):
         """Fuzzy matching catches typos."""
-        result = await vue_api_lookup("onMounte")
+        result = await vue_api_lookup("onMounte", ctx=_mock_ctx())
         assert "# `onMounted`" in result
 
     @pytest.mark.asyncio
     async def test_lookup_not_found(self):
-        result = await vue_api_lookup("nonExistentApi")
+        result = await vue_api_lookup("nonExistentApi", ctx=_mock_ctx())
         assert "No API entity found" in result
         assert "vue_docs_search" in result
 
@@ -809,11 +822,11 @@ class TestApiLookup:
         server_state.qdrant = None
         server_state.bm25 = None
         with pytest.raises(ToolError, match="not initialized"):
-            await vue_api_lookup("ref")
+            await vue_api_lookup("ref", ctx=_mock_ctx())
 
     @pytest.mark.asyncio
     async def test_lookup_section_cleaned(self):
-        result = await vue_api_lookup("defineProps")
+        result = await vue_api_lookup("defineProps", ctx=_mock_ctx())
         assert "{#" not in result  # anchor markers removed
         assert "defineProps() & defineEmits()" in result
 
@@ -879,7 +892,7 @@ class TestSearchTool:
             mock_jina_instance.close = AsyncMock()
             MockJina.return_value = mock_jina_instance
 
-            result = await vue_docs_search("how does computed caching work")
+            result = await vue_docs_search("how does computed caching work", ctx=_mock_ctx())
 
         assert "Computed Properties" in result
         assert "cached" in result
@@ -896,7 +909,7 @@ class TestSearchTool:
         server_state.bm25 = None
 
         with pytest.raises(ToolError, match="not initialized"):
-            await vue_docs_search("test query")
+            await vue_docs_search("test query", ctx=_mock_ctx())
 
     @pytest.mark.asyncio
     async def test_search_scope_fallback(self):
@@ -935,7 +948,7 @@ class TestSearchTool:
             mock_jina_instance.close = AsyncMock()
             MockJina.return_value = mock_jina_instance
 
-            result = await vue_docs_search("test", scope="tutorial")
+            result = await vue_docs_search("test", scope="tutorial", ctx=_mock_ctx())
 
         assert "broader scope" in result
         assert mock_qdrant.hybrid_search.call_count == 2
@@ -1365,10 +1378,13 @@ class TestMCPPrompts:
                     arguments={"symptom": "computed not updating"},
                 )
 
-        assert len(result.messages) > 0
-        text = result.messages[0].content.text
-        assert "computed not updating" in text
-        assert "vue_docs_search" in text
+        assert len(result.messages) == 2
+        all_text = " ".join(m.content.text for m in result.messages)
+        assert "computed not updating" in all_text
+        assert "vue_docs_search" in all_text
+        # First message is assistant context, second is user request
+        assert result.messages[0].role == "assistant"
+        assert result.messages[1].role == "user"
 
     @pytest.mark.asyncio
     async def test_compare_prompt_renders(self):
@@ -1382,9 +1398,9 @@ class TestMCPPrompts:
                     arguments={"items": "ref, reactive"},
                 )
 
-        text = result.messages[0].content.text
-        assert "`ref`" in text
-        assert "`reactive`" in text
+        all_text = " ".join(m.content.text for m in result.messages)
+        assert "`ref`" in all_text
+        assert "`reactive`" in all_text
 
     @pytest.mark.asyncio
     async def test_migrate_prompt_renders(self):
@@ -1401,9 +1417,9 @@ class TestMCPPrompts:
                     },
                 )
 
-        text = result.messages[0].content.text
-        assert "Options API" in text
-        assert "Composition API" in text
+        all_text = " ".join(m.content.text for m in result.messages)
+        assert "Options API" in all_text
+        assert "Composition API" in all_text
 
 
 # ---------------------------------------------------------------------------
@@ -1429,7 +1445,7 @@ class TestGetRelated:
     async def test_related_by_api_name(self):
         from vue_docs_server.tools.related import vue_get_related
 
-        result = await vue_get_related("ref")
+        result = await vue_get_related("ref", ctx=_mock_ctx())
         assert "`ref`" in result
         assert "Composable" in result
 
@@ -1437,7 +1453,7 @@ class TestGetRelated:
     async def test_related_shows_related_apis(self):
         from vue_docs_server.tools.related import vue_get_related
 
-        result = await vue_get_related("ref")
+        result = await vue_get_related("ref", ctx=_mock_ctx())
         # ref has related: reactive
         assert "reactive" in result
 
@@ -1445,14 +1461,14 @@ class TestGetRelated:
     async def test_related_by_synonym(self):
         from vue_docs_server.tools.related import vue_get_related
 
-        result = await vue_get_related("two-way binding")
+        result = await vue_get_related("two-way binding", ctx=_mock_ctx())
         assert "v-model" in result
 
     @pytest.mark.asyncio
     async def test_related_no_match(self):
         from vue_docs_server.tools.related import vue_get_related
 
-        result = await vue_get_related("completely unrelated topic xyz")
+        result = await vue_get_related("completely unrelated topic xyz", ctx=_mock_ctx())
         assert "No matching" in result
 
     @pytest.mark.asyncio
@@ -1465,4 +1481,4 @@ class TestGetRelated:
         server_state.qdrant = None
         server_state.bm25 = None
         with pytest.raises(ToolError, match="not initialized"):
-            await vue_get_related("ref")
+            await vue_get_related("ref", ctx=_mock_ctx())

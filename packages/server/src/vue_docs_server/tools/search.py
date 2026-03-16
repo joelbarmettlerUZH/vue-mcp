@@ -1,9 +1,10 @@
 """vue_docs_search tool implementation."""
 
-import logging
 from typing import Annotated
 
+from fastmcp import Context
 from fastmcp.exceptions import ToolError
+from fastmcp.telemetry import get_tracer
 from pydantic import Field
 
 from vue_docs_core.clients.jina import JinaClient
@@ -13,7 +14,8 @@ from vue_docs_core.retrieval.expansion import expand_cross_references
 from vue_docs_core.retrieval.reconstruction import reconstruct_results
 from vue_docs_server.startup import state
 
-logger = logging.getLogger(__name__)
+TOTAL_STEPS = 6
+_tracer = get_tracer()
 
 
 async def vue_docs_search(
@@ -40,6 +42,7 @@ async def vue_docs_search(
         int,
         Field(default=3, ge=1, le=20, description="Number of documentation sections to return."),
     ] = 3,
+    ctx: Context = None,
 ) -> str:
     """Search the Vue.js documentation.
 
@@ -52,48 +55,75 @@ async def vue_docs_search(
 
     jina = JinaClient()
     try:
-        # Embed the query
-        embed_result = await jina.embed([query], task=TASK_RETRIEVAL_QUERY)
-        if not embed_result.embeddings:
-            return "Error: Failed to generate query embedding."
-        dense_vector = embed_result.embeddings[0]
+        # Step 1: Embed the query
+        await ctx.report_progress(1, TOTAL_STEPS)
+        await ctx.info(f"Embedding query: {query!r}")
+        with _tracer.start_as_current_span("embed_query") as span:
+            span.set_attribute("query.length", len(query))
+            embed_result = await jina.embed([query], task=TASK_RETRIEVAL_QUERY)
+            if not embed_result.embeddings:
+                return "Error: Failed to generate query embedding."
+            dense_vector = embed_result.embeddings[0]
 
-        # Generate BM25 sparse vector
-        sparse_vector = state.bm25.get_query_sparse_vector(query)
+            # Generate BM25 sparse vector
+            sparse_vector = state.bm25.get_query_sparse_vector(query)
 
-        # Detect API entities in query for boosting
-        entity_boost = _detect_entities(query)
+            # Detect API entities in query for boosting
+            entity_boost = _detect_entities(query)
+            if entity_boost:
+                span.set_attribute("entities.detected", entity_boost)
 
-        # Run hybrid search — retrieve a wide candidate pool for reranking
-        scope_filter = scope if scope != "all" else None
-        hits = state.qdrant.hybrid_search(
-            dense_vector=dense_vector,
-            sparse_vector=sparse_vector,
-            limit=RETRIEVAL_LIMIT,
-            scope_filter=scope_filter,
-            entity_boost=entity_boost if entity_boost else None,
-        )
-
-        if not hits and scope_filter:
-            logger.info("No results for scope '%s', retrying with all", scope)
+        # Step 2: Run hybrid search
+        await ctx.report_progress(2, TOTAL_STEPS)
+        await ctx.info("Searching documentation")
+        with _tracer.start_as_current_span("hybrid_search") as span:
+            span.set_attribute("search.scope", scope)
+            scope_filter = scope if scope != "all" else None
             hits = state.qdrant.hybrid_search(
                 dense_vector=dense_vector,
                 sparse_vector=sparse_vector,
                 limit=RETRIEVAL_LIMIT,
+                scope_filter=scope_filter,
                 entity_boost=entity_boost if entity_boost else None,
             )
+
+            if not hits and scope_filter:
+                await ctx.warning(
+                    f"No results in scope '{scope}', expanding to all documentation"
+                )
+                span.set_attribute("search.scope_fallback", True)
+                hits = state.qdrant.hybrid_search(
+                    dense_vector=dense_vector,
+                    sparse_vector=sparse_vector,
+                    limit=RETRIEVAL_LIMIT,
+                    entity_boost=entity_boost if entity_boost else None,
+                )
+
+            span.set_attribute("search.hit_count", len(hits))
 
         if not hits:
             return f"No documentation found for: {query}"
 
-        # Resolve HyPE question hits to their parent chunks
-        hits = _resolve_hype_hits(hits)
+        # Step 3: Resolve HyPE question hits to their parent chunks
+        await ctx.report_progress(3, TOTAL_STEPS)
+        await ctx.info("Resolving related content")
+        with _tracer.start_as_current_span("resolve_hype"):
+            hits = _resolve_hype_hits(hits)
 
-        # Expand results via cross-references (before reranking)
-        hits = expand_cross_references(hits, state.qdrant)
+        # Step 4: Expand results via cross-references (before reranking)
+        await ctx.report_progress(4, TOTAL_STEPS)
+        await ctx.info("Expanding cross-references")
+        with _tracer.start_as_current_span("expand_crossrefs") as span:
+            pre_count = len(hits)
+            hits = expand_cross_references(hits, state.qdrant)
+            span.set_attribute("crossref.added", len(hits) - pre_count)
 
-        # Rerank candidates with Jina reranker v3
-        hits = await _rerank_hits(jina, query, hits)
+        # Step 5: Rerank candidates with Jina reranker v3
+        await ctx.report_progress(5, TOTAL_STEPS)
+        await ctx.info("Reranking candidates")
+        with _tracer.start_as_current_span("rerank") as span:
+            span.set_attribute("rerank.candidate_count", len(hits))
+            hits = await _rerank_hits(jina, query, hits, ctx)
     finally:
         await jina.close()
 
@@ -103,6 +133,15 @@ async def vue_docs_search(
     if not hits:
         return f"No documentation found for: {query}"
 
+    # Step 6: Reconstruct results
+    await ctx.report_progress(6, TOTAL_STEPS)
+    await ctx.info("Reconstructing results")
+
+    # Track query in session history
+    history = await ctx.get_state("query_history") or []
+    history.append({"query": query, "scope": scope, "results": len(hits)})
+    await ctx.set_state("query_history", history[-10:])
+
     return reconstruct_results(hits, max_results=max_results)
 
 
@@ -110,6 +149,7 @@ async def _rerank_hits(
     jina: JinaClient,
     query: str,
     hits: list[SearchHit],
+    ctx: Context,
 ) -> list[SearchHit]:
     """Rerank candidate hits using Jina reranker v3.
 
@@ -152,15 +192,11 @@ async def _rerank_hits(
                 )
             )
 
-        logger.info(
-            "Reranked %d candidates (tokens: %d)",
-            len(hits),
-            result.total_tokens,
-        )
+        await ctx.info(f"Reranked {len(hits)} candidates (tokens: {result.total_tokens})")
         return reranked
 
     except Exception:
-        logger.warning("Reranking failed, falling back to fusion scores", exc_info=True)
+        await ctx.warning("Reranking failed, falling back to fusion scores")
         return hits
 
 

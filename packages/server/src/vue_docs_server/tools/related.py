@@ -1,15 +1,13 @@
 """vue_get_related tool — find related documentation for a Vue.js topic."""
 
-import logging
 from typing import Annotated
 
+from fastmcp import Context
 from fastmcp.exceptions import ToolError
 from pydantic import Field
 
 from vue_docs_core.config import VUE_DOCS_BASE_URL
 from vue_docs_server.startup import state
-
-logger = logging.getLogger(__name__)
 
 
 async def vue_get_related(
@@ -21,6 +19,7 @@ async def vue_get_related(
             "'two-way binding'."
         ),
     ],
+    ctx: Context = None,
 ) -> str:
     """Find related Vue.js documentation for a given topic or API name.
 

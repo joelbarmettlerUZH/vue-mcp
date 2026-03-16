@@ -4,16 +4,14 @@ Fast-path exact match for API references — bypasses vector search entirely,
 goes straight to the API entity index and retrieves chunks by entity name.
 """
 
-import logging
 from typing import Annotated
 
+from fastmcp import Context
 from fastmcp.exceptions import ToolError
 from pydantic import Field
 
 from vue_docs_core.config import VUE_DOCS_BASE_URL
 from vue_docs_server.startup import state
-
-logger = logging.getLogger(__name__)
 
 
 async def vue_api_lookup(
@@ -26,6 +24,7 @@ async def vue_api_lookup(
             "Read the vue://api/index resource to browse all available API names."
         ),
     ],
+    ctx: Context = None,
 ) -> str:
     """Look up a Vue.js API by exact name.
 

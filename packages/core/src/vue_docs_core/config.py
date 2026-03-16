@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     vue_docs_path: str = "./data/vue-docs/src"
     data_path: str = "./data"
 
+    # Server
+    mask_error_details: bool = False
+
     # Pipeline
     pipeline_version: str = "5"  # Bumped: Day 13 RAPTOR hierarchical summaries
 

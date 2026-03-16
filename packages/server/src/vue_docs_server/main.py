@@ -4,7 +4,11 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastmcp import FastMCP
+from fastmcp.server.middleware.error_handling import ErrorHandlingMiddleware
+from fastmcp.server.middleware.response_limiting import ResponseLimitingMiddleware
+from fastmcp.server.middleware.timing import DetailedTimingMiddleware
 
+from vue_docs_core.config import settings
 from vue_docs_server.prompts import compare_vue_apis, debug_vue_issue, migrate_vue_pattern
 from vue_docs_server.resources.api_index import vue_api_entity, vue_api_index
 from vue_docs_server.resources.pages import vue_doc_page
@@ -60,25 +64,77 @@ mcp = FastMCP(
     "Vue Docs MCP Server",
     instructions=INSTRUCTIONS,
     lifespan=lifespan,
+    mask_error_details=settings.mask_error_details,
+    on_duplicate="warn",
 )
 
+# Middleware — order matters: outermost first
+mcp.add_middleware(ErrorHandlingMiddleware(include_traceback=not settings.mask_error_details))
+mcp.add_middleware(DetailedTimingMiddleware())
+mcp.add_middleware(ResponseLimitingMiddleware(max_size=500_000))
+
 # Tools
-mcp.tool(annotations={"readOnlyHint": True})(vue_docs_search)
-mcp.tool(annotations={"readOnlyHint": True})(vue_api_lookup)
-mcp.tool(annotations={"readOnlyHint": True})(vue_get_related)
+mcp.tool(
+    title="Search Vue.js Documentation",
+    tags={"search", "documentation"},
+    annotations={"readOnlyHint": True, "idempotentHint": True, "openWorldHint": False},
+    timeout=30.0,
+)(vue_docs_search)
+mcp.tool(
+    title="Vue API Lookup",
+    tags={"api", "reference"},
+    annotations={"readOnlyHint": True, "idempotentHint": True, "openWorldHint": False},
+    timeout=5.0,
+)(vue_api_lookup)
+mcp.tool(
+    title="Find Related Vue.js Topics",
+    tags={"api", "discovery"},
+    annotations={"readOnlyHint": True, "idempotentHint": True, "openWorldHint": False},
+    timeout=5.0,
+)(vue_get_related)
 
 # Resources
-mcp.resource("vue://pages/{path*}", mime_type="text/markdown")(vue_doc_page)
-mcp.resource("vue://topics", mime_type="text/markdown")(vue_table_of_contents)
-mcp.resource("vue://topics/{section*}", mime_type="text/markdown")(vue_section_topics)
-mcp.resource("vue://api/index", mime_type="text/markdown")(vue_api_index)
-mcp.resource("vue://api/entities/{name}", mime_type="text/markdown")(vue_api_entity)
-mcp.resource("vue://scopes", mime_type="text/markdown")(vue_search_scopes)
+mcp.resource(
+    "vue://pages/{path*}",
+    mime_type="text/markdown",
+    tags={"content", "pages"},
+    title="Vue Documentation Page",
+)(vue_doc_page)
+mcp.resource(
+    "vue://topics",
+    mime_type="text/markdown",
+    tags={"navigation", "index"},
+    title="Documentation Table of Contents",
+)(vue_table_of_contents)
+mcp.resource(
+    "vue://topics/{section*}",
+    mime_type="text/markdown",
+    tags={"navigation", "index"},
+    title="Section Table of Contents",
+)(vue_section_topics)
+mcp.resource(
+    "vue://api/index",
+    mime_type="text/markdown",
+    tags={"api", "index"},
+    title="API Entity Index",
+)(vue_api_index)
+mcp.resource(
+    "vue://api/entities/{name}",
+    mime_type="text/markdown",
+    tags={"api", "reference"},
+    title="API Entity Details",
+)(vue_api_entity)
+mcp.resource(
+    "vue://scopes",
+    mime_type="text/markdown",
+    tags={"navigation", "configuration"},
+    title="Valid Search Scopes",
+)(vue_search_scopes)
 
 # Prompts
-mcp.prompt(debug_vue_issue)
-mcp.prompt(compare_vue_apis)
-mcp.prompt(migrate_vue_pattern)
+mcp.prompt(title="Debug a Vue.js Issue", tags={"debugging", "workflow"})(debug_vue_issue)
+mcp.prompt(title="Compare Vue APIs", tags={"comparison", "workflow"})(compare_vue_apis)
+mcp.prompt(title="Migrate Vue Patterns", tags={"migration", "workflow"})(migrate_vue_pattern)
 
 
 def main():
