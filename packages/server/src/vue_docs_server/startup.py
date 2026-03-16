@@ -22,6 +22,10 @@ class ServerState:
         self.entity_index: EntityIndex = EntityIndex()
         self.synonym_table: dict[str, list[str]] = {}
         self.entity_matcher: EntityMatcher | None = None
+        # Page listing for resources (populated from index_state.json)
+        self.page_paths: list[str] = []
+        self.folder_structure: dict[str, list[str]] = {}
+        self.vue_docs_path: Path | None = None
 
     @property
     def is_ready(self) -> bool:
@@ -82,6 +86,26 @@ def load_bm25_model(data_path: Path) -> BM25Model:
     return model
 
 
+def load_index_state(data_path: Path) -> tuple[list[str], dict[str, list[str]]]:
+    """Load page listing and folder structure from index_state.json."""
+    state_path = data_path / "state" / "index_state.json"
+    if not state_path.exists():
+        logger.warning("Index state not found at %s", state_path)
+        return [], {}
+
+    with open(state_path) as f:
+        raw = json.load(f)
+
+    page_paths = sorted(raw.keys())
+    folder_structure: dict[str, list[str]] = {}
+    for fp in page_paths:
+        folder = fp.rsplit("/", 1)[0] if "/" in fp else ""
+        folder_structure.setdefault(folder, []).append(fp)
+
+    logger.info("Loaded %d page paths across %d folders", len(page_paths), len(folder_structure))
+    return page_paths, folder_structure
+
+
 def startup() -> None:
     """Initialize all server state."""
     data_path = Path(settings.data_path)
@@ -89,6 +113,10 @@ def startup() -> None:
 
     state.entity_index = load_entity_dictionary(data_path)
     state.synonym_table = load_synonym_table(data_path)
+
+    # Load page listing for resources
+    state.page_paths, state.folder_structure = load_index_state(data_path)
+    state.vue_docs_path = Path(settings.vue_docs_path).resolve()
     state.bm25 = load_bm25_model(data_path)
     state.qdrant = QdrantDocClient()
 

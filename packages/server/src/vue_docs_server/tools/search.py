@@ -1,6 +1,10 @@
 """vue_docs_search tool implementation."""
 
 import logging
+from typing import Annotated
+
+from fastmcp.exceptions import ToolError
+from pydantic import Field
 
 from vue_docs_core.clients.jina import JinaClient, TASK_RETRIEVAL_QUERY
 from vue_docs_core.clients.qdrant import SearchHit
@@ -13,42 +17,41 @@ logger = logging.getLogger(__name__)
 
 
 # Number of candidates to retrieve from Qdrant per prefetch arm.
-# This should be large enough to give the reranker a good candidate pool.
 _RETRIEVAL_LIMIT = 50
 
 # Minimum reranker relevance score to include a result.
-# Based on observed score distributions: relevant chunks score > 0,
-# irrelevant ones go negative.
 _RERANK_MIN_SCORE = 0.01
 
 
 async def vue_docs_search(
-    query: str,
-    scope: str = "all",
-    max_results: int = 3,
+    query: Annotated[str, Field(
+        description="A developer question or topic about Vue.js. "
+                    "Examples: 'how does computed caching work', "
+                    "'v-model on custom components', "
+                    "'defineProps TypeScript usage'."
+    )],
+    scope: Annotated[str, Field(
+        default="all",
+        description="Documentation section to search within. Use 'all' for the "
+                    "full docs, or narrow with a folder path like 'guide', "
+                    "'guide/essentials', 'guide/components', 'api', 'tutorial'. "
+                    "Read the vue://scopes resource for the complete list."
+    )] = "all",
+    max_results: Annotated[int, Field(
+        default=3,
+        ge=1,
+        le=20,
+        description="Number of documentation sections to return."
+    )] = 3,
 ) -> str:
     """Search the Vue.js documentation.
 
-    Performs hybrid dense+sparse search over the indexed Vue documentation,
-    reranks candidates with Jina reranker v3, and returns reconstructed,
-    readable documentation fragments ordered by the documentation's natural
-    reading flow.
-
-    Args:
-        query: The search query — a developer question or topic.
-        scope: Documentation scope to search within. Use "all" for everything,
-               or a folder path like "guide", "guide/essentials", "api",
-               "tutorial", "examples" to narrow the search.
-        max_results: Maximum number of documentation sections to return (1-20).
-
-    Returns:
-        Formatted documentation fragments with breadcrumbs, code examples,
-        and source URLs.
+    Performs hybrid semantic + keyword search over the indexed Vue documentation,
+    reranks candidates, and returns reconstructed, readable documentation
+    fragments ordered by the documentation's natural reading flow.
     """
     if not state.is_ready:
-        return "Error: Server not initialized. Please try again shortly."
-
-    max_results = max(1, min(20, max_results))
+        raise ToolError("Server not initialized. Please try again shortly.")
 
     jina = JinaClient()
     try:

@@ -87,7 +87,7 @@ def _make_entity_index() -> EntityIndex:
     """Build an entity index for testing."""
     return EntityIndex(
         entities={
-            "ref": ApiEntity(name="ref", entity_type=EntityType.COMPOSABLE),
+            "ref": ApiEntity(name="ref", entity_type=EntityType.COMPOSABLE, related=["reactive", "unref"]),
             "computed": ApiEntity(name="computed", entity_type=EntityType.COMPOSABLE),
             "defineProps": ApiEntity(name="defineProps", entity_type=EntityType.COMPILER_MACRO),
             "defineEmits": ApiEntity(name="defineEmits", entity_type=EntityType.COMPILER_MACRO),
@@ -792,11 +792,12 @@ class TestApiLookup:
 
     @pytest.mark.asyncio
     async def test_lookup_not_ready(self):
+        from fastmcp.exceptions import ToolError
         from vue_docs_server.startup import state as server_state
         server_state.qdrant = None
         server_state.bm25 = None
-        result = await vue_api_lookup("ref")
-        assert "not initialized" in result
+        with pytest.raises(ToolError, match="not initialized"):
+            await vue_api_lookup("ref")
 
     @pytest.mark.asyncio
     async def test_lookup_section_cleaned(self):
@@ -874,14 +875,15 @@ class TestSearchTool:
 
     @pytest.mark.asyncio
     async def test_search_not_ready(self):
-        """Search returns error when server not initialized."""
+        """Search raises ToolError when server not initialized."""
+        from fastmcp.exceptions import ToolError
         from vue_docs_server.startup import state as server_state
 
         server_state.qdrant = None
         server_state.bm25 = None
 
-        result = await vue_docs_search("test query")
-        assert "not initialized" in result
+        with pytest.raises(ToolError, match="not initialized"):
+            await vue_docs_search("test query")
 
     @pytest.mark.asyncio
     async def test_search_scope_fallback(self):
@@ -1001,6 +1003,22 @@ def _setup_server_state():
         entity_index=entity_index,
         synonym_table=server_state.synonym_table,
     )
+
+    # Resource state
+    server_state.page_paths = [
+        "guide/essentials/computed.md",
+        "guide/essentials/reactivity-fundamentals.md",
+        "api/reactivity-core.md",
+    ]
+    server_state.folder_structure = {
+        "guide/essentials": [
+            "guide/essentials/computed.md",
+            "guide/essentials/reactivity-fundamentals.md",
+        ],
+        "api": ["api/reactivity-core.md"],
+    }
+    server_state.vue_docs_path = None  # No disk access in integration tests
+
     return server_state
 
 
@@ -1017,7 +1035,7 @@ class TestMCPIntegration:
 
     @pytest.mark.asyncio
     async def test_list_tools(self):
-        """Server exposes both tools via MCP."""
+        """Server exposes all tools via MCP."""
         from vue_docs_server.main import mcp
 
         with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
@@ -1025,8 +1043,9 @@ class TestMCPIntegration:
                 tools = await client.list_tools()
 
         tool_names = [t.name for t in tools]
-        assert "vue_docs_search_tool" in tool_names
-        assert "vue_api_lookup_tool" in tool_names
+        assert "vue_docs_search" in tool_names
+        assert "vue_api_lookup" in tool_names
+        assert "vue_get_related" in tool_names
 
     @pytest.mark.asyncio
     async def test_tool_schema(self):
@@ -1037,7 +1056,7 @@ class TestMCPIntegration:
             async with Client(mcp) as client:
                 tools = await client.list_tools()
 
-        search_tool = next(t for t in tools if t.name == "vue_docs_search_tool")
+        search_tool = next(t for t in tools if t.name == "vue_docs_search")
         params = search_tool.inputSchema
         assert "query" in params["properties"]
         assert "scope" in params["properties"]
@@ -1053,14 +1072,14 @@ class TestMCPIntegration:
             async with Client(mcp) as client:
                 tools = await client.list_tools()
 
-        lookup_tool = next(t for t in tools if t.name == "vue_api_lookup_tool")
+        lookup_tool = next(t for t in tools if t.name == "vue_api_lookup")
         params = lookup_tool.inputSchema
         assert "api_name" in params["properties"]
         assert "api_name" in params.get("required", [])
 
     @pytest.mark.asyncio
     async def test_call_search_tool(self):
-        """Call vue_docs_search_tool through MCP protocol and get results."""
+        """Call vue_docs_search through MCP protocol and get results."""
         from vue_docs_server.main import mcp
 
         _setup_server_state()
@@ -1083,7 +1102,7 @@ class TestMCPIntegration:
 
             async with Client(mcp) as client:
                 result = await client.call_tool(
-                    "vue_docs_search_tool",
+                    "vue_docs_search",
                     {"query": "how does computed caching work"},
                 )
 
@@ -1095,7 +1114,7 @@ class TestMCPIntegration:
 
     @pytest.mark.asyncio
     async def test_call_api_lookup_tool(self):
-        """Call vue_api_lookup_tool through MCP protocol."""
+        """Call vue_api_lookup through MCP protocol."""
         from vue_docs_server.main import mcp
 
         _setup_server_state()
@@ -1106,7 +1125,7 @@ class TestMCPIntegration:
         ):
             async with Client(mcp) as client:
                 result = await client.call_tool(
-                    "vue_api_lookup_tool",
+                    "vue_api_lookup",
                     {"api_name": "ref"},
                 )
 
@@ -1138,7 +1157,7 @@ class TestMCPIntegration:
 
             async with Client(mcp) as client:
                 result = await client.call_tool(
-                    "vue_docs_search_tool",
+                    "vue_docs_search",
                     {"query": "ref basics", "scope": "guide/essentials", "max_results": 5},
                 )
 
@@ -1169,7 +1188,7 @@ class TestMCPIntegration:
 
             async with Client(mcp) as client:
                 result = await client.call_tool(
-                    "vue_docs_search_tool",
+                    "vue_docs_search",
                     {"query": "how does computed work"},
                 )
 
@@ -1188,3 +1207,248 @@ class TestMCPIntegration:
                 info = client.initialize_result
                 assert info is not None
                 assert info.serverInfo.name == "Vue Docs MCP Server"
+
+
+# ---------------------------------------------------------------------------
+# Tests: MCP Resources
+# ---------------------------------------------------------------------------
+
+
+class TestMCPResources:
+    """Test MCP resource registration and content via fastmcp.Client."""
+
+    @pytest.mark.asyncio
+    async def test_list_resources(self):
+        """Server exposes resource templates via MCP."""
+        from vue_docs_server.main import mcp
+
+        _setup_server_state()
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                resources = await client.list_resources()
+                templates = await client.list_resource_templates()
+
+        # Static resources
+        resource_uris = [str(r.uri) for r in resources]
+        assert "vue://topics" in resource_uris
+        assert "vue://api/index" in resource_uris
+        assert "vue://scopes" in resource_uris
+
+        # Template resources
+        template_uris = [t.uriTemplate for t in templates]
+        assert any("pages" in t for t in template_uris)
+        assert any("entities" in t for t in template_uris)
+
+    @pytest.mark.asyncio
+    async def test_read_topics_resource(self):
+        """TOC resource returns markdown with page listings."""
+        from vue_docs_server.main import mcp
+
+        _setup_server_state()
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                result = await client.read_resource("vue://topics")
+
+        text = result[0].text if hasattr(result[0], "text") else str(result[0])
+        assert "Table of Contents" in text
+        assert "computed" in text.lower()
+
+    @pytest.mark.asyncio
+    async def test_read_api_index_resource(self):
+        """API index resource returns grouped entity listing."""
+        from vue_docs_server.main import mcp
+
+        _setup_server_state()
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                result = await client.read_resource("vue://api/index")
+
+        text = result[0].text if hasattr(result[0], "text") else str(result[0])
+        assert "API Index" in text
+        assert "`ref`" in text
+        assert "`computed`" in text
+
+    @pytest.mark.asyncio
+    async def test_read_scopes_resource(self):
+        """Scopes resource lists valid search scopes."""
+        from vue_docs_server.main import mcp
+
+        _setup_server_state()
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                result = await client.read_resource("vue://scopes")
+
+        text = result[0].text if hasattr(result[0], "text") else str(result[0])
+        assert "Search Scopes" in text
+        assert "guide/essentials" in text
+
+    @pytest.mark.asyncio
+    async def test_read_api_entity_resource(self):
+        """API entity resource returns details for a specific entity."""
+        from vue_docs_server.main import mcp
+
+        _setup_server_state()
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                result = await client.read_resource("vue://api/entities/ref")
+
+        text = result[0].text if hasattr(result[0], "text") else str(result[0])
+        assert "`ref`" in text
+        assert "Composable" in text
+
+    @pytest.mark.asyncio
+    async def test_read_section_topics_resource(self):
+        """Section TOC resource filters to a specific section."""
+        from vue_docs_server.main import mcp
+
+        _setup_server_state()
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                result = await client.read_resource("vue://topics/guide/essentials")
+
+        text = result[0].text if hasattr(result[0], "text") else str(result[0])
+        assert "computed" in text.lower()
+        # Should NOT include api pages
+        assert "api/reactivity-core" not in text
+
+
+# ---------------------------------------------------------------------------
+# Tests: MCP Prompts
+# ---------------------------------------------------------------------------
+
+
+class TestMCPPrompts:
+    """Test MCP prompt registration and rendering via fastmcp.Client."""
+
+    @pytest.mark.asyncio
+    async def test_list_prompts(self):
+        """Server exposes all prompts via MCP."""
+        from vue_docs_server.main import mcp
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                prompts = await client.list_prompts()
+
+        prompt_names = [p.name for p in prompts]
+        assert "debug_vue_issue" in prompt_names
+        assert "compare_vue_apis" in prompt_names
+        assert "migrate_vue_pattern" in prompt_names
+
+    @pytest.mark.asyncio
+    async def test_debug_prompt_renders(self):
+        """Debug prompt returns structured debugging instructions."""
+        from vue_docs_server.main import mcp
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                result = await client.get_prompt(
+                    "debug_vue_issue",
+                    arguments={"symptom": "computed not updating"},
+                )
+
+        assert len(result.messages) > 0
+        text = result.messages[0].content.text
+        assert "computed not updating" in text
+        assert "vue_docs_search" in text
+
+    @pytest.mark.asyncio
+    async def test_compare_prompt_renders(self):
+        """Compare prompt includes API names."""
+        from vue_docs_server.main import mcp
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                result = await client.get_prompt(
+                    "compare_vue_apis",
+                    arguments={"items": "ref, reactive"},
+                )
+
+        text = result.messages[0].content.text
+        assert "`ref`" in text
+        assert "`reactive`" in text
+
+    @pytest.mark.asyncio
+    async def test_migrate_prompt_renders(self):
+        """Migrate prompt includes from/to patterns."""
+        from vue_docs_server.main import mcp
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                result = await client.get_prompt(
+                    "migrate_vue_pattern",
+                    arguments={
+                        "from_pattern": "Options API",
+                        "to_pattern": "Composition API",
+                    },
+                )
+
+        text = result.messages[0].content.text
+        assert "Options API" in text
+        assert "Composition API" in text
+
+
+# ---------------------------------------------------------------------------
+# Tests: vue_get_related tool
+# ---------------------------------------------------------------------------
+
+
+class TestGetRelated:
+    def setup_method(self):
+        from vue_docs_server.startup import state as server_state
+
+        entity_index = _make_entity_index()
+        server_state.entity_index = entity_index
+        server_state.synonym_table = _make_synonym_table()
+        server_state.entity_matcher = EntityMatcher(
+            entity_index=entity_index,
+            synonym_table=server_state.synonym_table,
+        )
+        server_state.qdrant = MagicMock()
+        server_state.bm25 = MagicMock()
+
+    @pytest.mark.asyncio
+    async def test_related_by_api_name(self):
+        from vue_docs_server.tools.related import vue_get_related
+
+        result = await vue_get_related("ref")
+        assert "`ref`" in result
+        assert "Composable" in result
+
+    @pytest.mark.asyncio
+    async def test_related_shows_related_apis(self):
+        from vue_docs_server.tools.related import vue_get_related
+
+        result = await vue_get_related("ref")
+        # ref has related: reactive
+        assert "reactive" in result
+
+    @pytest.mark.asyncio
+    async def test_related_by_synonym(self):
+        from vue_docs_server.tools.related import vue_get_related
+
+        result = await vue_get_related("two-way binding")
+        assert "v-model" in result
+
+    @pytest.mark.asyncio
+    async def test_related_no_match(self):
+        from vue_docs_server.tools.related import vue_get_related
+
+        result = await vue_get_related("completely unrelated topic xyz")
+        assert "No matching" in result
+
+    @pytest.mark.asyncio
+    async def test_related_not_ready(self):
+        from fastmcp.exceptions import ToolError
+        from vue_docs_server.startup import state as server_state
+        from vue_docs_server.tools.related import vue_get_related
+
+        server_state.qdrant = None
+        server_state.bm25 = None
+        with pytest.raises(ToolError, match="not initialized"):
+            await vue_get_related("ref")

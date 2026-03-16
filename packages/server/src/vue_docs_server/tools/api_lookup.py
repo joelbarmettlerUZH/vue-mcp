@@ -5,8 +5,11 @@ goes straight to the API entity index and retrieves chunks by entity name.
 """
 
 import logging
+from typing import Annotated
 
-from vue_docs_core.retrieval.entity_matcher import EntityMatcher
+from fastmcp.exceptions import ToolError
+from pydantic import Field
+
 from vue_docs_core.retrieval.reconstruction import VUE_DOCS_BASE_URL
 
 from vue_docs_server.startup import state
@@ -14,23 +17,22 @@ from vue_docs_server.startup import state
 logger = logging.getLogger(__name__)
 
 
-async def vue_api_lookup(api_name: str) -> str:
-    """Look up a Vue.js API by name.
+async def vue_api_lookup(
+    api_name: Annotated[str, Field(
+        description="The Vue API name to look up. Examples: 'ref', 'computed', "
+                    "'defineProps', 'v-model', 'onMounted', 'watchEffect', "
+                    "'Transition', 'KeepAlive'. "
+                    "Read the vue://api/index resource to browse all available API names."
+    )],
+) -> str:
+    """Look up a Vue.js API by exact name.
 
-    Fast-path for API references — bypasses vector search and returns
-    the API entity's documentation location and metadata directly.
-    For broader questions, use vue_docs_search instead.
-
-    Args:
-        api_name: The Vue API name to look up. Examples: "ref", "computed",
-                  "defineProps", "v-model", "onMounted", "watchEffect".
-
-    Returns:
-        API entity information including type, documentation page,
-        related APIs, and a direct link.
+    Fast-path for API references — returns the API's type, documentation
+    page, section, and related APIs. Much faster than a full search when
+    you know the API name.
     """
     if not state.is_ready:
-        return "Error: Server not initialized. Please try again shortly."
+        raise ToolError("Server not initialized. Please try again shortly.")
 
     # Try exact match first
     entity = _find_entity(api_name)
