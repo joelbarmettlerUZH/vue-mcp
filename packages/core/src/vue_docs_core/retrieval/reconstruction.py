@@ -12,6 +12,15 @@ def _file_path_to_url(file_path: str) -> str:
     return f"{VUE_DOCS_BASE_URL}/{path}"
 
 
+def _ref_to_link(ref: str) -> str:
+    """Convert a cross-reference path to a named markdown link."""
+    if ref.endswith(".md"):
+        url = _file_path_to_url(ref)
+        name = ref.rsplit("/", 1)[-1].removesuffix(".md").replace("-", " ").title()
+        return f"[{name}]({url})"
+    return ref
+
+
 def _format_code_block(content: str, language: str) -> str:
     """Format a code block with fenced syntax."""
     lang = language or ""
@@ -35,8 +44,6 @@ def _are_adjacent(a: SearchHit, b: SearchHit) -> bool:
     if not key_a or not key_b:
         return False
 
-    # Adjacent if sort keys share the same prefix up to the last segment
-    # and differ by exactly 1 in the last numeric segment.
     parts_a = key_a.rsplit("/", 1)
     parts_b = key_b.rsplit("/", 1)
 
@@ -45,7 +52,6 @@ def _are_adjacent(a: SearchHit, b: SearchHit) -> bool:
     if len(parts_a) == 2 and parts_a[0] != parts_b[0]:
         return False
 
-    # Extract numeric prefix from last segment (e.g. "03_computed" -> 3)
     last_a = parts_a[-1]
     last_b = parts_b[-1]
     try:
@@ -57,11 +63,7 @@ def _are_adjacent(a: SearchHit, b: SearchHit) -> bool:
 
 
 def _merge_adjacent_hits(hits: list[SearchHit]) -> list[list[SearchHit]]:
-    """Group consecutive adjacent hits into merged groups.
-
-    Returns a list of groups where each group is a list of adjacent hits
-    that should be rendered together.
-    """
+    """Group consecutive adjacent hits into merged groups."""
     if not hits:
         return []
 
@@ -76,68 +78,75 @@ def _merge_adjacent_hits(hits: list[SearchHit]) -> list[list[SearchHit]]:
     return groups
 
 
-def _build_summary_line(hits: list[SearchHit]) -> str:
-    """Build a top-level summary describing what was found."""
-    n = len(hits)
-    pages = {h.payload.get("file_path", "") for h in hits}
-    page_count = len(pages - {""})
+def _build_chunk_frontmatter(hits: list[SearchHit]) -> str:
+    """Build YAML frontmatter for a chunk or merged group of chunks."""
+    payload = hits[0].payload
+    breadcrumb = payload.get("breadcrumb", "")
+    file_path = payload.get("file_path", "")
 
-    # Collect unique API entities across all hits
-    all_entities: list[str] = []
-    seen: set[str] = set()
-    for h in hits:
-        for e in h.payload.get("api_entities", []):
-            if e not in seen:
-                all_entities.append(e)
-                seen.add(e)
+    lines = ["---"]
 
-    parts = [f"Found {n} relevant documentation section{'s' if n != 1 else ''}"]
-    if page_count > 1:
-        parts[0] += f" across {page_count} pages"
+    if breadcrumb:
+        lines.append(f"breadcrumb: {breadcrumb}")
 
-    if all_entities:
-        entity_list = ", ".join(f"`{e}`" for e in all_entities[:8])
-        if len(all_entities) > 8:
-            entity_list += f" and {len(all_entities) - 8} more"
-        parts.append(f"Related APIs: {entity_list}")
+    if file_path:
+        lines.append(f"source: {_file_path_to_url(file_path)}")
 
-    return " | ".join(parts) + "\n"
+    # Collect APIs across all hits in the group
+    all_apis: list[str] = []
+    seen_apis: set[str] = set()
+    all_refs: list[str] = []
+    seen_refs: set[str] = set()
+
+    for hit in hits:
+        for api in hit.payload.get("api_entities", []):
+            if api not in seen_apis:
+                all_apis.append(api)
+                seen_apis.add(api)
+        for ref in hit.payload.get("cross_references", []):
+            if ref not in seen_refs:
+                all_refs.append(ref)
+                seen_refs.add(ref)
+
+    if all_apis:
+        lines.append("apis: [" + ", ".join(all_apis) + "]")
+
+    if all_refs:
+        links = [_ref_to_link(r) for r in all_refs[:5]]
+        lines.append("see_also: [" + ", ".join(links) + "]")
+
+    lines.append("---")
+    return "\n".join(lines)
 
 
 def _render_hit(hit: SearchHit, show_heading: bool = True) -> list[str]:
-    """Render a single hit into markdown lines."""
+    """Render a single hit's content into markdown lines (no frontmatter)."""
     parts: list[str] = []
     payload = hit.payload
     chunk_type = payload.get("chunk_type", "")
-    breadcrumb = payload.get("breadcrumb", "")
     content = payload.get("content", "")
     section_title = payload.get("section_title", "")
     subsection_title = payload.get("subsection_title", "")
     language_tag = payload.get("language_tag", "")
     preceding_prose = payload.get("preceding_prose", "")
-    api_entities = payload.get("api_entities", [])
-    cross_references = payload.get("cross_references", [])
 
-    # Summary chunks are rendered as blockquote introductions
+    # Summary chunks as GFM admonitions
     if chunk_type in ("page_summary", "folder_summary", "top_summary"):
         label = {
             "page_summary": "Overview",
             "folder_summary": "Section Overview",
             "top_summary": "Topic Overview",
         }[chunk_type]
-        parts.append(f"**{label}:** {content}")
+        parts.append("> [!NOTE]")
+        parts.append(f"> **{label}:** {content}")
         parts.append("")
         return parts
 
     # Section/subsection heading
     if show_heading:
-        if subsection_title:
-            parts.append(f"### {subsection_title}")
-        elif section_title:
-            parts.append(f"### {section_title}")
-
-        if breadcrumb:
-            parts.append(f"*{breadcrumb}*")
+        heading = subsection_title or section_title
+        if heading:
+            parts.append(f"### {heading}")
             parts.append("")
 
     # Content rendering based on chunk type
@@ -147,7 +156,6 @@ def _render_hit(hit: SearchHit, show_heading: bool = True) -> list[str]:
             parts.append("")
         parts.append(_format_code_block(content, language_tag))
     elif chunk_type == "image":
-        # Render image with alt text; content holds the alt text or description
         alt = content or "documentation image"
         image_url = payload.get("image_url", "")
         if image_url:
@@ -160,20 +168,6 @@ def _render_hit(hit: SearchHit, show_heading: bool = True) -> list[str]:
     else:
         parts.append(content)
 
-    # API entities tag line
-    if api_entities:
-        entities_str = ", ".join(f"`{e}`" for e in api_entities)
-        parts.append(f"\nAPIs: {entities_str}")
-
-    # Cross-reference "See also" links
-    if cross_references:
-        see_also = []
-        for ref in cross_references[:5]:
-            url = _file_path_to_url(ref) if ref.endswith(".md") else ref
-            see_also.append(url)
-        if see_also:
-            parts.append(f"\nSee also: {', '.join(see_also)}")
-
     parts.append("")
     return parts
 
@@ -185,8 +179,8 @@ def reconstruct_results(
     """Reconstruct search hits into a readable, structured response.
 
     Groups results by source page, orders by global sort key (documentation
-    reading order), merges adjacent chunks from the same section, and formats
-    with breadcrumbs, code blocks, and cross-references.
+    reading order), merges adjacent chunks, and wraps each chunk group
+    with YAML frontmatter containing its metadata.
     """
     if not hits:
         return "No results found."
@@ -195,28 +189,28 @@ def reconstruct_results(
     selected = hits[:max_results]
     selected.sort(key=lambda h: h.payload.get("global_sort_key", "zzz"))
 
-    # Build summary
-    summary = _build_summary_line(selected)
-
     # Separate folder/top summaries (no file_path) from page-level results
     _SUMMARY_TYPES = {"folder_summary", "top_summary"}
     high_level_summaries = [h for h in selected if h.payload.get("chunk_type") in _SUMMARY_TYPES]
     page_level_hits = [h for h in selected if h.payload.get("chunk_type") not in _SUMMARY_TYPES]
 
-    # Group by file_path (source page)
     sections: list[str] = []
 
-    # Render high-level summaries first (top > folder ordering)
+    # Render high-level summaries first
     if high_level_summaries:
         for hl in high_level_summaries:
-            sections.append("\n".join(_render_hit(hl, show_heading=True)))
+            parts = [_build_chunk_frontmatter([hl]), ""]
+            parts.extend(_render_hit(hl, show_heading=True))
+            sections.append("\n".join(parts))
 
-    for file_path, group in groupby(page_level_hits, key=lambda h: h.payload.get("file_path", "")):
+    # Group by file_path (source page)
+    for file_path, group in groupby(
+        page_level_hits, key=lambda h: h.payload.get("file_path", "")
+    ):
         page_hits = list(group)
         if not page_hits:
             continue
 
-        # Place page_summary hits first, then the rest in sort key order
         summaries = [h for h in page_hits if h.payload.get("chunk_type") == "page_summary"]
         detail_hits = [h for h in page_hits if h.payload.get("chunk_type") != "page_summary"]
 
@@ -224,21 +218,28 @@ def reconstruct_results(
         url = _file_path_to_url(file_path)
 
         # Page header
-        page_parts: list[str] = [f"## {page_title}"]
-        page_parts.append(f"Source: {url}")
-        page_parts.append("")
+        page_parts: list[str] = [
+            f"## {page_title}",
+            f"<sup>[source]({url})</sup>",
+            "",
+        ]
 
-        # Render page summary as introduction
+        # Render page summaries
         for s in summaries:
-            page_parts.extend(_render_hit(s, show_heading=True))
+            chunk_block = [_build_chunk_frontmatter([s]), ""]
+            chunk_block.extend(_render_hit(s, show_heading=True))
+            page_parts.extend(chunk_block)
 
-        # Merge adjacent detail hits
+        # Merge adjacent detail hits, then render each group with its own frontmatter
         merged_groups = _merge_adjacent_hits(detail_hits)
 
         for merged in merged_groups:
-            # First hit in group gets full heading
+            # Frontmatter for the merged group
+            page_parts.append(_build_chunk_frontmatter(merged))
+            page_parts.append("")
+
+            # Content: first hit gets heading, subsequent skip it
             page_parts.extend(_render_hit(merged[0], show_heading=True))
-            # Subsequent adjacent hits skip the heading
             for hit in merged[1:]:
                 page_parts.extend(_render_hit(hit, show_heading=False))
 
@@ -247,4 +248,4 @@ def reconstruct_results(
     if not sections:
         return "No results found."
 
-    return summary + "\n---\n\n".join(sections)
+    return "\n---\n\n".join(sections)

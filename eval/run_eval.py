@@ -102,13 +102,28 @@ def load_questions(path: Path) -> list[dict]:
     return questions
 
 
+class _NoOpContext:
+    """Lightweight no-op context for running tools outside the MCP protocol."""
+
+    async def report_progress(self, *a, **kw): pass
+    async def info(self, *a, **kw): pass
+    async def warning(self, *a, **kw): pass
+    async def error(self, *a, **kw): pass
+    async def debug(self, *a, **kw): pass
+    async def get_state(self, *a, **kw): return None
+    async def set_state(self, *a, **kw): pass
+
+
+_noop_ctx = _NoOpContext()
+
+
 async def run_search(
     query: str,
     max_results: int = 10,
 ) -> tuple[str, float]:
     """Run a single search query through the actual server pipeline."""
     start = time.monotonic()
-    result_text = await vue_docs_search(query, max_results=max_results)
+    result_text = await vue_docs_search(query, max_results=max_results, ctx=_noop_ctx)
     latency = time.monotonic() - start
     return result_text, latency
 

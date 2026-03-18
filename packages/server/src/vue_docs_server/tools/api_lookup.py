@@ -45,37 +45,55 @@ async def vue_api_lookup(
             entity = _find_entity(match_result.entities[0])
 
     if entity is None:
-        return f"No API entity found for '{api_name}'. Try vue_docs_search for broader queries."
+        return (
+            f"No API entity found for `{api_name}`.\n\n"
+            f"**Next step:** Use `vue_docs_search` with query `\"{api_name}\"` "
+            f"for a broader documentation search."
+        )
 
     # Build response
-    parts: list[str] = []
-    parts.append(f"# `{entity.name}`")
-    parts.append("")
-    parts.append(f"**Type:** {entity.entity_type.replace('_', ' ').title()}")
+    type_label = entity.entity_type.replace("_", " ").title()
+    chunk_ids = state.entity_index.entity_to_chunks.get(entity.name, [])
+
+    lines: list[str] = [
+        f"# `{entity.name}`\n",
+        f"> **{type_label}**",
+    ]
 
     if entity.page_path:
         page_url = _page_path_to_url(entity.page_path)
-        parts.append(f"**Documentation:** {page_url}")
+        lines.append(f"> {page_url}")
 
     if entity.section:
-        # Clean up section text (remove {#anchor} markers and HTML)
         section_clean = _clean_section_title(entity.section)
-        parts.append(f"**Section:** {section_clean}")
+        lines[-1] += f" — {section_clean}"
 
-    if entity.related:
-        related_str = ", ".join(f"`{r}`" for r in entity.related)
-        parts.append(f"**Related APIs:** {related_str}")
+    lines.append("")
 
-    # Look up which chunks reference this entity
-    chunk_ids = state.entity_index.entity_to_chunks.get(entity.name, [])
+    # Details table
+    details: list[tuple[str, str]] = []
     if chunk_ids:
-        parts.append(f"\nReferenced in {len(chunk_ids)} documentation chunks.")
+        details.append(("Documentation chunks", str(len(chunk_ids))))
+    if entity.related:
+        details.append(("Related APIs", ", ".join(f"`{r}`" for r in entity.related)))
 
-    parts.append(
-        f'\nUse `vue_docs_search` with query "{entity.name}" for full documentation content.'
+    if details:
+        lines.append("| Property | Value |")
+        lines.append("|----------|-------|")
+        for key, val in details:
+            lines.append(f"| {key} | {val} |")
+        lines.append("")
+
+    # Next steps
+    lines.append("**Next steps:**")
+    lines.append(
+        f'- `vue_docs_search` with query `"{entity.name}"` for full documentation content'
     )
+    if entity.related:
+        related_names = ", ".join(f"`{r}`" for r in entity.related[:3])
+        lines.append(f"- `vue_api_lookup` on related APIs: {related_names}")
 
-    return "\n".join(parts)
+    return "\n".join(lines)
 
 
 def _find_entity(name: str):

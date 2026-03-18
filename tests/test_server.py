@@ -25,7 +25,7 @@ from vue_docs_core.retrieval.entity_matcher import (
 )
 from vue_docs_core.retrieval.reconstruction import (
     _are_adjacent,
-    _build_summary_line,
+    _build_chunk_frontmatter,
     _file_path_to_url,
     _merge_adjacent_hits,
     reconstruct_results,
@@ -146,7 +146,8 @@ class TestReconstruction:
         assert "Computed Properties" in result
         assert "vuejs.org" in result
         assert "re-evaluate" in result
-        assert "Found 1 relevant" in result
+        assert "---\n" in result  # per-chunk YAML frontmatter
+        assert "breadcrumb:" in result
 
     def test_code_block_rendering(self):
         hits = [
@@ -194,16 +195,16 @@ class TestReconstruction:
         assert "## Page A" in result
         assert "## Page B" in result
 
-    def test_api_entities_displayed(self):
+    def test_api_entities_in_chunk_frontmatter(self):
         hits = [_make_hit(api_entities=["computed", "ref"])]
         result = reconstruct_results(hits)
-        assert "`computed`" in result
-        assert "`ref`" in result
+        assert "apis: [computed, ref]" in result
 
     def test_max_results_limit(self):
         hits = [_make_hit(chunk_id=f"chunk_{i}", content=f"Content {i}") for i in range(20)]
         result = reconstruct_results(hits, max_results=5)
-        assert "Found 5 relevant" in result
+        # Should only contain 5 chunks worth of content
+        assert result.count("### Computed Caching") == 5
 
     def test_file_path_to_url(self):
         assert (
@@ -230,10 +231,10 @@ class TestReconstruction:
         hit = _make_hit()
         hit.payload["cross_references"] = ["guide/essentials/watchers.md", "api/reactivity-core.md"]
         result = reconstruct_results([hit])
-        assert "See also:" in result
+        assert "see_also:" in result
         assert "vuejs.org/guide/essentials/watchers" in result
 
-    def test_summary_line_with_entities(self):
+    def test_per_chunk_entities(self):
         hits = [
             _make_hit(api_entities=["computed", "ref"]),
             _make_hit(
@@ -244,16 +245,14 @@ class TestReconstruction:
             ),
         ]
         result = reconstruct_results(hits)
-        assert "across 2 pages" in result
-        assert "Related APIs:" in result
-        assert "`computed`" in result
+        # Each chunk's frontmatter has its own APIs
+        assert "apis: [computed, ref]" in result
+        assert "apis: [reactive]" in result
 
-    def test_summary_line_single_page(self):
+    def test_chunk_frontmatter_has_breadcrumb(self):
         hits = [_make_hit()]
         result = reconstruct_results(hits)
-        assert "Found 1 relevant" in result
-        # Should NOT say "across X pages" for single page
-        assert "across" not in result.split("\n")[0]
+        assert "breadcrumb: Guide > Essentials" in result
 
     def test_page_summary_rendered_as_overview(self):
         hits = [
@@ -266,6 +265,7 @@ class TestReconstruction:
         ]
         result = reconstruct_results(hits)
         assert "**Overview:**" in result
+        assert "[!NOTE]" in result
         assert "computed properties in Vue 3" in result
 
     def test_folder_summary_rendered_as_section_overview(self):
@@ -441,32 +441,34 @@ class TestAdjacentMerging:
         assert "Second content" in result
 
 
-class TestBuildSummaryLine:
-    def test_basic_summary(self):
+class TestBuildChunkFrontmatter:
+    def test_basic_frontmatter(self):
         hits = [_make_hit()]
-        summary = _build_summary_line(hits)
-        assert "Found 1 relevant" in summary
+        fm = _build_chunk_frontmatter(hits)
+        assert fm.startswith("---\n")
+        assert fm.endswith("---")
+        assert "breadcrumb:" in fm
+        assert "source:" in fm
 
-    def test_multi_page_summary(self):
-        hits = [
-            _make_hit(file_path="guide/a.md"),
-            _make_hit(file_path="guide/b.md"),
-            _make_hit(file_path="guide/c.md"),
-        ]
-        summary = _build_summary_line(hits)
-        assert "across 3 pages" in summary
-
-    def test_entities_in_summary(self):
+    def test_entities_in_frontmatter(self):
         hits = [_make_hit(api_entities=["computed", "ref"])]
-        summary = _build_summary_line(hits)
-        assert "`computed`" in summary
-        assert "`ref`" in summary
+        fm = _build_chunk_frontmatter(hits)
+        assert "apis: [computed, ref]" in fm
 
-    def test_many_entities_truncated(self):
-        entities = [f"api{i}" for i in range(12)]
-        hits = [_make_hit(api_entities=entities)]
-        summary = _build_summary_line(hits)
-        assert "and 4 more" in summary
+    def test_merged_group_combines_entities(self):
+        hits = [
+            _make_hit(api_entities=["computed"]),
+            _make_hit(chunk_id="b", api_entities=["ref", "computed"]),
+        ]
+        fm = _build_chunk_frontmatter(hits)
+        assert "apis: [computed, ref]" in fm  # deduplicated
+
+    def test_cross_references_in_frontmatter(self):
+        hit = _make_hit()
+        hit.payload["cross_references"] = ["guide/essentials/watchers.md"]
+        fm = _build_chunk_frontmatter([hit])
+        assert "see_also:" in fm
+        assert "Watchers" in fm
 
 
 # ---------------------------------------------------------------------------
@@ -782,7 +784,7 @@ class TestApiLookup:
         assert "Composable" in result
         assert "vuejs.org/api/reactivity-core" in result
         assert "`reactive`" in result  # related APIs
-        assert "2 documentation chunks" in result
+        assert "Documentation chunks" in result and "2" in result
 
     @pytest.mark.asyncio
     async def test_lookup_case_insensitive(self):

@@ -18,28 +18,31 @@ def debug_vue_issue(
     """Structured prompt for debugging a Vue.js issue using the documentation."""
     code_block = ""
     if code_snippet:
-        code_block = f"\n\n**Code:**\n```\n{code_snippet}\n```"
+        code_block = f"\n\n```\n{code_snippet}\n```"
 
     return PromptResult(
         messages=[
             Message(
-                "I'll help debug your Vue.js issue systematically using the official "
-                "documentation. I'll search for relevant concepts, check API gotchas, "
-                "and find related patterns to diagnose the problem.",
+                "I'll help debug this Vue.js issue step-by-step using the "
+                "official documentation. I'll identify the root cause, find "
+                "relevant docs, and provide a fix with citations.",
                 role="assistant",
             ),
             Message(
-                f"I need to debug a Vue.js issue.\n\n"
-                f"**Symptom:** {symptom}{code_block}\n\n"
-                f"Please help me diagnose this by:\n"
-                f"1. Search the Vue.js documentation for the relevant concept "
-                f"using `vue_docs_search`\n"
-                f"2. Check if there are common gotchas documented for the APIs "
-                f"involved using `vue_api_lookup`\n"
-                f"3. Look for related patterns that might explain the behavior "
-                f"using `vue_get_related`\n"
-                f"4. Provide a clear explanation of why this happens and how to "
-                f"fix it, citing specific documentation sections.",
+                f"## Issue\n\n"
+                f"{symptom}{code_block}\n\n"
+                f"## Debugging workflow\n\n"
+                f"Please follow these steps:\n\n"
+                f"1. **Identify the concept** — Determine which Vue.js concept "
+                f"is involved, then search with `vue_docs_search`\n"
+                f"2. **Check API details** — Look up the specific APIs using "
+                f"`vue_api_lookup` to find known gotchas or constraints\n"
+                f"3. **Explore related patterns** — Use `vue_get_related` to "
+                f"discover if alternative approaches exist\n"
+                f"4. **Explain and fix** — Provide:\n"
+                f"   - **Root cause** with a reference to the relevant doc section\n"
+                f"   - **Fix** with corrected code\n"
+                f"   - **Prevention** tip to avoid this in the future",
             ),
         ],
     )
@@ -58,24 +61,35 @@ def compare_vue_apis(
     api_list = [item.strip() for item in items.split(",") if item.strip()]
     formatted = ", ".join(f"`{a}`" for a in api_list)
 
+    lookup_steps = "\n".join(
+        f"   - `vue_api_lookup` → `\"{a}\"`" for a in api_list
+    )
+
     return PromptResult(
         messages=[
             Message(
-                f"I'll compare {formatted} using the official Vue.js documentation, "
-                f"covering purpose, key differences, performance, and common patterns.",
+                f"I'll compare {formatted} using the official Vue.js documentation "
+                f"and present a structured comparison.",
                 role="assistant",
             ),
             Message(
-                f"Please compare these Vue.js APIs/patterns: {formatted}\n\n"
-                f"For each one:\n"
-                f"1. Look up its documentation using `vue_api_lookup`\n"
-                f"2. Search for usage details with `vue_docs_search`\n"
-                f"3. Check related APIs with `vue_get_related`\n\n"
-                f"Then provide a comparison covering:\n"
-                f"- **Purpose**: What each one is for\n"
-                f"- **Key differences**: When to use which\n"
-                f"- **Performance**: Any performance implications\n"
-                f"- **Common patterns**: Typical usage examples from the docs",
+                f"## Compare: {formatted}\n\n"
+                f"### Research steps\n\n"
+                f"1. **Look up each API:**\n{lookup_steps}\n"
+                f"2. **Search for usage context** — `vue_docs_search` for each API\n"
+                f"3. **Find connections** — `vue_get_related` to discover shared patterns\n\n"
+                f"### Output format\n\n"
+                f"Present the comparison as:\n\n"
+                f"| Aspect | {' | '.join(f'`{a}`' for a in api_list)} |\n"
+                f"|--------|{'|'.join('--------|' for _ in api_list)}\n"
+                f"| Purpose | ... |\n"
+                f"| Reactivity | ... |\n"
+                f"| Performance | ... |\n"
+                f"| Use when... | ... |\n\n"
+                f"Then provide:\n"
+                f"- **Key differences** with code examples from the docs\n"
+                f"- **When to use which** — decision criteria\n"
+                f"- **Common mistakes** when choosing between them",
             ),
         ],
     )
@@ -101,25 +115,34 @@ def migrate_vue_pattern(
     return PromptResult(
         messages=[
             Message(
-                f"I'll create a migration guide from **{from_pattern}** to "
-                f"**{to_pattern}** using the official Vue.js documentation.",
+                f"I'll create a comprehensive migration guide from "
+                f"**{from_pattern}** to **{to_pattern}** using the official "
+                f"Vue.js documentation.",
                 role="assistant",
             ),
             Message(
-                f"I need to migrate from **{from_pattern}** to **{to_pattern}** "
-                f"in Vue.js.\n\n"
-                f"Please help by:\n"
-                f"1. Search the Vue.js documentation for both patterns using "
-                f"`vue_docs_search`\n"
-                f"2. Look up relevant APIs for both approaches using `vue_api_lookup`\n"
-                f"3. Find related concepts with `vue_get_related`\n\n"
-                f"Then provide:\n"
-                f"- **Why migrate**: Benefits of the new pattern\n"
-                f"- **Key mappings**: How each concept in `{from_pattern}` maps to "
-                f"`{to_pattern}`\n"
-                f"- **Step-by-step**: Concrete migration steps with code examples "
-                f"from the docs\n"
-                f"- **Gotchas**: Common pitfalls during migration",
+                f"## Migrate: {from_pattern} → {to_pattern}\n\n"
+                f"### Research steps\n\n"
+                f"1. **Understand the source** — `vue_docs_search` for "
+                f"`\"{from_pattern}\"`\n"
+                f"2. **Understand the target** — `vue_docs_search` for "
+                f"`\"{to_pattern}\"`\n"
+                f"3. **Look up relevant APIs** — `vue_api_lookup` for key APIs "
+                f"in both patterns\n"
+                f"4. **Find related concepts** — `vue_get_related` to discover "
+                f"the full migration surface\n\n"
+                f"### Output format\n\n"
+                f"Structure the migration guide as:\n\n"
+                f"1. **Why migrate** — Benefits of `{to_pattern}` over "
+                f"`{from_pattern}`\n"
+                f"2. **Concept mapping** — Table showing how each concept in "
+                f"`{from_pattern}` maps to `{to_pattern}`:\n\n"
+                f"   | {from_pattern} | {to_pattern} | Notes |\n"
+                f"   |---|---|---|\n"
+                f"   | ... | ... | ... |\n\n"
+                f"3. **Step-by-step migration** — Concrete steps with before/after "
+                f"code examples from the docs\n"
+                f"4. **Gotchas** — Common pitfalls and how to avoid them",
             ),
         ],
     )

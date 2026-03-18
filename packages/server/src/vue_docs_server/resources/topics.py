@@ -11,9 +11,17 @@ def _page_title(file_path: str) -> str:
     return name.replace("-", " ").title()
 
 
-def _build_toc(folders: dict[str, list[str]]) -> str:
+def _build_toc(folders: dict[str, list[str]], *, show_header: bool = True) -> str:
     """Build a markdown TOC from a folder structure dict."""
-    lines: list[str] = ["# Vue.js Documentation — Table of Contents\n"]
+    lines: list[str] = []
+
+    if show_header:
+        total_pages = sum(len(pages) for pages in folders.values())
+        total_sections = len(folders)
+        lines.append("# Vue.js Documentation — Table of Contents\n")
+        lines.append(
+            f"> **{total_pages}** pages across **{total_sections}** sections\n"
+        )
 
     for folder in sorted(folders.keys()):
         pages = folders[folder]
@@ -22,7 +30,7 @@ def _build_toc(folders: dict[str, list[str]]) -> str:
         for page_path in sorted(pages):
             title = _page_title(page_path)
             uri_path = page_path.removesuffix(".md")
-            lines.append(f"- **{title}** — `vue://pages/{uri_path}`")
+            lines.append(f"- [{title}](vue://pages/{uri_path})")
         lines.append("")
 
     return "\n".join(lines)
@@ -48,9 +56,10 @@ async def vue_section_topics(section: str) -> str:
             matching[folder] = pages
 
     if not matching:
-        available = ", ".join(sorted(set(f.split("/")[0] for f in state.folder_structure if f)))
+        available = sorted(set(f.split("/")[0] for f in state.folder_structure if f))
         raise ResourceError(
-            f"Section not found: '{section}'. Available top-level sections: {available}"
+            f"Section not found: `{section}`.\n\n"
+            f"Available top-level sections: {', '.join(f'`{s}`' for s in available)}"
         )
 
     return _build_toc(matching)
