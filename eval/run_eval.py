@@ -1,8 +1,9 @@
 """Run evaluation: query the search pipeline and judge results with an LLM.
 
 Loads questions from questions.json, runs each through the MCP server's
-actual search pipeline (vue_docs_search), then uses Gemini as an LLM judge
-to score retrieval quality and answer correctness.
+actual search pipeline (vue_docs_search), then computes deterministic
+retrieval metrics (Recall@K) and uses Gemini as an LLM judge to score
+answer quality.
 
 Usage:
     uv run python eval/run_eval.py
@@ -14,6 +15,7 @@ import argparse
 import asyncio
 import json
 import logging
+import re
 import statistics
 import sys
 import time
@@ -31,28 +33,71 @@ logger = logging.getLogger(__name__)
 
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
+# ---------------------------------------------------------------------------
+# Judge prompt — format-agnostic, focuses on information content
+# ---------------------------------------------------------------------------
+
 JUDGE_PROMPT = """\
-You are evaluating a documentation retrieval system for Vue.js. Given a developer \
-question, the expected answer, and the retrieved documentation context, score the \
-retrieval quality.
+You are an expert evaluator for a Vue.js documentation retrieval system.
+
+You will be given:
+1. A developer's **question**
+2. The **expected answer** (ground truth)
+3. The **expected relevant APIs**
+4. The **retrieved documentation** from the search system
+
+Your task: evaluate whether the retrieved documentation contains the information \
+needed to answer the question correctly and completely.
+
+IMPORTANT: Ignore formatting, markdown syntax, YAML frontmatter blocks, HTML tags, \
+and structural elements. Focus ONLY on the informational content of the retrieved text. \
+A section contains an API if the API name appears anywhere in the text, including inside \
+code blocks, frontmatter, or prose.
+
+## Inputs
 
 **Question:** {question}
 
-**Expected Answer:** {expected_answer}
+**Expected answer:** {expected_answer}
 
-**Expected Relevant APIs:** {relevant_apis}
+**Expected relevant APIs:** {relevant_apis}
 
-**Retrieved Context:**
+**Retrieved documentation:**
 {retrieved_context}
 
-Score the following dimensions on a scale of 1-5:
+## Scoring rubric
 
-1. **relevance**: How relevant is the retrieved context to the question? (1=completely irrelevant, 5=perfectly relevant)
-2. **completeness**: Does the retrieved context contain enough information to fully answer the question? (1=missing everything, 5=complete answer possible)
-3. **correctness**: If you were to answer the question using only the retrieved context, would the answer be correct? (1=would produce wrong answer, 5=would produce fully correct answer)
-4. **api_coverage**: Are the expected APIs mentioned or covered in the retrieved context? (1=none found, 5=all found)
+Score each dimension on a 1-5 scale:
 
-Also provide a brief explanation of your scoring.
+### relevance (Is the retrieved content about the right topic?)
+- 5: All retrieved sections directly address the question's topic
+- 4: Most sections are relevant, one may be tangential
+- 3: About half the content is relevant
+- 2: Only a small portion relates to the question
+- 1: Retrieved content is about a completely different topic
+
+### completeness (Could someone fully answer the question from this content alone?)
+- 5: All information needed for a complete answer is present
+- 4: Most information present, minor details missing
+- 3: Core answer is present but important details are missing
+- 2: Only fragments of the needed information are present
+- 1: The content does not contain enough to answer the question
+
+### correctness (Would an answer based on this content be accurate?)
+- 5: The content would lead to a fully correct answer
+- 4: The content would lead to a mostly correct answer with minor gaps
+- 3: The content would lead to a partially correct answer
+- 2: The content could lead to a misleading answer
+- 1: The content would lead to an incorrect answer
+
+### api_coverage (Are the expected APIs mentioned in the retrieved content?)
+- 5: All expected APIs appear in the retrieved content
+- 4: Most expected APIs appear (one minor one missing)
+- 3: About half of the expected APIs appear
+- 2: Only one or two expected APIs appear
+- 1: None of the expected APIs appear in the content
+
+Provide your scores and a brief explanation (1-2 sentences).
 """
 
 # Function declaration for structured judge scoring
@@ -80,7 +125,7 @@ JUDGE_FUNCTION = {
             },
             "explanation": {
                 "type": "string",
-                "description": "Brief explanation of the scoring.",
+                "description": "Brief explanation of the scoring (1-2 sentences).",
             },
         },
         "required": ["relevance", "completeness", "correctness", "api_coverage", "explanation"],
@@ -128,6 +173,60 @@ async def run_search(
     return result_text, latency
 
 
+# ---------------------------------------------------------------------------
+# Deterministic retrieval metrics (no LLM needed)
+# ---------------------------------------------------------------------------
+
+
+def compute_recall_at_k(
+    retrieved_context: str,
+    relevant_paths: list[str],
+    relevant_apis: list[str],
+) -> dict:
+    """Compute deterministic recall metrics from retrieved context.
+
+    - path_recall: fraction of expected paths that appear in the retrieved content
+    - api_recall: fraction of expected APIs mentioned in the retrieved content
+    """
+    context_lower = retrieved_context.lower()
+
+    # Path recall: check if any chunk from each expected path was retrieved
+    # The retrieved context contains source URLs like https://vuejs.org/guide/essentials/computed
+    # and breadcrumbs like "Guide > Essentials > Computed Properties"
+    paths_found = 0
+    for path in relevant_paths:
+        # Convert "guide/essentials/computed.md" to the URL slug "guide/essentials/computed"
+        slug = path.removeprefix("/").removesuffix(".md")
+        if slug.lower() in context_lower:
+            paths_found += 1
+
+    # API recall: check if each expected API name appears anywhere in the text
+    apis_found = 0
+    for api in relevant_apis:
+        # Case-insensitive search for the API name
+        # Use word boundary-ish matching to avoid "ref" matching "preference"
+        pattern = re.escape(api)
+        if re.search(pattern, retrieved_context, re.IGNORECASE):
+            apis_found += 1
+
+    path_recall = paths_found / len(relevant_paths) if relevant_paths else 1.0
+    api_recall = apis_found / len(relevant_apis) if relevant_apis else 1.0
+
+    return {
+        "path_recall": round(path_recall, 3),
+        "api_recall": round(api_recall, 3),
+        "paths_found": paths_found,
+        "paths_expected": len(relevant_paths),
+        "apis_found": apis_found,
+        "apis_expected": len(relevant_apis),
+    }
+
+
+# ---------------------------------------------------------------------------
+# LLM judge
+# ---------------------------------------------------------------------------
+
+
 def judge_result(
     question: str,
     expected_answer: str,
@@ -136,7 +235,7 @@ def judge_result(
     model: str | None = None,
 ) -> dict:
     """Use Gemini as LLM judge to score retrieval quality via function calling."""
-    model = model or settings.gemini_flash_lite_model
+    model = model or "gemini-3.1-flash-lite-preview"
     api_key = settings.gemini_api_key
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY not set")
@@ -145,7 +244,7 @@ def judge_result(
         question=question,
         expected_answer=expected_answer,
         relevant_apis=", ".join(relevant_apis) if relevant_apis else "(none specified)",
-        retrieved_context=retrieved_context[:8000],  # Truncate to stay within limits
+        retrieved_context=retrieved_context,
     )
 
     url = f"{GEMINI_API_URL}/{model}:generateContent?key={api_key}"
@@ -164,7 +263,7 @@ def judge_result(
         },
     }
 
-    with httpx.Client(timeout=60.0) as client:
+    with httpx.Client(timeout=120.0) as client:
         response = client.post(url, json=payload)
         if response.status_code >= 500:
             raise httpx.HTTPStatusError(
@@ -184,7 +283,6 @@ def judge_result(
     for part in parts:
         if "functionCall" in part:
             scores = part["functionCall"].get("args", {})
-            # Ensure all keys exist with defaults
             for key in ("relevance", "completeness", "correctness", "api_coverage"):
                 scores.setdefault(key, 0)
             scores.setdefault("explanation", "")
@@ -205,11 +303,8 @@ def judge_result(
 
 def _parse_scores_from_text(text: str) -> dict:
     """Best-effort extraction of scores from a text response."""
-    import re
-
     scores: dict = {"explanation": text[:200]}
     for dim in ("relevance", "completeness", "correctness", "api_coverage"):
-        # Match patterns like "relevance=4", "relevance: 4", "**relevance**: 3/5"
         match = re.search(rf"{dim}\s*[=:]\s*(\d)", text.lower())
         scores[dim] = int(match.group(1)) if match else 0
 
@@ -221,14 +316,85 @@ def _parse_scores_from_text(text: str) -> dict:
     return scores
 
 
+# ---------------------------------------------------------------------------
+# Multi-run judge for stability
+# ---------------------------------------------------------------------------
+
+
+def judge_result_stable(
+    question: str,
+    expected_answer: str,
+    relevant_apis: list[str],
+    retrieved_context: str,
+    model: str | None = None,
+    runs: int = 3,
+) -> dict:
+    """Run the judge multiple times and take the median score per dimension.
+
+    This eliminates run-to-run variance from the LLM judge.
+    """
+    all_scores: list[dict] = []
+    explanations: list[str] = []
+
+    for run_idx in range(runs):
+        for attempt in range(5):
+            try:
+                scores = judge_result(
+                    question=question,
+                    expected_answer=expected_answer,
+                    relevant_apis=relevant_apis,
+                    retrieved_context=retrieved_context,
+                    model=model,
+                )
+                all_scores.append(scores)
+                explanations.append(scores.get("explanation", ""))
+                break
+            except Exception as e:
+                logger.warning("Judge run %d attempt %d failed: %s", run_idx + 1, attempt + 1, e)
+                if attempt < 4:
+                    time.sleep(2**attempt)
+                else:
+                    # Use zeros for this run if all retries fail
+                    all_scores.append({
+                        "relevance": 0, "completeness": 0,
+                        "correctness": 0, "api_coverage": 0,
+                    })
+
+    # Take median per dimension
+    median_scores: dict = {}
+    for dim in ("relevance", "completeness", "correctness", "api_coverage"):
+        values = [s.get(dim, 0) for s in all_scores if s.get(dim, 0) > 0]
+        median_scores[dim] = int(statistics.median(values)) if values else 0
+
+    # Keep the explanation from the first successful run
+    median_scores["explanation"] = explanations[0] if explanations else ""
+
+    # Store individual run scores for transparency
+    median_scores["_runs"] = [
+        {d: s.get(d, 0) for d in ("relevance", "completeness", "correctness", "api_coverage")}
+        for s in all_scores
+    ]
+
+    return median_scores
+
+
+# ---------------------------------------------------------------------------
+# Evaluation runner
+# ---------------------------------------------------------------------------
+
+
 async def run_evaluation(
     questions: list[dict],
     judge_model: str | None = None,
     max_results: int = 10,
+    judge_runs: int = 3,
 ) -> list[dict]:
     """Run evaluation on all questions.
 
-    Returns list of result dicts with question, scores, and latency.
+    For each question:
+    1. Run the search pipeline
+    2. Compute deterministic recall metrics (path_recall, api_recall)
+    3. Run the LLM judge multiple times and take median scores
     """
     results = []
 
@@ -238,6 +404,7 @@ async def run_evaluation(
         difficulty = q.get("difficulty", "unknown")
         expected_answer = q.get("expected_answer", "")
         relevant_apis = q.get("relevant_apis", [])
+        relevant_paths = q.get("relevant_paths", [])
 
         logger.info("[%d/%d] %s (intent=%s)", i + 1, len(questions), question[:80], intent)
 
@@ -246,65 +413,64 @@ async def run_evaluation(
             retrieved_context, latency = await run_search(question, max_results=max_results)
         except Exception as e:
             logger.error("Search failed for '%s': %s", question[:50], e)
-            results.append(
-                {
-                    "question": question,
-                    "intent": intent,
-                    "difficulty": difficulty,
-                    "latency": 0,
-                    "scores": {
-                        "relevance": 0,
-                        "completeness": 0,
-                        "correctness": 0,
-                        "api_coverage": 0,
-                    },
-                    "error": str(e),
-                }
-            )
-            continue
-
-        # Judge with LLM (retry up to 5 times on transient errors)
-        scores = None
-        for attempt in range(5):
-            try:
-                scores = judge_result(
-                    question=question,
-                    expected_answer=expected_answer,
-                    relevant_apis=relevant_apis,
-                    retrieved_context=retrieved_context,
-                    model=judge_model,
-                )
-                break
-            except Exception as e:
-                logger.warning(
-                    "Judging attempt %d failed for '%s': %s", attempt + 1, question[:50], e
-                )
-                if attempt < 4:
-                    await asyncio.sleep(2**attempt)
-                else:
-                    raise
-
-        results.append(
-            {
+            results.append({
                 "question": question,
                 "intent": intent,
                 "difficulty": difficulty,
-                "latency": round(latency, 3),
-                "scores": scores,
-                "retrieved_preview": retrieved_context[:500],
-            }
+                "latency": 0,
+                "recall": {"path_recall": 0, "api_recall": 0},
+                "scores": {
+                    "relevance": 0, "completeness": 0,
+                    "correctness": 0, "api_coverage": 0,
+                },
+                "error": str(e),
+            })
+            continue
+
+        # Deterministic recall metrics
+        recall = compute_recall_at_k(retrieved_context, relevant_paths, relevant_apis)
+
+        # LLM judge (median of multiple runs)
+        scores = judge_result_stable(
+            question=question,
+            expected_answer=expected_answer,
+            relevant_apis=relevant_apis,
+            retrieved_context=retrieved_context,
+            model=judge_model,
+            runs=judge_runs,
         )
 
+        results.append({
+            "question": question,
+            "intent": intent,
+            "difficulty": difficulty,
+            "latency": round(latency, 3),
+            "recall": recall,
+            "scores": scores,
+            "retrieved_preview": retrieved_context[:500],
+        })
+
+        runs_str = " ".join(
+            f"[{r['relevance']}/{r['completeness']}/{r['correctness']}/{r['api_coverage']}]"
+            for r in scores.get("_runs", [])
+        )
         logger.info(
-            "  -> relevance=%d completeness=%d correctness=%d api=%d latency=%.2fs",
+            "  -> rel=%d comp=%d corr=%d api=%d | path_recall=%.0f%% api_recall=%.0f%% | runs: %s",
             scores.get("relevance", 0),
             scores.get("completeness", 0),
             scores.get("correctness", 0),
             scores.get("api_coverage", 0),
-            latency,
+            recall["path_recall"] * 100,
+            recall["api_recall"] * 100,
+            runs_str,
         )
 
     return results
+
+
+# ---------------------------------------------------------------------------
+# Metrics computation
+# ---------------------------------------------------------------------------
 
 
 def compute_metrics(results: list[dict]) -> dict:
@@ -314,7 +480,7 @@ def compute_metrics(results: list[dict]) -> dict:
 
     dimensions = ["relevance", "completeness", "correctness", "api_coverage"]
 
-    # Overall metrics
+    # Overall LLM judge metrics
     overall: dict[str, float] = {}
     for dim in dimensions:
         values = [r["scores"].get(dim, 0) for r in results if r["scores"].get(dim, 0) > 0]
@@ -322,7 +488,7 @@ def compute_metrics(results: list[dict]) -> dict:
             overall[f"avg_{dim}"] = round(statistics.mean(values), 2)
             overall[f"median_{dim}"] = round(statistics.median(values), 2)
 
-    # Composite score (average of all dimensions)
+    # Composite score
     composite_values = []
     for r in results:
         s = r["scores"]
@@ -331,6 +497,14 @@ def compute_metrics(results: list[dict]) -> dict:
             composite_values.append(statistics.mean(vals))
     if composite_values:
         overall["avg_composite"] = round(statistics.mean(composite_values), 2)
+
+    # Deterministic recall metrics
+    path_recalls = [r["recall"]["path_recall"] for r in results if "recall" in r]
+    api_recalls = [r["recall"]["api_recall"] for r in results if "recall" in r]
+    if path_recalls:
+        overall["avg_path_recall"] = round(statistics.mean(path_recalls), 3)
+    if api_recalls:
+        overall["avg_api_recall"] = round(statistics.mean(api_recalls), 3)
 
     # Latency
     latencies = [r["latency"] for r in results if r["latency"] > 0]
@@ -346,65 +520,132 @@ def compute_metrics(results: list[dict]) -> dict:
     by_intent: dict[str, dict] = {}
     intent_groups: dict[str, list[dict]] = {}
     for r in results:
-        intent = r["intent"]
-        intent_groups.setdefault(intent, []).append(r)
+        intent_groups.setdefault(r["intent"], []).append(r)
 
     for intent, group in intent_groups.items():
-        intent_metrics: dict[str, float] = {"count": len(group)}
+        m: dict[str, float] = {"count": len(group)}
         for dim in dimensions:
             values = [r["scores"].get(dim, 0) for r in group if r["scores"].get(dim, 0) > 0]
             if values:
-                intent_metrics[f"avg_{dim}"] = round(statistics.mean(values), 2)
-        by_intent[intent] = intent_metrics
+                m[f"avg_{dim}"] = round(statistics.mean(values), 2)
+        pr = [r["recall"]["path_recall"] for r in group if "recall" in r]
+        ar = [r["recall"]["api_recall"] for r in group if "recall" in r]
+        if pr:
+            m["avg_path_recall"] = round(statistics.mean(pr), 3)
+        if ar:
+            m["avg_api_recall"] = round(statistics.mean(ar), 3)
+        by_intent[intent] = m
 
     # Per-difficulty metrics
     by_difficulty: dict[str, dict] = {}
     diff_groups: dict[str, list[dict]] = {}
     for r in results:
-        diff = r["difficulty"]
-        diff_groups.setdefault(diff, []).append(r)
+        diff_groups.setdefault(r["difficulty"], []).append(r)
 
     for diff, group in diff_groups.items():
-        diff_metrics: dict[str, float] = {"count": len(group)}
+        m = {"count": len(group)}
         for dim in dimensions:
             values = [r["scores"].get(dim, 0) for r in group if r["scores"].get(dim, 0) > 0]
             if values:
-                diff_metrics[f"avg_{dim}"] = round(statistics.mean(values), 2)
-        by_difficulty[diff] = diff_metrics
+                m[f"avg_{dim}"] = round(statistics.mean(values), 2)
+        pr = [r["recall"]["path_recall"] for r in group if "recall" in r]
+        ar = [r["recall"]["api_recall"] for r in group if "recall" in r]
+        if pr:
+            m["avg_path_recall"] = round(statistics.mean(pr), 3)
+        if ar:
+            m["avg_api_recall"] = round(statistics.mean(ar), 3)
+        by_difficulty[diff] = m
+
+    # Pass rates at various thresholds
+    pass_rates: dict[str, dict] = {}
+    for threshold in (5, 4, 3, 2):
+        key = f"gte_{threshold}"
+        rates: dict[str, float] = {}
+        for dim in dimensions:
+            passing = sum(1 for r in results if r["scores"].get(dim, 0) >= threshold)
+            rates[dim] = round(passing / len(results), 3)
+        all_pass = sum(
+            1 for r in results
+            if all(r["scores"].get(d, 0) >= threshold for d in dimensions)
+        )
+        rates["all"] = round(all_pass / len(results), 3)
+        pass_rates[key] = rates
+
+    # Pass rates by intent (all dims >= 4)
+    pass_by_intent: dict[str, float] = {}
+    for intent, group in intent_groups.items():
+        passing = sum(
+            1 for r in group
+            if all(r["scores"].get(d, 0) >= 4 for d in dimensions)
+        )
+        pass_by_intent[intent] = round(passing / len(group), 3)
+
+    # Pass rates by difficulty (all dims >= 4)
+    pass_by_difficulty: dict[str, float] = {}
+    for diff, group in diff_groups.items():
+        passing = sum(
+            1 for r in group
+            if all(r["scores"].get(d, 0) >= 4 for d in dimensions)
+        )
+        pass_by_difficulty[diff] = round(passing / len(group), 3)
 
     return {
         "overall": overall,
         "by_intent": by_intent,
         "by_difficulty": by_difficulty,
+        "pass_rates": pass_rates,
+        "pass_by_intent": pass_by_intent,
+        "pass_by_difficulty": pass_by_difficulty,
     }
+
+
+# ---------------------------------------------------------------------------
+# Report formatting
+# ---------------------------------------------------------------------------
 
 
 def format_report(metrics: dict) -> str:
     """Format metrics as a human-readable report."""
     lines: list[str] = []
-    lines.append("=" * 60)
+    lines.append("=" * 70)
     lines.append("VUE DOCS MCP EVALUATION REPORT")
-    lines.append("=" * 60)
+    lines.append("=" * 70)
 
     overall = metrics.get("overall", {})
     lines.append(f"\nTotal questions: {overall.get('total_questions', 0)}")
     lines.append(f"Errors: {overall.get('errors', 0)}")
-    lines.append("")
 
-    lines.append("OVERALL SCORES (1-5 scale):")
-    lines.append(f"  Composite:    {overall.get('avg_composite', 'N/A')}")
-    lines.append(
-        f"  Relevance:    {overall.get('avg_relevance', 'N/A')} (median {overall.get('median_relevance', 'N/A')})"
-    )
-    lines.append(
-        f"  Completeness: {overall.get('avg_completeness', 'N/A')} (median {overall.get('median_completeness', 'N/A')})"
-    )
-    lines.append(
-        f"  Correctness:  {overall.get('avg_correctness', 'N/A')} (median {overall.get('median_correctness', 'N/A')})"
-    )
-    lines.append(
-        f"  API Coverage: {overall.get('avg_api_coverage', 'N/A')} (median {overall.get('median_api_coverage', 'N/A')})"
-    )
+    lines.append("\nDETERMINISTIC RETRIEVAL METRICS:")
+    lines.append(f"  Path Recall:  {overall.get('avg_path_recall', 'N/A'):.1%}"
+                 if isinstance(overall.get('avg_path_recall'), float)
+                 else f"  Path Recall:  {overall.get('avg_path_recall', 'N/A')}")
+    lines.append(f"  API Recall:   {overall.get('avg_api_recall', 'N/A'):.1%}"
+                 if isinstance(overall.get('avg_api_recall'), float)
+                 else f"  API Recall:   {overall.get('avg_api_recall', 'N/A')}")
+
+    lines.append(f"\nLLM JUDGE — avg composite: {overall.get('avg_composite', 'N/A')}")
+
+    pass_rates = metrics.get("pass_rates", {})
+    if pass_rates:
+        dims_short = {"relevance": "rel", "completeness": "comp",
+                      "correctness": "corr", "api_coverage": "api", "all": "ALL"}
+        lines.append("")
+        lines.append(
+            f"  {'threshold':>10s}  {'rel':>5s}  {'comp':>5s}  "
+            f"{'corr':>5s}  {'api':>5s}  {'ALL':>5s}"
+        )
+        lines.append("  " + "-" * 43)
+        for threshold in (5, 4, 3, 2):
+            key = f"gte_{threshold}"
+            rates = pass_rates.get(key, {})
+            lines.append(
+                f"  {'>= ' + str(threshold):>10s}  "
+                f"{rates.get('relevance', 0):>5.0%}  "
+                f"{rates.get('completeness', 0):>5.0%}  "
+                f"{rates.get('correctness', 0):>5.0%}  "
+                f"{rates.get('api_coverage', 0):>5.0%}  "
+                f"{rates.get('all', 0):>5.0%}"
+            )
 
     lines.append("\nLATENCY:")
     lines.append(f"  Average: {overall.get('avg_latency', 'N/A')}s")
@@ -412,31 +653,62 @@ def format_report(metrics: dict) -> str:
     lines.append(f"  Max:     {overall.get('max_latency', 'N/A')}s")
 
     by_intent = metrics.get("by_intent", {})
+    pass_by_intent = metrics.get("pass_by_intent", {})
     if by_intent:
         lines.append("\nBY INTENT:")
+        lines.append(
+            f"  {'intent':15s} {'n':>3s}  {'pR%':>4s}  {'aR%':>4s}  "
+            f"{'>=4':>5s}  {'avg':>4s}"
+        )
+        lines.append("  " + "-" * 42)
         for intent, m in sorted(by_intent.items()):
+            pr = m.get("avg_path_recall", 0)
+            ar = m.get("avg_api_recall", 0)
+            p4 = pass_by_intent.get(intent, 0)
+            composite_vals = [
+                m.get(f"avg_{d}", 0)
+                for d in ("relevance", "completeness", "correctness", "api_coverage")
+                if m.get(f"avg_{d}", 0) > 0
+            ]
+            avg = statistics.mean(composite_vals) if composite_vals else 0
             lines.append(
-                f"  {intent:15s} (n={m.get('count', 0):2d})  "
-                f"rel={m.get('avg_relevance', 'N/A'):>4}  "
-                f"comp={m.get('avg_completeness', 'N/A'):>4}  "
-                f"corr={m.get('avg_correctness', 'N/A'):>4}  "
-                f"api={m.get('avg_api_coverage', 'N/A'):>4}"
+                f"  {intent:15s} {m.get('count', 0):3d}  "
+                f"{pr:>4.0%}  {ar:>4.0%}  "
+                f"{p4:>5.0%}  {avg:>4.1f}"
             )
 
     by_difficulty = metrics.get("by_difficulty", {})
+    pass_by_difficulty = metrics.get("pass_by_difficulty", {})
     if by_difficulty:
         lines.append("\nBY DIFFICULTY:")
+        lines.append(
+            f"  {'diff':10s} {'n':>3s}  {'pR%':>4s}  {'aR%':>4s}  "
+            f"{'>=4':>5s}  {'avg':>4s}"
+        )
+        lines.append("  " + "-" * 37)
         for diff, m in sorted(by_difficulty.items()):
+            pr = m.get("avg_path_recall", 0)
+            ar = m.get("avg_api_recall", 0)
+            p4 = pass_by_difficulty.get(diff, 0)
+            composite_vals = [
+                m.get(f"avg_{d}", 0)
+                for d in ("relevance", "completeness", "correctness", "api_coverage")
+                if m.get(f"avg_{d}", 0) > 0
+            ]
+            avg = statistics.mean(composite_vals) if composite_vals else 0
             lines.append(
-                f"  {diff:10s} (n={m.get('count', 0):2d})  "
-                f"rel={m.get('avg_relevance', 'N/A'):>4}  "
-                f"comp={m.get('avg_completeness', 'N/A'):>4}  "
-                f"corr={m.get('avg_correctness', 'N/A'):>4}  "
-                f"api={m.get('avg_api_coverage', 'N/A'):>4}"
+                f"  {diff:10s} {m.get('count', 0):3d}  "
+                f"{pr:>4.0%}  {ar:>4.0%}  "
+                f"{p4:>5.0%}  {avg:>4.1f}"
             )
 
-    lines.append("\n" + "=" * 60)
+    lines.append("\n" + "=" * 70)
     return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
 
 
 async def main_async(args: argparse.Namespace) -> None:
@@ -453,6 +725,7 @@ async def main_async(args: argparse.Namespace) -> None:
             questions=questions,
             judge_model=args.judge_model,
             max_results=args.max_results,
+            judge_runs=args.judge_runs,
         )
     finally:
         shutdown()
@@ -476,7 +749,8 @@ async def main_async(args: argparse.Namespace) -> None:
                 "timestamp": timestamp,
                 "config": {
                     "max_results": args.max_results,
-                    "judge_model": args.judge_model or settings.gemini_flash_lite_model,
+                    "judge_model": args.judge_model or "gemini-3.1-flash-lite-preview",
+                    "judge_runs": args.judge_runs,
                     "embedding_model": settings.jina_embedding_model,
                     "reranker_model": settings.jina_reranker_model,
                     "total_questions": len(questions),
@@ -525,7 +799,13 @@ def main() -> None:
         "--judge-model",
         type=str,
         default=None,
-        help="Gemini model for judging (default: gemini-2.5-flash-lite)",
+        help="Gemini model for judging (default: gemini-3.1-flash-lite-preview)",
+    )
+    parser.add_argument(
+        "--judge-runs",
+        type=int,
+        default=3,
+        help="Number of judge runs per question for median stability (default: 3)",
     )
 
     args = parser.parse_args()

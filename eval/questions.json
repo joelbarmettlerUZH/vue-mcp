@@ -1,365 +1,972 @@
 [
   {
-    "question": "When creating a Vue application, what is the role of the root component, and how do you mount the application to the DOM? Can you configure app-level error handling and globally register components before mounting?",
     "intent": "conceptual",
     "difficulty": "medium",
-    "expected_answer": "Every Vue application starts with a root component passed to `createApp`. This component forms the base of the component tree. The application is mounted to the DOM by calling `app.mount()` with a container element or selector. All app configurations, including `app.config.errorHandler` and `app.component()` registrations, must be applied *before* calling `app.mount()`, as its return value is the root component instance, not the application instance.",
+    "relevant_apis": [],
+    "expected_answer": "Props follow a one-way data flow. You should not mutate props directly. Instead, emit an event to the parent to request a change.",
+    "question": "Can I mutate props in a child component?",
     "relevant_paths": [
-      "guide/essentials/application.md",
-      "api/application.md"
-    ],
-    "relevant_apis": [
-      "createApp",
-      "app.mount",
-      "app.config.errorHandler",
-      "app.component"
+      "guide/components/props.md"
     ]
   },
   {
-    "question": "Explain the difference between `v-if` and `v-show` in terms of rendering cost and DOM manipulation. When would you prefer one over the other?",
-    "intent": "comparison",
-    "difficulty": "medium",
-    "expected_answer": "`v-if` is 'real' conditional rendering; it destroys and recreates the element and its children during toggles, and is lazy (doesn't render initially if false). It has higher toggle costs. `v-show` always renders the element and keeps it in the DOM, only toggling its `display` CSS property. It has higher initial render costs but lower toggle costs. Prefer `v-show` for frequent toggles, and `v-if` for conditions unlikely to change at runtime.",
     "relevant_paths": [
-      "guide/essentials/conditional.md",
+      "api/ssr.md"
+    ],
+    "relevant_apis": [],
+    "expected_answer": "`data-allow-mismatch` (3.5+) suppresses hydration mismatch warnings for specific types of mismatches.",
+    "question": "How do I ignore hydration mismatch warnings?",
+    "intent": "debugging",
+    "difficulty": "hard"
+  },
+  {
+    "intent": "api_lookup",
+    "difficulty": "hard",
+    "relevant_apis": [
+      "hasInjectionContext"
+    ],
+    "question": "What is hasInjectionContext?",
+    "expected_answer": "`hasInjectionContext` checks if `inject()` can be called safely, often used in library code to prevent warnings.",
+    "relevant_paths": [
+      "api/composition-api-dependency-injection.md"
+    ]
+  },
+  {
+    "relevant_paths": [
+      "api/render-function.md"
+    ],
+    "difficulty": "hard",
+    "intent": "api_lookup",
+    "expected_answer": "`withDirectives` is used to apply custom directives to a vnode created with `h`.",
+    "question": "How can I add directives to a vnode?",
+    "relevant_apis": [
+      "withDirectives"
+    ]
+  },
+  {
+    "relevant_paths": [
+      "guide/components/slots.md"
+    ],
+    "relevant_apis": [
+      "slot"
+    ],
+    "question": "What are slots?",
+    "expected_answer": "Slots are placeholders in a component's template where parent content is rendered. Use the `<slot>` element.",
+    "intent": "conceptual",
+    "difficulty": "easy"
+  },
+  {
+    "question": "How do I merge props objects?",
+    "expected_answer": "`mergeProps` merges multiple props objects, handling special cases like class, style, and event listeners correctly.",
+    "relevant_apis": [
+      "mergeProps"
+    ],
+    "difficulty": "medium",
+    "intent": "api_lookup",
+    "relevant_paths": [
+      "api/render-function.md"
+    ]
+  },
+  {
+    "difficulty": "easy",
+    "intent": "comparison",
+    "relevant_apis": [
+      "template",
+      "render"
+    ],
+    "question": "template vs render?",
+    "expected_answer": "`template` is a string to be compiled, `render` is a programmatic function returning a VNode tree. `render` has higher priority.",
+    "relevant_paths": [
+      "api/options-rendering.md"
+    ]
+  },
+  {
+    "relevant_apis": [],
+    "question": "What is a composable?",
+    "expected_answer": "A composable is a function that uses Composition API to reuse stateful logic. Conventionally, they start with \"use\".",
+    "difficulty": "easy",
+    "intent": "conceptual",
+    "relevant_paths": [
+      "guide/reusability/composables.md"
+    ]
+  },
+  {
+    "question": "What's the difference between watch and computed?",
+    "expected_answer": "`watch` is for side effects when state changes, while `computed` is for deriving new values from existing state.",
+    "relevant_apis": [
+      "watch",
+      "computed"
+    ],
+    "difficulty": "easy",
+    "intent": "comparison",
+    "relevant_paths": [
+      "guide/essentials/watchers.md"
+    ]
+  },
+  {
+    "relevant_apis": [
+      "isProxy",
+      "isReactive",
+      "isReadonly"
+    ],
+    "question": "How do I check if an object is reactive or readonly?",
+    "expected_answer": "`isProxy` checks for any Vue proxy, `isReactive` checks for reactive proxies, `isReadonly` checks for readonly proxies.",
+    "difficulty": "hard",
+    "intent": "api_lookup",
+    "relevant_paths": [
+      "api/reactivity-utilities.md"
+    ]
+  },
+  {
+    "relevant_paths": [
+      "api/application.md"
+    ],
+    "intent": "api_lookup",
+    "difficulty": "easy",
+    "expected_answer": "`createApp` is the global API to create a new Vue application instance.",
+    "question": "What is the entry point for a Vue application?",
+    "relevant_apis": [
+      "createApp"
+    ]
+  },
+  {
+    "relevant_paths": [
+      "api/composition-api-lifecycle.md"
+    ],
+    "expected_answer": "Lifecycle hooks must be called synchronously inside `setup()`. They cannot be inside async callbacks or `setTimeout`.",
+    "question": "Why do my lifecycle hooks not fire?",
+    "relevant_apis": [],
+    "intent": "debugging",
+    "difficulty": "medium"
+  },
+  {
+    "intent": "conceptual",
+    "difficulty": "easy",
+    "expected_answer": "Composition API is a set of APIs that use functions to define component logic, providing better logic reuse and type inference than Options API.",
+    "question": "What is the Composition API?",
+    "relevant_apis": [],
+    "relevant_paths": [
+      "guide/extras/composition-api-faq.md"
+    ]
+  },
+  {
+    "relevant_paths": [
+      "guide/essentials/class-and-style.md"
+    ],
+    "intent": "debugging",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "$attrs"
+    ],
+    "question": "Why are my classes not being applied to my multi-root component?",
+    "expected_answer": "If a component has multiple root elements, you must define which element receives the fallthrough classes using `$attrs.class`."
+  },
+  {
+    "intent": "comparison",
+    "difficulty": "easy",
+    "relevant_apis": [
+      "computed"
+    ],
+    "question": "What is the difference between computed properties and methods?",
+    "expected_answer": "Computed properties are cached based on their reactive dependencies, meaning they only re-evaluate when a dependency changes. Methods always re-run on every re-render.",
+    "relevant_paths": [
+      "guide/essentials/computed.md"
+    ]
+  },
+  {
+    "relevant_paths": [
+      "guide/essentials/template-syntax.md"
+    ],
+    "difficulty": "easy",
+    "intent": "api_lookup",
+    "question": "How do I render text vs raw HTML?",
+    "expected_answer": "Mustache syntax `{{ msg }}` is used for basic text interpolation. `v-html` is used to render raw HTML content.",
+    "relevant_apis": [
+      "v-html"
+    ]
+  },
+  {
+    "difficulty": "easy",
+    "intent": "conceptual",
+    "expected_answer": "SFCs colocate template, logic, and style in one file, allowing for better maintainability and tooling support.",
+    "question": "Why use SFCs?",
+    "relevant_apis": [],
+    "relevant_paths": [
+      "guide/scaling-up/sfc.md"
+    ]
+  },
+  {
+    "relevant_paths": [
+      "guide/extras/rendering-mechanism.md"
+    ],
+    "expected_answer": "The compiler analyzes templates and adds \"patch flags\" to vnodes, allowing the runtime to skip unnecessary diffing.",
+    "question": "How does Vue optimize rendering?",
+    "relevant_apis": [],
+    "intent": "conceptual",
+    "difficulty": "medium"
+  },
+  {
+    "intent": "conceptual",
+    "difficulty": "medium",
+    "expected_answer": "`defineComponent` is a type helper for better type inference in TypeScript. It's essentially a runtime no-op.",
+    "question": "What is defineComponent for?",
+    "relevant_apis": [
+      "defineComponent"
+    ],
+    "relevant_paths": [
+      "api/general.md"
+    ]
+  },
+  {
+    "intent": "howto",
+    "difficulty": "hard",
+    "expected_answer": "`src` imports allow you to split SFC blocks into separate files, just like importing a module.",
+    "question": "How do I split SFC blocks into separate files?",
+    "relevant_apis": [],
+    "relevant_paths": [
+      "api/sfc-spec.md"
+    ]
+  },
+  {
+    "relevant_paths": [
+      "api/component-instance.md"
+    ],
+    "difficulty": "medium",
+    "intent": "conceptual",
+    "question": "When should I use $forceUpdate?",
+    "expected_answer": "`$forceUpdate` forces a re-render. It is rarely needed, primarily when you have manually created non-reactive state.",
+    "relevant_apis": [
+      "$forceUpdate"
+    ]
+  },
+  {
+    "question": "Why is my onMounted hook not working inside a setTimeout?",
+    "expected_answer": "Lifecycle hooks must be registered synchronously during the `setup()` phase. They cannot be called inside asynchronous functions like `setTimeout`.",
+    "relevant_apis": [
+      "onMounted"
+    ],
+    "intent": "debugging",
+    "difficulty": "medium",
+    "relevant_paths": [
+      "guide/essentials/lifecycle.md"
+    ]
+  },
+  {
+    "relevant_paths": [
+      "api/application.md"
+    ],
+    "expected_answer": "`app.runWithContext` allows you to execute a function in the app's injection context, which is useful when calling `inject` outside of a component instance.",
+    "question": "What is app.runWithContext used for?",
+    "relevant_apis": [
+      "app.runWithContext"
+    ],
+    "difficulty": "hard",
+    "intent": "api_lookup"
+  },
+  {
+    "question": "How do I validate prop values?",
+    "expected_answer": "Yes, you can define custom validation functions using the `validator` key in the prop object definition.",
+    "relevant_apis": [
+      "props"
+    ],
+    "intent": "howto",
+    "difficulty": "hard",
+    "relevant_paths": [
+      "guide/components/props.md"
+    ]
+  },
+  {
+    "relevant_paths": [
+      "api/reactivity-core.md"
+    ],
+    "relevant_apis": [
+      "ref",
+      "reactive"
+    ],
+    "question": "ref vs reactive?",
+    "expected_answer": "`ref` is a reactive value container. `reactive` creates a reactive proxy of an object.",
+    "intent": "comparison",
+    "difficulty": "easy"
+  },
+  {
+    "relevant_paths": [
+      "guide/best-practices/production-deployment.md"
+    ],
+    "intent": "howto",
+    "difficulty": "easy",
+    "question": "How do I deploy Vue to production?",
+    "expected_answer": "Use the production build (`.prod.js`) and ensure compile-time flags are configured to strip development-only code.",
+    "relevant_apis": []
+  },
+  {
+    "relevant_paths": [
+      "guide/reusability/plugins.md"
+    ],
+    "question": "How do I add a global method to all components?",
+    "expected_answer": "Use `app.config.globalProperties` to add properties available on all components, but use them sparingly.",
+    "relevant_apis": [
+      "app.config.globalProperties"
+    ],
+    "difficulty": "medium",
+    "intent": "howto"
+  },
+  {
+    "difficulty": "easy",
+    "intent": "conceptual",
+    "expected_answer": "Vue is a framework for building UI interfaces, based on components and reactivity.",
+    "question": "What is Vue?",
+    "relevant_apis": [],
+    "relevant_paths": [
+      "guide/introduction.md"
+    ]
+  },
+  {
+    "expected_answer": "`watchEffect` automatically tracks dependencies used in the callback, while `watch` requires you to explicitly specify the source to watch.",
+    "question": "When should I use watchEffect vs watch?",
+    "relevant_apis": [
+      "watchEffect",
+      "watch"
+    ],
+    "difficulty": "medium",
+    "intent": "comparison",
+    "relevant_paths": [
+      "guide/essentials/watchers.md"
+    ]
+  },
+  {
+    "intent": "howto",
+    "difficulty": "easy",
+    "relevant_apis": [
+      "v-bind"
+    ],
+    "question": "How can I toggle CSS classes dynamically?",
+    "expected_answer": "You can use `v-bind:class` (or the shorthand `:class`) and pass an object where keys are class names and values are boolean expressions.",
+    "relevant_paths": [
+      "guide/essentials/class-and-style.md"
+    ]
+  },
+  {
+    "difficulty": "hard",
+    "intent": "conceptual",
+    "relevant_apis": [
+      "nextTick"
+    ],
+    "expected_answer": "Vue buffers DOM updates until the \"next tick\" to ensure that each component updates only once, regardless of the number of state changes. Use `nextTick()` to wait for DOM updates.",
+    "question": "Why are my DOM updates not reflected immediately?",
+    "relevant_paths": [
+      "guide/essentials/reactivity-fundamentals.md"
+    ]
+  },
+  {
+    "relevant_paths": [
+      "guide/built-ins/suspense.md"
+    ],
+    "relevant_apis": [
+      "Suspense"
+    ],
+    "expected_answer": "`<Suspense>` displays fallback content while waiting for nested async dependencies to resolve.",
+    "question": "What is Suspense for?",
+    "intent": "conceptual",
+    "difficulty": "easy"
+  },
+  {
+    "relevant_paths": [
       "api/built-in-directives.md"
     ],
+    "intent": "comparison",
+    "difficulty": "easy",
+    "expected_answer": "`v-text` updates the text content, while `v-html` updates the inner HTML. `v-html` should be used with caution due to XSS risks.",
+    "question": "What is the difference between v-text and v-html?",
+    "relevant_apis": [
+      "v-text",
+      "v-html"
+    ]
+  },
+  {
+    "intent": "debugging",
+    "difficulty": "hard",
+    "expected_answer": "If a native event like `click` is defined in `emits`, the listener will only respond to component-emitted `click` events, not native DOM `click` events.",
+    "question": "Why is my native click event not firing anymore?",
+    "relevant_apis": [
+      "emits"
+    ],
+    "relevant_paths": [
+      "guide/components/events.md"
+    ]
+  },
+  {
+    "intent": "debugging",
+    "difficulty": "hard",
+    "relevant_apis": [],
+    "expected_answer": "In in-DOM templates, you cannot use self-closing tags like `<MyComponent />` for components; you must use explicit closing tags like `<my-component></my-component>`.",
+    "question": "Why is my component not closing properly in my HTML file?",
+    "relevant_paths": [
+      "guide/essentials/component-basics.md"
+    ]
+  },
+  {
+    "difficulty": "hard",
+    "intent": "howto",
+    "expected_answer": "You can access modifiers via the second return value of `defineModel` (the array destructuring `[model, modifiers]`) and apply custom logic in the `set` transformer option.",
+    "question": "How do I handle custom modifiers with component v-model?",
+    "relevant_apis": [
+      "defineModel"
+    ],
+    "relevant_paths": [
+      "guide/components/v-model.md"
+    ]
+  },
+  {
+    "intent": "conceptual",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "MaybeRef",
+      "MaybeRefOrGetter"
+    ],
+    "expected_answer": "`MaybeRef<T>` represents `T | Ref<T>`, while `MaybeRefOrGetter<T>` represents `T | Ref<T> | () => T`. These are useful for composables.",
+    "question": "What are MaybeRef and MaybeRefOrGetter?",
+    "relevant_paths": [
+      "api/utility-types.md"
+    ]
+  },
+  {
+    "difficulty": "medium",
+    "intent": "debugging",
+    "relevant_apis": [
+      "v-model"
+    ],
+    "question": "Why is my v-model not updating while I'm typing Chinese?",
+    "expected_answer": "For IME-based languages, `v-model` does not update during composition. You should use a manual `input` event listener and `value` binding instead.",
+    "relevant_paths": [
+      "guide/essentials/forms.md"
+    ]
+  },
+  {
+    "relevant_paths": [
+      "guide/essentials/class-and-style.md"
+    ],
+    "intent": "api_lookup",
+    "difficulty": "hard",
+    "relevant_apis": [
+      "v-bind"
+    ],
+    "expected_answer": "If you provide an array of values for a style property, Vue will only render the last value that the browser supports.",
+    "question": "How does Vue handle multiple values for a style property?"
+  },
+  {
+    "relevant_apis": [
+      "v-if",
+      "v-for"
+    ],
+    "expected_answer": "`v-if` is evaluated first. Using them together is not recommended due to implicit precedence. Move `v-if` to a wrapper element if needed.",
+    "question": "What is the precedence between v-if and v-for?",
+    "difficulty": "hard",
+    "intent": "debugging",
+    "relevant_paths": [
+      "guide/essentials/conditional.md"
+    ]
+  },
+  {
+    "relevant_paths": [
+      "api/ssr.md"
+    ],
+    "difficulty": "easy",
+    "intent": "api_lookup",
+    "relevant_apis": [
+      "renderToString"
+    ],
+    "question": "How do I render a Vue app to a string on the server?",
+    "expected_answer": "`renderToString` returns a Promise resolving to the HTML string. Use it for standard SSR."
+  },
+  {
+    "relevant_paths": [
+      "guide/best-practices/security.md"
+    ],
+    "intent": "debugging",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "v-html"
+    ],
+    "question": "What is the risk of v-html?",
+    "expected_answer": "`v-html` renders raw HTML. Only use it on trusted content. Never use it on user-provided strings."
+  },
+  {
+    "expected_answer": "The special `$event` variable allows you to pass the native DOM event object to a method handler in an inline handler.",
+    "question": "How can I access the native event in an inline handler?",
+    "relevant_apis": [
+      "v-on"
+    ],
+    "intent": "api_lookup",
+    "difficulty": "medium",
+    "relevant_paths": [
+      "guide/essentials/event-handling.md"
+    ]
+  },
+  {
+    "relevant_paths": [
+      "guide/essentials/conditional.md"
+    ],
+    "intent": "comparison",
+    "difficulty": "medium",
+    "expected_answer": "`v-if` destroys and re-creates elements, while `v-show` keeps the element in the DOM and just toggles the `display` CSS property. Use `v-if` for infrequent toggles and `v-show` for frequent ones.",
+    "question": "When should I use v-if vs v-show?",
     "relevant_apis": [
       "v-if",
       "v-show"
     ]
   },
   {
-    "question": "What are the `v-on` event modifiers for keyboard events, and can I use any `KeyboardEvent.key` value directly, like `page-down`? Which modifier should I use if I want to trigger an event only when Ctrl and *no other* system keys are pressed?",
-    "intent": "api_lookup",
-    "difficulty": "medium",
-    "expected_answer": "Vue provides aliases for common keys like `.enter`, `.tab`, `.delete`, `.esc`, `.space`, `.up`, `.down`, `.left`, `.right`. You can also directly use any valid `KeyboardEvent.key` values as modifiers by converting them to kebab-case, e.g., `@keyup.page-down`. To trigger an event only when Ctrl and no other system modifiers are pressed, use the `.ctrl.exact` modifier.",
+    "difficulty": "easy",
+    "intent": "howto",
+    "expected_answer": "Custom directives are for low-level DOM access. Define them as objects with lifecycle hooks like `mounted` or `updated`.",
+    "question": "How do I create a custom directive?",
+    "relevant_apis": [],
     "relevant_paths": [
-      "guide/essentials/event-handling.md",
-      "api/built-in-directives.md"
-    ],
-    "relevant_apis": [
-      "v-on"
+      "guide/reusability/custom-directives.md"
     ]
   },
   {
-    "question": "I'm trying to use `v-model` on a text input, but it's not updating the bound data during Chinese IME composition. Why is this happening and what's the workaround?",
     "intent": "debugging",
     "difficulty": "medium",
-    "expected_answer": "`v-model` doesn't get updated during IME (Input Method Editor) composition for languages like Chinese, Japanese, or Korean. This is by design. To respond to these updates, you should use your own `input` event listener and `value` binding instead of `v-model`. This allows you to manually control when the data is synced.",
-    "relevant_paths": [
-      "guide/essentials/forms.md"
-    ],
+    "expected_answer": "You must wait until the component is mounted before accessing the ref. Accessing it before mount will result in `null` or `undefined`.",
+    "question": "Why is my template ref null?",
     "relevant_apis": [
-      "v-model"
+      "ref"
+    ],
+    "relevant_paths": [
+      "guide/essentials/template-refs.md"
     ]
   },
   {
-    "question": "When using `v-for` with an array of objects, what is the purpose of the `:key` attribute and why is it recommended? What happens if I omit it, especially with child component state or temporary DOM state?",
-    "intent": "conceptual",
-    "difficulty": "medium",
-    "expected_answer": "The `:key` attribute provides a unique hint to Vue's virtual DOM algorithm to identify each node's identity when updating a list. It enables Vue to reuse and reorder existing elements efficiently. If omitted, Vue uses an 'in-place patch' strategy, which is efficient but unsuitable when list items rely on child component state or temporary DOM state (like form input values), as it might lead to incorrect behavior or lost state. It's recommended to always provide a unique `key` with `v-for`.",
-    "relevant_paths": [
-      "guide/essentials/list.md",
-      "api/built-in-special-attributes.md"
-    ],
     "relevant_apis": [
-      "v-for",
-      "key"
-    ]
-  },
-  {
-    "question": "Describe a scenario where a computed property would be more appropriate than a method for displaying a derived value, focusing on performance. What is the key difference in how they handle caching?",
+      "watch",
+      "watchEffect"
+    ],
+    "expected_answer": "`watch` lets you watch sources lazily with access to prev/new values. `watchEffect` runs immediately and tracks dependencies automatically.",
+    "question": "watch vs watchEffect?",
     "intent": "comparison",
-    "difficulty": "medium",
-    "expected_answer": "A computed property is more appropriate for derived values that depend on reactive data because it is cached based on its reactive dependencies. It only re-evaluates when its dependencies change, returning the cached result immediately otherwise. A method, however, will always run its function whenever a re-render happens, regardless of whether its underlying data has changed. For expensive computations, computed properties offer significant performance benefits due to caching.",
+    "difficulty": "hard",
+    "relevant_paths": [
+      "api/reactivity-core.md"
+    ]
+  },
+  {
+    "relevant_paths": [
+      "guide/essentials/component-basics.md"
+    ],
+    "intent": "migration",
+    "difficulty": "hard",
+    "relevant_apis": [
+      "defineProps"
+    ],
+    "question": "How do I defineProps in Options API vs Composition API?",
+    "expected_answer": "`defineProps` is a compile-time macro only available in `<script setup>` that does not need to be imported. It returns an object containing all props. In Options API, you use the `props` option."
+  },
+  {
+    "relevant_paths": [
+      "guide/essentials/event-handling.md"
+    ],
+    "question": "How do I listen to events in Vue?",
+    "expected_answer": "Use the `@` symbol (or `v-on`) followed by the event name, e.g., `@click=\"handler\"`.",
+    "relevant_apis": [
+      "v-on"
+    ],
+    "intent": "howto",
+    "difficulty": "easy"
+  },
+  {
+    "relevant_paths": [
+      "guide/built-ins/teleport.md"
+    ],
+    "relevant_apis": [
+      "Teleport"
+    ],
+    "expected_answer": "Use the `defer` prop (3.5+) to wait for the target element to be rendered in the component tree before teleporting.",
+    "question": "What is deferred Teleport?",
+    "difficulty": "hard",
+    "intent": "api_lookup"
+  },
+  {
+    "relevant_paths": [
+      "guide/quick-start.md"
+    ],
+    "expected_answer": "ES modules don't work over the `file://` protocol. You need to serve your files via a local HTTP server (e.g. `npx serve`) to avoid CORS errors.",
+    "question": "Why are my ES module imports failing locally?",
+    "relevant_apis": [],
+    "difficulty": "hard",
+    "intent": "debugging"
+  },
+  {
+    "relevant_paths": [
+      "api/composition-api-lifecycle.md"
+    ],
+    "question": "How can I handle errors in my child components?",
+    "expected_answer": "`onErrorCaptured` captures errors from descendant components. Returning `false` stops error propagation.",
+    "relevant_apis": [
+      "onErrorCaptured"
+    ],
+    "difficulty": "hard",
+    "intent": "conceptual"
+  },
+  {
+    "relevant_apis": [
+      "Transition",
+      "TransitionGroup"
+    ],
+    "expected_answer": "`<Transition>` is for single-element animations (enter/leave), while `<TransitionGroup>` is for list animations (insert/remove/move).",
+    "question": "When to use Transition vs TransitionGroup?",
+    "difficulty": "easy",
+    "intent": "comparison",
+    "relevant_paths": [
+      "api/built-in-components.md"
+    ]
+  },
+  {
+    "relevant_paths": [
+      "guide/components/v-model.md"
+    ],
+    "intent": "howto",
+    "difficulty": "easy",
+    "relevant_apis": [
+      "defineModel"
+    ],
+    "question": "What is the recommended way to do v-model on a component?",
+    "expected_answer": "`defineModel()` (v3.4+) is the recommended way to create two-way bindings. It creates a prop and an update event automatically."
+  },
+  {
+    "difficulty": "easy",
+    "intent": "howto",
+    "relevant_apis": [
+      "defineAsyncComponent"
+    ],
+    "expected_answer": "Use `defineAsyncComponent` to import components lazily. This helps split your app into smaller chunks.",
+    "question": "How do I lazy load a component?",
+    "relevant_paths": [
+      "guide/components/async.md"
+    ]
+  },
+  {
+    "relevant_paths": [
+      "api/composition-api-lifecycle.md"
+    ],
+    "difficulty": "easy",
+    "intent": "api_lookup",
+    "relevant_apis": [
+      "onMounted",
+      "onUpdated",
+      "onUnmounted"
+    ],
+    "expected_answer": "`onMounted` runs after component mount, `onUpdated` after DOM updates, and `onUnmounted` after component unmount.",
+    "question": "What are the most common lifecycle hooks?"
+  },
+  {
     "relevant_paths": [
       "guide/essentials/computed.md"
     ],
+    "difficulty": "medium",
+    "intent": "howto",
+    "question": "How do I make a computed property writable?",
+    "expected_answer": "You need to provide both a getter and a setter in the computed property definition.",
     "relevant_apis": [
       "computed"
     ]
   },
   {
-    "question": "I need to access a DOM element directly after my component mounts. How can I do this using template refs in a `<script setup>` component (Vue 3.5+) using `useTemplateRef`?",
-    "intent": "howto",
-    "difficulty": "easy",
-    "expected_answer": "To access a DOM element after mount in a `<script setup>` component (Vue 3.5+), you can use `useTemplateRef()`. First, declare a ref in your script with a name that matches the `ref` attribute in your template. Then, use `onMounted` to ensure the DOM is ready before attempting to access the element via `yourRefName.value`.",
-    "relevant_paths": [
-      "guide/essentials/template-refs.md",
-      "api/composition-api-helpers.md",
-      "api/composition-api-lifecycle.md"
-    ],
-    "relevant_apis": [
-      "useTemplateRef",
-      "onMounted"
-    ]
-  },
-  {
-    "question": "What are the different ways to declare props in a Vue component using `<script setup>` (e.g. using `definProps`), and how do I provide default values for them, especially for mutable types like arrays?",
     "intent": "howto",
     "difficulty": "hard",
-    "expected_answer": "In `<script setup>`, props can be declared using `defineProps()`. You can use an array of strings for simple declarations (`defineProps(['foo'])`) or an object for validations (`defineProps({ title: String })`). For default values with type-based declarations (3.5+), you can use JavaScript's native destructuring with default values: `const { msg = 'hello', labels = ['one', 'two'] } = defineProps<Props>()`. For mutable types like arrays or objects, native default value syntax automatically handles the factory function behavior to avoid value sharing.",
+    "question": "How do I configure compile-time flags?",
+    "expected_answer": "You can configure these flags using your build tool's `define` option (e.g., in `vite.config.js` or `webpack.config.js`).",
+    "relevant_apis": [],
     "relevant_paths": [
-      "guide/components/props.md",
-      "api/sfc-script-setup.md"
-    ],
-    "relevant_apis": [
-      "defineProps"
+      "api/compile-time-flags.md"
     ]
   },
   {
-    "question": "I have a deeply nested component that needs data from a distant ancestor. What is the recommended Vue pattern for this, and what are its advantages over 'props drilling'?",
-    "intent": "conceptual",
-    "difficulty": "medium",
-    "expected_answer": "The recommended pattern is Provide/Inject. A parent component can `provide` data using a key, and any descendant component, regardless of depth, can `inject` that data using the same key. This avoids 'props drilling,' where the same prop has to be passed down through intermediate components that don't directly need it, making data flow harder to manage and code more verbose.",
-    "relevant_paths": [
-      "guide/components/provide-inject.md",
-      "api/composition-api-dependency-injection.md",
-      "api/options-composition.md"
-    ],
+    "expected_answer": "You can create a simple router by using `<component :is>` and listening to the `hashchange` event.",
+    "question": "How do I make a simple router without a library?",
     "relevant_apis": [
-      "provide",
-      "inject"
-    ]
-  },
-  {
-    "question": "What is an async component in Vue, how do I define it using `defineAsyncComponent`, and what options are available to handle loading and error states?",
-    "intent": "api_lookup",
-    "difficulty": "medium",
-    "expected_answer": "An async component is a component that is lazy-loaded from the server only when it's needed, typically using ES module dynamic import. It's defined with `defineAsyncComponent()`. This function can take a loader function (returning a Promise) or an options object. The options object allows specifying `loadingComponent`, `delay` (before showing loading), `errorComponent`, and `timeout` (before showing error component).",
-    "relevant_paths": [
-      "guide/components/async.md",
-      "api/general.md",
-      "api/built-in-components.md"
+      "component"
     ],
-    "relevant_apis": [
-      "defineAsyncComponent"
-    ]
-  },
-  {
-    "question": "My component has multiple root elements, but I want to apply fallthrough attributes (like `class` or `v-on` listeners) to a specific child element within its template. How can I achieve this using `inheritAttrs: false` and `v-bind=\"$attrs\"`?",
+    "difficulty": "hard",
     "intent": "howto",
-    "difficulty": "medium",
-    "expected_answer": "For components with multiple root elements, automatic attribute fallthrough is disabled. To apply fallthrough attributes to a specific child, set `inheritAttrs: false` in the component's options. Then, explicitly bind `$attrs` to the desired child element using `v-bind=\"$attrs\"`. This gives you full control over where attributes are applied.",
     "relevant_paths": [
-      "guide/components/attrs.md",
-      "api/options-misc.md",
-      "api/component-instance.md"
-    ],
+      "guide/scaling-up/routing.md"
+    ]
+  },
+  {
     "relevant_apis": [
-      "inheritAttrs",
       "$attrs",
-      "v-bind"
-    ]
-  },
-  {
-    "question": "I'm creating a custom input component that implements 'two-way binding' using `v-model`. In Vue 3.4+, how do I implement this using `defineModel()` and how does it relate to the `modelValue` prop and `update:modelValue` event?",
-    "intent": "api_lookup",
-    "difficulty": "medium",
-    "expected_answer": "In Vue 3.4+, `defineModel()` is the recommended macro for implementing two-way binding with `v-model`. It returns a ref whose `.value` is synced with the parent's `v-model` binding. Under the hood, `defineModel()` declares a `modelValue` prop (or a custom named prop if an argument is passed) and emits an `update:modelValue` event (or `update:yourPropName`) when the ref's value is mutated. This simplifies the previous manual prop/emit setup.",
-    "relevant_paths": [
-      "guide/components/v-model.md",
-      "api/sfc-script-setup.md",
-      "api/composition-api-helpers.md"
+      "inheritAttrs"
     ],
-    "relevant_apis": [
-      "defineModel",
-      "v-model"
-    ]
-  },
-  {
-    "question": "What is a 'scoped slot' and how does it allow a child component to pass data back to its parent's slot content when rendering? Provide a code example of a parent consuming a child's default scoped slot.",
-    "intent": "conceptual",
+    "expected_answer": "`$attrs` contains fallthrough attributes (passed to component but not props/emits). Use `inheritAttrs: false` to disable inheritance.",
+    "question": "How do I handle fallthrough attributes?",
+    "intent": "api_lookup",
     "difficulty": "hard",
-    "expected_answer": "A scoped slot is a slot that can receive data (slot props) from the child component rendering it. This allows the parent to customize the appearance of the slot content while still using data from the child's scope. The child passes data as attributes to the `<slot>` element. The parent consumes these props by binding `v-slot` to a variable, e.g., `v-slot=\"slotProps\"` or destructured `v-slot=\"{ text, count }\"`, which makes the child's data available in the slot's template.",
     "relevant_paths": [
-      "guide/components/slots.md",
-      "api/built-in-directives.md"
-    ],
-    "relevant_apis": [
-      "v-slot"
+      "api/component-instance.md"
     ]
   },
   {
-    "question": "Can I use `v-if` and `v-for` on the same element? If so, which one has higher precedence, and what are the recommended best practices to avoid issues, especially regarding variable access?",
-    "intent": "debugging",
     "difficulty": "medium",
-    "expected_answer": "Yes, but it's not recommended. When `v-if` and `v-for` are on the same element, `v-if` has higher priority. This means the `v-if` condition will *not* have access to variables from the `v-for`'s scope, leading to errors. The recommended fix is to move `v-for` to a wrapping `<template>` tag. Another best practice is to use a computed property to filter the list *before* `v-for`, or move `v-if` to a container element if it's just to hide the entire list.",
+    "intent": "howto",
+    "expected_answer": "The `<component :is=\"...\">` element allows dynamic switching. The value of `:is` can be a registered component name string or the imported component object.",
+    "question": "How can I switch components dynamically?",
+    "relevant_apis": [],
     "relevant_paths": [
-      "guide/essentials/list.md",
-      "api/built-in-directives.md"
-    ],
-    "relevant_apis": [
-      "v-if",
-      "v-for"
+      "guide/essentials/component-basics.md"
     ]
   },
   {
-    "question": "What lifecycle hooks are available for a custom directive, and which ones are typically used for a shorthand function definition?",
+    "expected_answer": "`beforeCreate` is for initialization, `created` for state setup, `beforeMount`/`mounted` for mounting, `beforeUpdate`/`updated` for updates, `beforeUnmount`/`unmounted` for unmounting.",
+    "question": "What are the standard lifecycle hooks?",
+    "relevant_apis": [
+      "beforeCreate",
+      "created",
+      "beforeMount",
+      "mounted",
+      "beforeUpdate",
+      "updated",
+      "beforeUnmount",
+      "unmounted"
+    ],
     "intent": "api_lookup",
-    "difficulty": "medium",
-    "expected_answer": "Custom directive lifecycle hooks include `created`, `beforeMount`, `mounted`, `beforeUpdate`, `updated`, `beforeUnmount`, and `unmounted`. When defining a directive using the function shorthand, that function will be called for both the `mounted` and `updated` hooks. This is useful when the directive needs to perform the same DOM manipulation on initial insertion and subsequent updates.",
+    "difficulty": "easy",
+    "relevant_paths": [
+      "api/options-lifecycle.md"
+    ]
+  },
+  {
     "relevant_paths": [
       "guide/reusability/custom-directives.md"
     ],
-    "relevant_apis": []
+    "question": "Should I use custom directives on components?",
+    "expected_answer": "No, using custom directives on components is not recommended because it may cause unexpected behavior with multiple root nodes.",
+    "relevant_apis": [],
+    "difficulty": "hard",
+    "intent": "conceptual"
   },
   {
-    "question": "Describe Vue's 'deep reactivity' by default, and how fallthrough attributes like `class` and `style` are merged from parent to child components. When might you want to opt out of deep reactivity, and what APIs would you use for that?",
-    "intent": "conceptual",
-    "difficulty": "hard",
-    "expected_answer": "Vue's reactivity system is deep by default, meaning changes to nested objects or arrays are detected. Fallthrough attributes like `class` and `style` are automatically merged with any existing attributes on a child component's single root element. You might opt out of deep reactivity for performance optimizations on large immutable data structures or integration with external state management systems, using `shallowRef()` or `shallowReactive()`. These APIs only track reactivity at the root level, requiring explicit replacement of the root value to trigger updates. You can also disable fallthrough attributes with `inheritAttrs: false` to manually bind `$attrs` to specific elements.",
     "relevant_paths": [
-      "guide/essentials/reactivity-fundamentals.md",
-      "api/reactivity-advanced.md",
-      "guide/components/attrs.md",
-      "guide/essentials/class-and-style.md",
-      "api/options-misc.md"
+      "guide/built-ins/suspense.md"
     ],
     "relevant_apis": [
-      "shallowRef",
-      "shallowReactive",
-      "inheritAttrs",
-      "$attrs"
+      "Suspense"
+    ],
+    "expected_answer": "Use `suspensible` prop on nested Suspense components to delegate async dependency handling to a parent Suspense boundary.",
+    "question": "How do I handle nested Suspense components?",
+    "difficulty": "hard",
+    "intent": "howto"
+  },
+  {
+    "difficulty": "medium",
+    "intent": "conceptual",
+    "relevant_apis": [],
+    "question": "Why do my multiple components not share the same state?",
+    "expected_answer": "Each instance maintains its own separate data (like `count`) because a new instance is created every time the component is used.",
+    "relevant_paths": [
+      "guide/essentials/component-basics.md"
     ]
   },
   {
-    "question": "What is the `app.mount()` method used for? What does it return, and when should it be called relative to other app configurations?",
+    "relevant_paths": [
+      "guide/reusability/custom-directives.md"
+    ],
+    "intent": "comparison",
+    "difficulty": "medium",
+    "relevant_apis": [],
+    "expected_answer": "Use function shorthand if you only need the same behavior for `mounted` and `updated`. Otherwise, use the object hook syntax.",
+    "question": "When to use function vs object custom directive?"
+  },
+  {
+    "relevant_paths": [
+      "guide/essentials/list.md"
+    ],
+    "question": "How should I filter a list using v-if and v-for?",
+    "expected_answer": "`v-if` has higher priority than `v-for`. Using them on the same element is not recommended. Instead, wrap the `v-for` in a `<template>` and use `v-if` on the inner element.",
+    "relevant_apis": [
+      "v-if",
+      "v-for"
+    ],
+    "intent": "debugging",
+    "difficulty": "hard"
+  },
+  {
+    "relevant_paths": [
+      "api/built-in-components.md"
+    ],
+    "intent": "conceptual",
+    "difficulty": "hard",
+    "relevant_apis": [
+      "Teleport"
+    ],
+    "question": "How can I render a component outside the root app element?",
+    "expected_answer": "`<Teleport>` renders its content to a different part of the DOM, such as the `body`, regardless of the component's original DOM location."
+  },
+  {
+    "relevant_paths": [
+      "guide/components/events.md"
+    ],
+    "relevant_apis": [
+      "$emit",
+      "defineEmits"
+    ],
+    "question": "How do I emit custom events?",
+    "expected_answer": "Use `$emit('event-name')` in the template or `emit('event-name')` in script to trigger events. Parent listens with `@event-name`.",
+    "difficulty": "easy",
+    "intent": "howto"
+  },
+  {
+    "difficulty": "medium",
     "intent": "api_lookup",
-    "difficulty": "easy",
-    "expected_answer": "`app.mount()` is used to mount the Vue application instance into a container DOM element. It expects either an actual DOM element or a CSS selector string. It returns the root component instance. This method should always be called *after* all other app configurations (like `app.config.errorHandler` or `app.component` registrations) and asset registrations are complete.",
-    "relevant_paths": [
-      "guide/essentials/application.md",
-      "api/application.md"
-    ],
     "relevant_apis": [
-      "app.mount"
-    ]
-  },
-  {
-    "question": "I'm seeing a lot of 'flash of un-compiled templates' when using Vue without a build step. How can I prevent this visual glitch?",
-    "intent": "debugging",
-    "difficulty": "easy",
-    "expected_answer": "When using Vue without a build step (in-DOM templates), users might see raw mustache tags before Vue compiles them. To prevent this 'flash of un-compiled templates,' you can use the `v-cloak` directive. Apply `v-cloak` to the element containing your Vue template, and add a CSS rule like `[v-cloak] { display: none; }`. The `v-cloak` attribute will be removed once the component is mounted and compiled, making the content visible.",
-    "relevant_paths": [
-      "api/built-in-directives.md"
+      "readonly"
     ],
-    "relevant_apis": [
-      "v-cloak"
-    ]
-  },
-  {
-    "question": "Explain the difference between `watch()` and `watchEffect()` in Composition API. When would you choose one over the other, particularly regarding dependency tracking and callback timing?",
-    "intent": "comparison",
-    "difficulty": "hard",
-    "expected_answer": "`watch()` tracks explicitly defined sources (refs, reactive objects, or getters) and executes its callback lazily when those sources change. It provides both the new and old values. `watchEffect()` automatically tracks all reactive dependencies accessed during its synchronous execution and runs its callback immediately upon creation and whenever any tracked dependency changes. `watch()` offers more precise control over which state triggers the watcher and lazy execution, while `watchEffect()` is more convenient for cases where the callback uses all its dependencies and needs immediate execution.",
+    "question": "How do I create a read-only reactive object?",
+    "expected_answer": "`readonly` creates a readonly proxy of an object or ref. It's deep by default.",
     "relevant_paths": [
-      "guide/essentials/watchers.md",
       "api/reactivity-core.md"
-    ],
-    "relevant_apis": [
-      "watch",
-      "watchEffect"
     ]
   },
   {
-    "question": "How do I define a computed property that is writable, allowing me to both read and update its value? Provide an example for both Options API and Composition API.",
-    "intent": "howto",
     "difficulty": "medium",
-    "expected_answer": "By default, computed properties are getter-only. To make one writable, you must provide both a `get` function and a `set` function. In Options API, define `fullName` within the `computed` option as an object with `get()` and `set()` methods. In Composition API, use `computed()` and pass an object with `get()` and `set()` methods.",
-    "relevant_paths": [
-      "guide/essentials/computed.md"
-    ],
-    "relevant_apis": [
-      "computed"
-    ]
-  },
-  {
-    "question": "What is a 'composable' in Vue, and what are its key advantages over alternative logic reuse patterns like mixins and renderless components? What are the best practices for its input arguments and return values?",
-    "intent": "conceptual",
-    "difficulty": "hard",
-    "expected_answer": "A 'composable' is a function that leverages Vue's Composition API to encapsulate and reuse stateful logic. Its advantages over mixins include clear source of properties (avoiding namespace collisions), explicit cross-composable communication, and better TypeScript inference. Compared to renderless components, composables avoid the overhead of extra component instances. Best practices suggest naming them with 'use' prefix, accepting refs/getters as input (normalized with `toValue`), returning a plain object of refs for destructuring, and cleaning up side effects in `onUnmounted`.",
-    "relevant_paths": [
-      "guide/reusability/composables.md",
-      "guide/extras/composition-api-faq.md"
-    ],
-    "relevant_apis": [
-      "ref",
-      "onMounted",
-      "onUnmounted",
-      "toValue"
-    ]
-  },
-  {
-    "question": "What are the security implications of using `v-html` with user-provided content? What is Vue's default behavior for HTML content and attribute bindings to protect against XSS?",
-    "intent": "conceptual",
-    "difficulty": "medium",
-    "expected_answer": "Using `v-html` with untrusted, user-provided content is dangerous as it can easily lead to XSS vulnerabilities, allowing arbitrary JavaScript execution. Vue automatically escapes HTML content in mustache interpolations (`{{ }}`) and attribute bindings (`v-bind`) using native browser APIs, converting potentially malicious strings into safe HTML entities. However, `v-html` explicitly renders raw HTML, bypassing this escape mechanism, so it should only be used with trusted content.",
-    "relevant_paths": [
-      "guide/best-practices/security.md",
-      "guide/essentials/template-syntax.md",
-      "api/built-in-directives.md"
-    ],
-    "relevant_apis": [
-      "v-html",
-      "v-bind"
-    ]
-  },
-  {
-    "question": "What are 'fallthrough attributes'? How does Vue merge `class` and `style` attributes from a parent component onto a child component's root element if the child already has them?",
-    "intent": "conceptual",
-    "difficulty": "easy",
-    "expected_answer": "'Fallthrough attributes' are attributes or `v-on` listeners passed to a component that are not explicitly declared as props or emits. When a component has a single root element, these attributes are automatically added to it. If the child's root element already has `class` or `style` attributes, Vue intelligently merges them with the inherited values. For `class`, values are concatenated (e.g., 'btn large'); for `style`, objects are merged (e.g., 'color: red; font-size: 1em;').",
-    "relevant_paths": [
-      "guide/components/attrs.md",
-      "guide/essentials/class-and-style.md"
-    ],
-    "relevant_apis": [
-      "$attrs"
-    ]
-  },
-  {
-    "question": "I'm trying to use `onmounted` in an async `setTimeout` callback in my `<script setup>` component, but it's not working. Why, and what's the correct way to register lifecycle hooks in this context?",
-    "intent": "debugging",
-    "difficulty": "medium",
-    "expected_answer": "Lifecycle hooks like `onMounted` must be registered *synchronously* during the component's `setup()` phase (or directly in `<script setup>`). Calling `onMounted` inside an async callback like `setTimeout` means it's no longer synchronous with the component's setup, so Vue cannot associate the callback with the current active component instance. To correctly register the hook, call `onMounted` directly in `<script setup>` or `setup()`, and place any `setTimeout` logic inside its callback.",
-    "relevant_paths": [
-      "guide/essentials/lifecycle.md",
-      "api/composition-api-lifecycle.md"
-    ],
-    "relevant_apis": [
-      "onMounted"
-    ]
-  },
-  {
-    "question": "How does Vue's reactivity system differ from React Hooks, particularly concerning dependency tracking, stale closures, and manual optimization needs?",
     "intent": "comparison",
-    "difficulty": "hard",
-    "expected_answer": "Vue's Composition API (composables) invokes `setup()` or `<script setup>` only once, avoiding stale closures. Its runtime reactivity system automatically tracks dependencies for computed properties and watchers, eliminating the need for manual dependency arrays (unlike React's `useEffect`, `useMemo`, `useCallback`). Vue's fine-grained reactivity ensures child components update only when necessary, reducing the need for manual optimization like `useCallback` to prevent over-rendering. React Hooks invoke repeatedly, leading to call-order sensitivity and dependency array pitfalls.",
+    "relevant_apis": [],
+    "question": "Options API vs Composition API?",
+    "expected_answer": "Options API uses objects (`data`, `methods`, etc.), while Composition API uses imported functions (`ref`, `onMounted`, etc.) in `setup()` or `<script setup>`.",
     "relevant_paths": [
-      "guide/extras/composition-api-faq.md",
-      "guide/extras/reactivity-in-depth.md"
-    ],
-    "relevant_apis": [
-      "ref",
-      "reactive",
-      "watch",
-      "watchEffect"
+      "guide/introduction.md"
     ]
   },
   {
-    "question": "A Vue 2 project uses global mixins extensively for common component logic. What is the recommended Vue 3 approach for logic reuse, and what are the drawbacks of continuing to use mixins in Vue 3?",
-    "intent": "migration",
-    "difficulty": "medium",
-    "expected_answer": "The recommended Vue 3 approach for logic reuse is 'Composables' using the Composition API. Composables offer better clarity on property sources, prevent namespace collisions, and enable explicit communication between reusable logic units. While mixins are still supported in Vue 3 for backward compatibility, they are no longer recommended due to drawbacks like unclear property sources, potential namespace collisions, and implicit cross-mixin communication, which make code harder to trace and maintain in large applications.",
     "relevant_paths": [
-      "api/options-composition.md",
-      "guide/reusability/composables.md",
-      "guide/extras/composition-api-faq.md"
+      "api/options-composition.md"
     ],
+    "expected_answer": "`mixins` merge options from other objects into the component. We recommend Composables instead for logic reuse.",
+    "question": "What are mixins and should I use them?",
     "relevant_apis": [
       "mixins"
+    ],
+    "difficulty": "medium",
+    "intent": "migration"
+  },
+  {
+    "relevant_paths": [
+      "guide/extras/composition-api-faq.md"
+    ],
+    "expected_answer": "Composition API makes it easier to group logic by concern, whereas Options API forces grouping by option type (data, methods, etc.).",
+    "question": "How does Composition API improve code organization?",
+    "relevant_apis": [],
+    "difficulty": "medium",
+    "intent": "comparison"
+  },
+  {
+    "question": "Can I have multiple apps on one page?",
+    "expected_answer": "Yes, you can have multiple Vue application instances on the same page. Each instance has its own scope for configuration and global assets.",
+    "relevant_apis": [
+      "createApp"
+    ],
+    "intent": "conceptual",
+    "difficulty": "easy",
+    "relevant_paths": [
+      "guide/essentials/application.md"
+    ]
+  },
+  {
+    "relevant_paths": [
+      "api/composition-api-helpers.md"
+    ],
+    "relevant_apis": [
+      "useAttrs",
+      "useSlots"
+    ],
+    "question": "What are useAttrs and useSlots?",
+    "expected_answer": "`useAttrs` returns the object of fallthrough attributes, and `useSlots` returns the object of slots. They are meant for `<script setup>`.",
+    "intent": "api_lookup",
+    "difficulty": "easy"
+  },
+  {
+    "question": "How do I access fallthrough attributes in JavaScript?",
+    "expected_answer": "Use `useAttrs()` (Composition API) or `this.$attrs` (Options API) to access them programmatically. Note that `$attrs` is not reactive.",
+    "relevant_apis": [
+      "useAttrs",
+      "$attrs"
+    ],
+    "difficulty": "hard",
+    "intent": "api_lookup",
+    "relevant_paths": [
+      "guide/components/attrs.md"
+    ]
+  },
+  {
+    "relevant_paths": [
+      "api/composition-api-setup.md"
+    ],
+    "question": "Can I use this in setup?",
+    "expected_answer": "No, `this` is undefined in `setup()`. Use the props argument and setup context instead.",
+    "relevant_apis": [
+      "setup"
+    ],
+    "difficulty": "medium",
+    "intent": "conceptual"
+  },
+  {
+    "difficulty": "medium",
+    "intent": "comparison",
+    "relevant_apis": [
+      "v-if",
+      "v-show"
+    ],
+    "question": "v-if vs v-show?",
+    "expected_answer": "`v-show` toggles visibility via CSS display, while `v-if` conditionally adds/removes elements from the DOM.",
+    "relevant_paths": [
+      "api/built-in-directives.md"
+    ]
+  },
+  {
+    "relevant_paths": [
+      "guide/quick-start.md"
+    ],
+    "difficulty": "easy",
+    "intent": "howto",
+    "relevant_apis": [],
+    "question": "How do I start a new Vue project?",
+    "expected_answer": "Use `npm create vue@latest` to scaffold a modern Vue project with Vite."
+  },
+  {
+    "relevant_apis": [
+      "ref",
+      "useTemplateRef"
+    ],
+    "question": "How do I get a reference to a DOM element?",
+    "expected_answer": "Use the `ref` attribute on the element and then access it using `useTemplateRef` (Composition API) or `this.$refs` (Options API).",
+    "difficulty": "easy",
+    "intent": "howto",
+    "relevant_paths": [
+      "guide/essentials/template-refs.md"
+    ]
+  },
+  {
+    "difficulty": "medium",
+    "intent": "comparison",
+    "relevant_apis": [],
+    "question": "Why is local registration preferred over global?",
+    "expected_answer": "Global registration can prevent tree-shaking and makes dependency tracking harder in large apps. Local registration is preferred for better maintainability.",
+    "relevant_paths": [
+      "guide/components/registration.md"
+    ]
+  },
+  {
+    "intent": "api_lookup",
+    "difficulty": "easy",
+    "relevant_apis": [
+      "data",
+      "props",
+      "computed"
+    ],
+    "question": "What are data, props, and computed in Options API?",
+    "expected_answer": "`data` returns initial reactive state. `props` declares external props. `computed` defines derived state.",
+    "relevant_paths": [
+      "api/options-state.md"
     ]
   }
 ]

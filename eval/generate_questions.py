@@ -34,17 +34,24 @@ then generate exactly {count} test questions.
 
 Requirements for the questions:
 1. Each question must be answerable from the documentation content provided.
-2. Questions should cover ALL of these intent types (distribute roughly evenly):
+2. Questions MUST cover ALL of these intent types with roughly equal distribution \
+(aim for ~{per_intent} questions per type):
    - api_lookup: Questions about specific Vue API signatures, parameters, return values
    - conceptual: Questions about Vue principles, reactivity system, rendering, etc.
    - howto: Questions about how to accomplish specific tasks
-   - debugging: Questions describing a symptom or unexpected behavior
-   - comparison: Questions asking about differences between approaches
-   - migration: Questions about converting between patterns (Options API vs Composition API)
-3. Include varying difficulty levels (easy, medium, hard).
+   - debugging: Questions describing a symptom or unexpected behavior (e.g. "my component \
+isn't updating", "I'm getting a warning about...", "why does X not work when I do Y")
+   - comparison: Questions asking about differences between approaches (e.g. "ref vs reactive", \
+"watch vs watchEffect", "v-if vs v-show", "Options API vs Composition API")
+   - migration: Questions about converting between patterns (Options API vs Composition API, \
+Vue 2 to Vue 3, mixins to composables, event bus to provide/inject)
+3. Include varying difficulty levels (easy, medium, hard) — aim for ~30% each.
 4. Include some questions with typos or informal phrasing (e.g., "definProps", "onmounted").
 5. Include some multi-faceted questions that span multiple documentation sections.
 6. Include some questions using synonyms or informal language (e.g., "two-way binding" for v-model).
+
+CRITICAL: You MUST generate at least {min_per_intent} questions for EACH intent type. \
+Do NOT over-generate api_lookup questions at the expense of other types.
 
 ---
 DOCUMENTATION CONTENT:
@@ -170,7 +177,7 @@ def build_docs_content(files: list[tuple[str, str]], max_chars: int = 800_000) -
 
 def call_gemini(prompt: str, model: str | None = None) -> list[dict]:
     """Call Gemini API with function calling and return structured questions."""
-    model = model or settings.gemini_flash_model
+    model = model or "gemini-3.1-flash-lite-preview"
     api_key = settings.gemini_api_key
     if not api_key:
         logger.error("GEMINI_API_KEY not set")
@@ -235,8 +242,12 @@ def generate_questions(
     files = collect_doc_files(docs_path)
     docs_content = build_docs_content(files)
 
+    per_intent = max(count // 6, 5)
+    min_per_intent = max(count // 10, 3)
     prompt = GENERATION_PROMPT.format(
         count=count,
+        per_intent=per_intent,
+        min_per_intent=min_per_intent,
         docs_content=docs_content,
     )
 
