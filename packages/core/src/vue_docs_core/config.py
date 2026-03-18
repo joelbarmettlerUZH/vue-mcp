@@ -76,7 +76,7 @@ INDEXED_FIELDS = {
 # ---------------------------------------------------------------------------
 
 RETRIEVAL_LIMIT = 50
-RERANK_MIN_SCORE = 0.01
+RERANK_MIN_SCORE = -0.5
 FUZZY_MIN_SCORE = 85
 EXPANSION_SCORE = 0.0
 EXPANSION_MEDIUM_CUTOFF = 10

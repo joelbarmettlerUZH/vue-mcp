@@ -1489,5 +1489,652 @@
       "defineModel"
     ],
     "intent": "howto"
+  },
+  {
+    "relevant_apis": [
+      "ref"
+    ],
+    "expected_answer": "You can use `ref` to hold a state value, which will automatically trigger UI updates when the value changes. Using `ref` ensures that Vue's reactivity system tracks the variable.",
+    "intent": "conceptual",
+    "question": "How do I make a variable that updates the screen automatically when I change it?",
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/essentials/reactivity-fundamentals"
+    ]
+  },
+  {
+    "relevant_paths": [
+      "guide/essentials/lifecycle"
+    ],
+    "difficulty": "extreme",
+    "expected_answer": "You should use the `onMounted` lifecycle hook to run code once the component has been added to the DOM.",
+    "relevant_apis": [
+      "onMounted"
+    ],
+    "question": "I want to run some code right after my component appears on screen",
+    "intent": "howto"
+  },
+  {
+    "question": "My child widget needs to send a message back up to the parent widget",
+    "intent": "howto",
+    "expected_answer": "To send data from a child component to a parent, you use `defineEmits` in the child to declare an event and the `emit` function to send the data, and then listen for that event in the parent component using `v-on` (or @).",
+    "relevant_apis": [
+      "defineEmits",
+      "emit"
+    ],
+    "relevant_paths": [
+      "guide/components/events"
+    ],
+    "difficulty": "extreme"
+  },
+  {
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/essentials/computed"
+    ],
+    "expected_answer": "You should use the `computed` function, which creates a cached value that only re-calculates when its reactive dependencies change.",
+    "relevant_apis": [
+      "computed"
+    ],
+    "question": "I need a cached calculation that re-runs when its inputs change",
+    "intent": "conceptual"
+  },
+  {
+    "intent": "howto",
+    "question": "How do I make a reusable chunk of logic I can share between pages?",
+    "relevant_apis": [
+      "ref",
+      "onMounted"
+    ],
+    "expected_answer": "You can create a composable function, which is a standard JavaScript function that uses Vue's reactivity and lifecycle APIs, and import/call it in your components to share logic.",
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/reusability/composables"
+    ]
+  },
+  {
+    "relevant_apis": [
+      "defineProps",
+      "props"
+    ],
+    "expected_answer": "You should use `defineProps` (in `<script setup>`) or the `props` option to define the data the component expects to receive.",
+    "intent": "howto",
+    "question": "How can I make my component accept data from its parent?",
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/components/props"
+    ]
+  },
+  {
+    "relevant_paths": [
+      "guide/essentials/forms"
+    ],
+    "difficulty": "extreme",
+    "relevant_apis": [
+      "v-model"
+    ],
+    "expected_answer": "You can use `v-model` on your component to create a two-way binding. Internally, this uses a prop (defaulting to `modelValue`) and an event (defaulting to `update:modelValue`).",
+    "intent": "howto",
+    "question": "What is the easiest way to keep a form input in sync with my JavaScript state?"
+  },
+  {
+    "expected_answer": "You can use the `Teleport` component to render a template fragment in a different part of the DOM, which is useful for things like modals that need to be outside the parent's layout.",
+    "relevant_apis": [
+      "Teleport"
+    ],
+    "question": "I have a modal that needs to be positioned absolutely relative to the body, but it's defined inside a deeply nested component. How do I do that?",
+    "intent": "howto",
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/built-ins/teleport"
+    ]
+  },
+  {
+    "question": "How do I render a list of items from an array in my template?",
+    "intent": "howto",
+    "expected_answer": "You can use `v-for` with an array and provide a unique `key` attribute for each item, which helps Vue track each node's identity for efficient patching.",
+    "relevant_apis": [
+      "v-for"
+    ],
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/essentials/list"
+    ]
+  },
+  {
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/essentials/class-and-style"
+    ],
+    "intent": "howto",
+    "question": "How do I make my element's CSS classes change based on a variable in my component?",
+    "relevant_apis": [
+      "v-bind"
+    ],
+    "expected_answer": "You use the `v-bind` directive (or the `:` shorthand) to dynamically set attributes like `class` or `style` based on component state."
+  },
+  {
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/essentials/list",
+      "guide/essentials/reactivity-fundamentals"
+    ],
+    "relevant_apis": [
+      "reactive",
+      "ref"
+    ],
+    "expected_answer": "Vue's reactivity system tracks dependencies at runtime. When an array is mutated (e.g., using `push`, `pop`, `splice`), Vue detects the change automatically. If you replace the entire array, you must re-assign the variable. Reactivity caveats apply when using indexes to set items or changing length.",
+    "intent": "debugging",
+    "question": "I changed my array but the list on screen didn't update"
+  },
+  {
+    "intent": "debugging",
+    "question": "My form remembers old values from a previous item when I switch between items",
+    "relevant_apis": [
+      "v-for",
+      "key"
+    ],
+    "expected_answer": "When rendering lists, Vue uses an in-place patch strategy. If elements aren't uniquely keyed, reordering items can lead to unexpected behavior if those items contain stateful children (like form inputs). Providing a `:key` fixes this by giving each element a unique identity.",
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/essentials/list"
+    ]
+  },
+  {
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "api/sfc-css-features"
+    ],
+    "relevant_apis": [
+      "scoped"
+    ],
+    "expected_answer": "By default, CSS styles in a component are global. To prevent styles from leaking, you must add the `scoped` attribute to your `<style>` block, which will scope the CSS to that component's root element.",
+    "intent": "debugging",
+    "question": "My styles from one component are leaking into another component"
+  },
+  {
+    "question": "I put console.log in my function but it never fires",
+    "intent": "debugging",
+    "expected_answer": "If a function or lifecycle hook like `onMounted` is triggered at the wrong time (e.g., before the DOM is fully rendered or outside of the setup phase), expected side effects will fail. Lifecycle hooks must be called synchronously during setup.",
+    "relevant_apis": [
+      "onMounted",
+      "setup"
+    ],
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/essentials/lifecycle"
+    ]
+  },
+  {
+    "question": "I'm adding a new property to my object but the UI doesn't react to it",
+    "intent": "debugging",
+    "expected_answer": "The reactivity system tracks object properties. If you add a new property to an object after initialization without using `reactive` or `ref` correctly (or adding it via `data`), Vue cannot track it. You should ensure properties are declared upfront or use `reactive`.",
+    "relevant_apis": [
+      "reactive"
+    ],
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/essentials/reactivity-fundamentals"
+    ]
+  },
+  {
+    "intent": "debugging",
+    "question": "I'm trying to manipulate the DOM element after changing state, but the changes aren't there yet",
+    "relevant_apis": [
+      "nextTick"
+    ],
+    "expected_answer": "Vue performs batch DOM updates. When you mutate state, the updates aren't applied synchronously. To access the updated DOM, you need to use `nextTick`.",
+    "relevant_paths": [
+      "api/general"
+    ],
+    "difficulty": "extreme"
+  },
+  {
+    "intent": "debugging",
+    "question": "Why does my component reset its state every time it's hidden and shown?",
+    "relevant_apis": [
+      "KeepAlive"
+    ],
+    "expected_answer": "This is often caused by `v-if` destroying and recreating components. When a component is destroyed, its state is lost. You can use `<KeepAlive>` to cache the component instance.",
+    "relevant_paths": [
+      "guide/built-ins/keep-alive"
+    ],
+    "difficulty": "extreme"
+  },
+  {
+    "relevant_apis": [
+      "v-model",
+      "defineModel"
+    ],
+    "expected_answer": "In Vue 3, `v-model` is just syntactic sugar for a `modelValue` prop and an `update:modelValue` event. If your event name is wrong or the prop isn't defined, the binding will fail to sync.",
+    "intent": "debugging",
+    "question": "My custom component's v-model isn't updating the parent state",
+    "relevant_paths": [
+      "guide/components/v-model"
+    ],
+    "difficulty": "extreme"
+  },
+  {
+    "question": "My custom component is not rendering inside my table tag",
+    "intent": "debugging",
+    "expected_answer": "This typically happens if the component is being rendered inside an element that doesn't support custom tags (like `<table>` or `<ul>`). Use the `is` attribute with the `vue:` prefix as a workaround.",
+    "relevant_apis": [
+      "is"
+    ],
+    "relevant_paths": [
+      "guide/essentials/component-basics"
+    ],
+    "difficulty": "extreme"
+  },
+  {
+    "question": "My parent component cannot access a method in my child component via a template ref",
+    "intent": "debugging",
+    "expected_answer": "Components using `<script setup>` are private by default. You must use `defineExpose` to explicitly expose properties or methods to the parent component.",
+    "relevant_apis": [
+      "defineExpose",
+      "ref"
+    ],
+    "relevant_paths": [
+      "guide/essentials/template-refs"
+    ],
+    "difficulty": "extreme"
+  },
+  {
+    "question": "How do I build a reusable modal that can be opened from anywhere and supports custom content?",
+    "intent": "comparison",
+    "expected_answer": "You can use `Teleport` to mount the modal to `body`, `slots` for content, and `provide/inject` (or props) to control the state. These allow the component to be logically nested but rendered outside the DOM hierarchy.",
+    "relevant_apis": [
+      "Teleport",
+      "slots",
+      "provide",
+      "inject"
+    ],
+    "relevant_paths": [
+      "guide/built-ins/teleport",
+      "guide/components/slots",
+      "guide/components/provide-inject"
+    ],
+    "difficulty": "extreme"
+  },
+  {
+    "relevant_apis": [
+      "KeepAlive",
+      "watch",
+      "onDeactivated"
+    ],
+    "expected_answer": "When a component inside `KeepAlive` is deactivated, its instance is cached, but it is not destroyed. Watchers are still reactive if the component is still alive in the cache, but `onUnmounted` will not be called; `onDeactivated` will be called instead.",
+    "intent": "comparison",
+    "question": "What happens to watchers when a component inside KeepAlive gets deactivated?",
+    "relevant_paths": [
+      "guide/built-ins/keep-alive",
+      "guide/essentials/watchers",
+      "guide/essentials/lifecycle"
+    ],
+    "difficulty": "extreme"
+  },
+  {
+    "intent": "howto",
+    "question": "How do I create a component with multiple sections that the parent can fill independently?",
+    "relevant_apis": [
+      "slots"
+    ],
+    "expected_answer": "You can use named slots (v-slot:name) in the child component's template. The parent then passes multiple fragments of content, each targeted at a specific slot outlet, and the child renders them in those locations.",
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/components/slots"
+    ]
+  },
+  {
+    "intent": "howto",
+    "question": "How do I share data between a distant ancestor and a deeply nested descendant without prop drilling?",
+    "relevant_apis": [
+      "provide",
+      "inject"
+    ],
+    "expected_answer": "You need to create a wrapper component that renders the children and provides the state. Use `provide` in the parent and `inject` in the deeply nested child to avoid passing props through every intermediate component.",
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/components/provide-inject"
+    ]
+  },
+  {
+    "question": "How do I improve performance by loading some of my components only when they are needed?",
+    "intent": "howto",
+    "expected_answer": "You can define asynchronous components using `defineAsyncComponent`. This allows you to split your app into chunks, which can be loaded on-demand, improving initial load performance. You can also specify `loadingComponent` and `errorComponent`.",
+    "relevant_apis": [
+      "defineAsyncComponent"
+    ],
+    "relevant_paths": [
+      "guide/components/async"
+    ],
+    "difficulty": "extreme"
+  },
+  {
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/essentials/list"
+    ],
+    "expected_answer": "You can use `v-for` with a `key` on the component, and pass the data as props. This keeps components loosely coupled while allowing the parent to control data flow.",
+    "relevant_apis": [
+      "v-for",
+      "props"
+    ],
+    "question": "How do I render a list of components and pass data to each one?",
+    "intent": "howto"
+  },
+  {
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/components/v-model"
+    ],
+    "question": "Can I have multiple v-model bindings on a single component?",
+    "intent": "howto",
+    "expected_answer": "Yes, by using `defineModel` (3.4+) or by emitting `update:propName` events. This allows a child component to update a parent's state directly, maintaining the one-way data flow principle while simplifying two-way binding.",
+    "relevant_apis": [
+      "defineModel",
+      "v-model"
+    ]
+  },
+  {
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/built-ins/teleport"
+    ],
+    "question": "How do I render a piece of my component in a different place in the DOM tree?",
+    "intent": "howto",
+    "expected_answer": "You can use the `Teleport` component to render content in another part of the DOM while keeping the component logic in the same place. It is a portal-like mechanism for Vue.",
+    "relevant_apis": [
+      "Teleport"
+    ]
+  },
+  {
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/reusability/composables"
+    ],
+    "question": "How do I share stateful logic between components without using mixins?",
+    "intent": "howto",
+    "expected_answer": "For cross-component logic, you should use Composables. They allow you to define a function that encapsulates stateful logic and use it in multiple components, keeping your code DRY.",
+    "relevant_apis": [
+      "composables"
+    ]
+  },
+  {
+    "question": "Can I use await at the top level of script setup?",
+    "intent": "howto",
+    "expected_answer": "Yes, Vue 3 allows async setup in components that are descendants of a Suspense component. The Suspense component will handle the loading and error states automatically.",
+    "relevant_apis": [
+      "script setup",
+      "Suspense"
+    ],
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "api/sfc-script-setup",
+      "guide/built-ins/suspense"
+    ]
+  },
+  {
+    "expected_answer": "Yes, `computed` will cache its value. If you return a Promise, the computed property will hold the promise itself. However, computed properties are expected to be synchronous; returning a promise is usually not what you want, and you should use a watcher or `onMounted` instead.",
+    "relevant_apis": [
+      "computed"
+    ],
+    "question": "What happens if I return a Promise from a computed property?",
+    "intent": "conceptual",
+    "relevant_paths": [
+      "guide/essentials/computed"
+    ],
+    "difficulty": "extreme"
+  },
+  {
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/essentials/watchers"
+    ],
+    "expected_answer": "You can watch props directly in Composition API. However, in the Options API or if you're dealing with reactive objects, you might need a getter function to watch a specific property of a prop.",
+    "relevant_apis": [
+      "watch"
+    ],
+    "question": "Can I watch a prop directly or do I need to wrap it in a getter?",
+    "intent": "howto"
+  },
+  {
+    "relevant_apis": [
+      "app.component",
+      "app.directive"
+    ],
+    "expected_answer": "Yes, you can register global assets like components or directives on the `app` instance using `app.component` or `app.directive`, making them available everywhere without local registration.",
+    "intent": "howto",
+    "question": "Are there components that I can use in every file without importing them?",
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/components/registration"
+    ]
+  },
+  {
+    "question": "What is the difference between ref and shallowRef?",
+    "intent": "conceptual",
+    "expected_answer": "Reactivity is based on getters/setters (for refs) and Proxies (for reactive objects). Shallow refs opt out of deep reactivity, meaning nested properties won't be reactive, which is a performance optimization.",
+    "relevant_apis": [
+      "ref",
+      "shallowRef"
+    ],
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/extras/reactivity-in-depth",
+      "api/reactivity-advanced"
+    ]
+  },
+  {
+    "expected_answer": "You can use `v-once` for static content, `v-memo` for memoizing sub-trees based on dependencies, and `shallowRef` for large, immutable data structures to reduce proxy overhead.",
+    "relevant_apis": [
+      "v-once",
+      "v-memo",
+      "shallowRef"
+    ],
+    "question": "How do I improve performance for extremely large reactive lists?",
+    "intent": "howto",
+    "relevant_paths": [
+      "guide/best-practices/performance"
+    ],
+    "difficulty": "extreme"
+  },
+  {
+    "expected_answer": "Yes, `v-if` has higher priority, which means `v-if` will not have access to variables declared in `v-for`. The best practice is to move `v-for` to a `<template>` wrapper and then use `v-if` on the inner element.",
+    "relevant_apis": [
+      "v-if",
+      "v-for"
+    ],
+    "question": "What happens if I put v-if and v-for on the same element?",
+    "intent": "conceptual",
+    "relevant_paths": [
+      "guide/essentials/list"
+    ],
+    "difficulty": "extreme"
+  },
+  {
+    "relevant_paths": [
+      "guide/essentials/conditional"
+    ],
+    "difficulty": "extreme",
+    "question": "Why should I prefer v-show over v-if in some cases?",
+    "intent": "comparison",
+    "expected_answer": "`v-show` simply toggles the CSS `display` property, whereas `v-if` destroys and recreates the component instance (and event listeners). Prefer `v-show` for frequent toggles.",
+    "relevant_apis": [
+      "v-if",
+      "v-show"
+    ]
+  },
+  {
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/extras/rendering-mechanism"
+    ],
+    "relevant_apis": [
+      "v-bind"
+    ],
+    "expected_answer": "`v-bind` (or `:`) performs dynamic attribute binding. Vue uses bitwise patch flags at compile time to skip diffing static attributes and only update the bound ones, making updates extremely efficient.",
+    "intent": "conceptual",
+    "question": "How does v-bind improve update performance?"
+  },
+  {
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/components/events",
+      "guide/components/provide-inject"
+    ],
+    "question": "How do I send an event from a child to a sibling component?",
+    "intent": "conceptual",
+    "expected_answer": "Custom events do not bubble. You must use `emit` to communicate between a direct child and a parent. For siblings or deep components, use a global state manager (like Pinia) or provide/inject.",
+    "relevant_apis": [
+      "emit",
+      "provide",
+      "inject"
+    ]
+  },
+  {
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/components/v-model"
+    ],
+    "question": "How does v-model argument work?",
+    "intent": "conceptual",
+    "expected_answer": "When you use `v-model` with arguments, like `v-model:title`, Vue uses `title` as the prop name and `update:title` as the event name instead of the defaults. This allows multiple `v-model` bindings per component.",
+    "relevant_apis": [
+      "v-model"
+    ]
+  },
+  {
+    "expected_answer": "`defineExpose` is only for components using `<script setup>`. It lets you explicitly pick which properties or methods are available when a parent component uses a ref to access this child instance.",
+    "relevant_apis": [
+      "defineExpose"
+    ],
+    "question": "Why do I need defineExpose?",
+    "intent": "howto",
+    "relevant_paths": [
+      "guide/essentials/template-refs"
+    ],
+    "difficulty": "extreme"
+  },
+  {
+    "relevant_paths": [
+      "guide/essentials/watchers"
+    ],
+    "difficulty": "extreme",
+    "relevant_apis": [
+      "watch",
+      "watchEffect"
+    ],
+    "expected_answer": "vue3 composion api how to do watcehr -> Use `watch` or `watchEffect` from 'vue'. You pass the reactive source (a ref or getter) and a callback function.",
+    "intent": "debugging",
+    "question": "vue3 composion api how to do watcehr"
+  },
+  {
+    "expected_answer": "definprops not working typescript -> Ensure you are using `defineProps<Props>()` and that the type `Props` is defined in the same or an imported file. If you meant runtime declaration, ensure you're not mixing it with the generic type declaration.",
+    "relevant_apis": [
+      "defineProps"
+    ],
+    "question": "definprops not working typescript",
+    "intent": "debugging",
+    "relevant_paths": [
+      "guide/components/props"
+    ],
+    "difficulty": "extreme"
+  },
+  {
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/essentials/computed"
+    ],
+    "relevant_apis": [
+      "computed"
+    ],
+    "expected_answer": "y does my computed not update?? -> Check if the computed getter accesses a reactive dependency. Computed properties only update when their reactive dependencies (like refs or reactive objects) change. If you are using `Date.now()` or other non-reactive sources, it won't update.",
+    "intent": "debugging",
+    "question": "y does my computed not update??"
+  },
+  {
+    "relevant_apis": [
+      "slots"
+    ],
+    "expected_answer": "vue slots content not showing -> Ensure you are using the `<slot>` element in your child component and the slot content is passed in the parent's component tags. If named, match the names correctly.",
+    "intent": "debugging",
+    "question": "vue slots content not showing",
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/components/slots"
+    ]
+  },
+  {
+    "relevant_paths": [
+      "guide/essentials/list"
+    ],
+    "difficulty": "extreme",
+    "question": "v-for index key duplicate",
+    "intent": "debugging",
+    "expected_answer": "v-for index key duplicate -> The `key` must be unique across the list. If you are using an array index as the key, reordering the list will cause issues. Use a unique property of the item, like `item.id`.",
+    "relevant_apis": [
+      "v-for",
+      "key"
+    ]
+  },
+  {
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/essentials/watchers",
+      "guide/components/props"
+    ],
+    "expected_answer": "props not reacting in watcher -> Props are reactive. If you are watching a prop directly in `<script setup>`, ensure it is not destructured if using older Vue versions, or use a getter `() => props.myProp` if watching it in a watch function.",
+    "relevant_apis": [
+      "watch",
+      "defineProps"
+    ],
+    "question": "props not reacting in watcher",
+    "intent": "debugging"
+  },
+  {
+    "relevant_paths": [
+      "api/composition-api-helpers"
+    ],
+    "difficulty": "extreme",
+    "expected_answer": "cant access setup context -> In `<script setup>`, you don't have access to the setup context object. Use `useSlots()` and `useAttrs()` instead if you need them.",
+    "relevant_apis": [
+      "useSlots",
+      "useAttrs"
+    ],
+    "question": "cant access setup context",
+    "intent": "debugging"
+  },
+  {
+    "relevant_paths": [
+      "guide/components/attrs"
+    ],
+    "difficulty": "extreme",
+    "question": "my component root node attributes",
+    "intent": "debugging",
+    "expected_answer": "my component root node attributes -> By default, attributes passed to a component are applied to the root node (fallthrough attributes). If your component has multiple root nodes, you must manually bind them using `v-bind=\"$attrs\"`.",
+    "relevant_apis": [
+      "$attrs",
+      "inheritAttrs"
+    ]
+  },
+  {
+    "question": "v-model checkbox array",
+    "intent": "debugging",
+    "expected_answer": "v-model checkbox array -> Bind the checkbox to an array variable. When a checkbox is checked, its value is added to the array; when unchecked, it's removed. Each checkbox must have a `value` attribute.",
+    "relevant_apis": [
+      "v-model"
+    ],
+    "relevant_paths": [
+      "guide/essentials/forms"
+    ],
+    "difficulty": "extreme"
+  },
+  {
+    "difficulty": "extreme",
+    "relevant_paths": [],
+    "question": "cannot find module vue",
+    "intent": "debugging",
+    "expected_answer": "cannot find module vue -> This usually means the project is missing the `vue` dependency. Run `npm install vue` or `pnpm install vue`. If using TypeScript, also ensure your `tsconfig.json` has `vue` in the compiler options.",
+    "relevant_apis": []
   }
 ]

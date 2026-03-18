@@ -1195,8 +1195,8 @@ class TestMCPIntegration:
         assert call_kwargs.kwargs.get("limit") == 50  # _RETRIEVAL_LIMIT
 
     @pytest.mark.asyncio
-    async def test_call_search_tool_entity_boost(self):
-        """Detected entities are passed as boost filter to Qdrant."""
+    async def test_call_search_tool_no_entity_filter(self):
+        """Entity boost is NOT passed to Qdrant (BM25 handles keyword matching)."""
         from vue_docs_server.main import mcp
 
         server_state = _setup_server_state()
@@ -1221,9 +1221,8 @@ class TestMCPIntegration:
                 )
 
         call_kwargs = server_state.qdrant.hybrid_search.call_args
-        entity_boost = call_kwargs.kwargs.get("entity_boost")
-        assert entity_boost is not None
-        assert "computed" in entity_boost
+        # Entity boost should NOT be passed — BM25 handles keyword matching
+        assert call_kwargs.kwargs.get("entity_boost") is None
 
     @pytest.mark.asyncio
     async def test_server_instructions(self):

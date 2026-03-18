@@ -354,11 +354,9 @@ def judge_result_stable(
                 if attempt < 4:
                     time.sleep(2**attempt)
                 else:
-                    # Use zeros for this run if all retries fail
-                    all_scores.append({
-                        "relevance": 0, "completeness": 0,
-                        "correctness": 0, "api_coverage": 0,
-                    })
+                    raise RuntimeError(
+                        f"Judge failed after 5 attempts for: {question[:60]}"
+                    ) from e
 
     # Take median per dimension
     median_scores: dict = {}
@@ -408,24 +406,8 @@ async def run_evaluation(
 
         logger.info("[%d/%d] %s (intent=%s)", i + 1, len(questions), question[:80], intent)
 
-        # Run search
-        try:
-            retrieved_context, latency = await run_search(question, max_results=max_results)
-        except Exception as e:
-            logger.error("Search failed for '%s': %s", question[:50], e)
-            results.append({
-                "question": question,
-                "intent": intent,
-                "difficulty": difficulty,
-                "latency": 0,
-                "recall": {"path_recall": 0, "api_recall": 0},
-                "scores": {
-                    "relevance": 0, "completeness": 0,
-                    "correctness": 0, "api_coverage": 0,
-                },
-                "error": str(e),
-            })
-            continue
+        # Run search — fail fast on errors
+        retrieved_context, latency = await run_search(question, max_results=max_results)
 
         # Deterministic recall metrics
         recall = compute_recall_at_k(retrieved_context, relevant_paths, relevant_apis)
@@ -447,6 +429,8 @@ async def run_evaluation(
             "latency": round(latency, 3),
             "recall": recall,
             "scores": scores,
+            "context_chars": len(retrieved_context),
+            "context_tokens_approx": len(retrieved_context) // 4,
             "retrieved_preview": retrieved_context[:500],
         })
 
@@ -512,6 +496,14 @@ def compute_metrics(results: list[dict]) -> dict:
         overall["avg_latency"] = round(statistics.mean(latencies), 3)
         overall["p95_latency"] = round(sorted(latencies)[int(len(latencies) * 0.95)], 3)
         overall["max_latency"] = round(max(latencies), 3)
+
+    # Context size
+    context_chars = [r.get("context_chars", 0) for r in results if r.get("context_chars", 0) > 0]
+    context_tokens = [r.get("context_tokens_approx", 0) for r in results if r.get("context_tokens_approx", 0) > 0]
+    if context_chars:
+        overall["avg_context_chars"] = round(statistics.mean(context_chars))
+        overall["avg_context_tokens"] = round(statistics.mean(context_tokens))
+        overall["max_context_tokens"] = max(context_tokens)
 
     overall["total_questions"] = len(results)
     overall["errors"] = sum(1 for r in results if "error" in r)
@@ -645,10 +637,11 @@ def format_report(metrics: dict) -> str:
                 f"{rates.get('all', 0):>5.0%}"
             )
 
-    lines.append("\nLATENCY:")
-    lines.append(f"  Average: {overall.get('avg_latency', 'N/A')}s")
-    lines.append(f"  P95:     {overall.get('p95_latency', 'N/A')}s")
-    lines.append(f"  Max:     {overall.get('max_latency', 'N/A')}s")
+    lines.append("\nLATENCY & CONTEXT SIZE:")
+    lines.append(f"  Avg latency:  {overall.get('avg_latency', 'N/A')}s")
+    lines.append(f"  P95 latency:  {overall.get('p95_latency', 'N/A')}s")
+    lines.append(f"  Avg context:  ~{overall.get('avg_context_tokens', 'N/A')} tokens")
+    lines.append(f"  Max context:  ~{overall.get('max_context_tokens', 'N/A')} tokens")
 
     by_intent = metrics.get("by_intent", {})
     pass_by_intent = metrics.get("pass_by_intent", {})
