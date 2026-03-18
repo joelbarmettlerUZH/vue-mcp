@@ -627,8 +627,6 @@ def format_report(metrics: dict) -> str:
 
     pass_rates = metrics.get("pass_rates", {})
     if pass_rates:
-        dims_short = {"relevance": "rel", "completeness": "comp",
-                      "correctness": "corr", "api_coverage": "api", "all": "ALL"}
         lines.append("")
         lines.append(
             f"  {'threshold':>10s}  {'rel':>5s}  {'comp':>5s}  "

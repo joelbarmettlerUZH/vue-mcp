@@ -11,10 +11,12 @@ from vue_docs_core.clients.jina import JinaClient
 from vue_docs_core.clients.qdrant import SearchHit
 from vue_docs_core.config import RERANK_MIN_SCORE, RETRIEVAL_LIMIT, TASK_RETRIEVAL_QUERY
 from vue_docs_core.retrieval.expansion import expand_cross_references
+from vue_docs_core.retrieval.fusion import reciprocal_rank_fusion
+from vue_docs_core.retrieval.query_transform import transform_query
 from vue_docs_core.retrieval.reconstruction import reconstruct_results
 from vue_docs_server.startup import state
 
-TOTAL_STEPS = 6
+TOTAL_STEPS = 7
 _tracer = get_tracer()
 
 
@@ -46,80 +48,116 @@ async def vue_docs_search(
 ) -> str:
     """Search the Vue.js documentation.
 
-    Performs hybrid semantic + keyword search over the indexed Vue documentation,
-    reranks candidates, and returns reconstructed, readable documentation
+    Performs query transformation, hybrid semantic + keyword search over
+    the indexed Vue documentation, fuses multi-query results, reranks
+    candidates, and returns reconstructed, readable documentation
     fragments ordered by the documentation's natural reading flow.
     """
     if not state.is_ready:
         raise ToolError("Server not initialized. Please try again shortly.")
 
+    # Step 1: Entity detection + query transformation (parallel with LLM)
+    await ctx.report_progress(1, TOTAL_STEPS)
+    await ctx.info("Analyzing query")
+    with _tracer.start_as_current_span("query_transform") as span:
+        entity_boost = _detect_entities(query)
+        if entity_boost:
+            span.set_attribute("entities.detected", entity_boost)
+
+        transform = await transform_query(query, detected_entities=entity_boost)
+        span.set_attribute("transform.intent", transform.intent.value)
+        span.set_attribute("transform.sub_questions", len(transform.sub_questions))
+        span.set_attribute("transform.rewrites", len(transform.rewritten_queries))
+        span.set_attribute("transform.has_step_back", bool(transform.step_back_query))
+
+    await ctx.info(
+        f"Intent: {transform.intent.value}, "
+        f"{len(transform.rewritten_queries)} rewrites, "
+        f"{len(transform.sub_questions)} sub-questions"
+    )
+
+    # Step 2: Embed all query variants
+    await ctx.report_progress(2, TOTAL_STEPS)
+    await ctx.info("Embedding query variants")
+
+    # Collect all queries to search
+    all_queries = [query]
+    if transform.rewritten_queries:
+        all_queries.extend(transform.rewritten_queries[:4])
+    if transform.sub_questions:
+        all_queries.extend(transform.sub_questions[:4])
+    if transform.step_back_query:
+        all_queries.append(transform.step_back_query)
+
     jina = JinaClient()
     try:
-        # Step 1: Embed the query
-        await ctx.report_progress(1, TOTAL_STEPS)
-        await ctx.info(f"Embedding query: {query!r}")
-        with _tracer.start_as_current_span("embed_query") as span:
-            span.set_attribute("query.length", len(query))
-            embed_result = await jina.embed([query], task=TASK_RETRIEVAL_QUERY)
+        with _tracer.start_as_current_span("embed_queries") as span:
+            span.set_attribute("query.count", len(all_queries))
+            embed_result = await jina.embed(all_queries, task=TASK_RETRIEVAL_QUERY)
             if not embed_result.embeddings:
-                return "Error: Failed to generate query embedding."
-            dense_vector = embed_result.embeddings[0]
+                return "Error: Failed to generate query embeddings."
 
-            # Generate BM25 sparse vector
-            sparse_vector = state.bm25.get_query_sparse_vector(query)
-
-            # Detect API entities in query for boosting
-            entity_boost = _detect_entities(query)
-            if entity_boost:
-                span.set_attribute("entities.detected", entity_boost)
-
-        # Step 2: Run hybrid search
-        await ctx.report_progress(2, TOTAL_STEPS)
-        await ctx.info("Searching documentation")
-        with _tracer.start_as_current_span("hybrid_search") as span:
-            span.set_attribute("search.scope", scope)
+        # Step 3: Run hybrid search for each query variant
+        await ctx.report_progress(3, TOTAL_STEPS)
+        await ctx.info(f"Searching with {len(all_queries)} query variants")
+        with _tracer.start_as_current_span("multi_search") as span:
             scope_filter = scope if scope != "all" else None
-            hits = state.qdrant.hybrid_search(
-                dense_vector=dense_vector,
-                sparse_vector=sparse_vector,
-                limit=RETRIEVAL_LIMIT,
-                scope_filter=scope_filter,
-                entity_boost=entity_boost if entity_boost else None,
-            )
+            result_sets: list[list[SearchHit]] = []
 
-            if not hits and scope_filter:
+            for i, dense_vector in enumerate(embed_result.embeddings):
+                q = all_queries[i]
+                sparse_vector = state.bm25.get_query_sparse_vector(q)
+                hits = state.qdrant.hybrid_search(
+                    dense_vector=dense_vector,
+                    sparse_vector=sparse_vector,
+                    limit=RETRIEVAL_LIMIT,
+                    scope_filter=scope_filter,
+                    entity_boost=entity_boost if entity_boost else None,
+                )
+                result_sets.append(hits)
+
+            # If primary query returned nothing with scope, retry without
+            if not result_sets[0] and scope_filter:
                 await ctx.warning(
                     f"No results in scope '{scope}', expanding to all documentation"
                 )
                 span.set_attribute("search.scope_fallback", True)
                 hits = state.qdrant.hybrid_search(
-                    dense_vector=dense_vector,
-                    sparse_vector=sparse_vector,
+                    dense_vector=embed_result.embeddings[0],
+                    sparse_vector=state.bm25.get_query_sparse_vector(query),
                     limit=RETRIEVAL_LIMIT,
                     entity_boost=entity_boost if entity_boost else None,
                 )
+                result_sets[0] = hits
 
-            span.set_attribute("search.hit_count", len(hits))
+            total_hits = sum(len(rs) for rs in result_sets)
+            span.set_attribute("search.total_hits", total_hits)
+            span.set_attribute("search.result_sets", len(result_sets))
+
+        # Step 4: Fuse results across query variants
+        await ctx.report_progress(4, TOTAL_STEPS)
+        await ctx.info("Fusing multi-query results")
+        with _tracer.start_as_current_span("fusion") as span:
+            hits = reciprocal_rank_fusion(result_sets)
+            span.set_attribute("fusion.unique_chunks", len(hits))
 
         if not hits:
             return f"No documentation found for: {query}"
 
-        # Step 3: Resolve HyPE question hits to their parent chunks
-        await ctx.report_progress(3, TOTAL_STEPS)
+        # Step 5: Resolve HyPE question hits to their parent chunks
+        await ctx.report_progress(5, TOTAL_STEPS)
         await ctx.info("Resolving related content")
         with _tracer.start_as_current_span("resolve_hype"):
             hits = _resolve_hype_hits(hits)
 
-        # Step 4: Expand results via cross-references (before reranking)
-        await ctx.report_progress(4, TOTAL_STEPS)
-        await ctx.info("Expanding cross-references")
+        # Expand results via cross-references (before reranking)
         with _tracer.start_as_current_span("expand_crossrefs") as span:
             pre_count = len(hits)
             hits = expand_cross_references(hits, state.qdrant)
             span.set_attribute("crossref.added", len(hits) - pre_count)
 
-        # Step 5: Rerank candidates with Jina reranker v3
-        await ctx.report_progress(5, TOTAL_STEPS)
+        # Step 6: Rerank candidates with Jina reranker v3
+        await ctx.report_progress(6, TOTAL_STEPS)
         await ctx.info("Reranking candidates")
         with _tracer.start_as_current_span("rerank") as span:
             span.set_attribute("rerank.candidate_count", len(hits))
@@ -133,8 +171,8 @@ async def vue_docs_search(
     if not hits:
         return f"No documentation found for: {query}"
 
-    # Step 6: Reconstruct results
-    await ctx.report_progress(6, TOTAL_STEPS)
+    # Step 7: Reconstruct results
+    await ctx.report_progress(7, TOTAL_STEPS)
     await ctx.info("Reconstructing results")
 
     # Track query in session history

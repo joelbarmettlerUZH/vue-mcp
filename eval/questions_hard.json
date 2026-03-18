@@ -1,0 +1,523 @@
+[
+  {
+    "intent": "howto",
+    "expected_answer": "In the setup() hook, you can use the provide() function to inject data. To make it reactive, provide a ref. In the descendant component, use the inject() function to retrieve the provided ref; it will not be automatically unwrapped, so you access its value via .value. If using Options API, provide() is an object or function, and inject() retrieves the value, but provides are not reactive unless provided as a computed property.",
+    "difficulty": "hard",
+    "relevant_apis": [
+      "provide",
+      "inject",
+      "ref",
+      "computed"
+    ],
+    "relevant_paths": [
+      "guide/components/provide-inject.md",
+      "api/composition-api-dependency-injection.md",
+      "api/options-composition.md"
+    ],
+    "question": "I have a deeply nested component that needs to access state from a distant ancestor. How do I set up a reactive provide/inject pattern that works both in Composition API and Options API?"
+  },
+  {
+    "expected_answer": "The :key attribute is required for Vue to track node identity during list rendering. When a list's items have state (like input values or component instances), Vue's default in-place patch strategy will reuse elements at the same index even if the data order changes, leading to the symptoms you described. Providing a unique :key fixes this by allowing Vue to reorder DOM elements to match the data.",
+    "relevant_apis": [
+      "v-for",
+      "key"
+    ],
+    "difficulty": "hard",
+    "intent": "debugging",
+    "relevant_paths": [
+      "guide/essentials/list.md",
+      "api/built-in-special-attributes.md"
+    ],
+    "question": "My list renders correctly the first time, but when I sort the array, the input fields in the list items keep their old values instead of moving with the items. What is the cause?"
+  },
+  {
+    "question": "I'm using v-model for a number input, but Vue keeps saving the value as a string in my reactive state. How do I force it to be a number?",
+    "intent": "howto",
+    "relevant_apis": [
+      "v-model"
+    ],
+    "difficulty": "hard",
+    "expected_answer": "You need to use a v-model with the .number modifier on the input element. This automatically typecasts the user input as a number using parseFloat(), which ensures the bound data is a number rather than a string.",
+    "relevant_paths": [
+      "guide/essentials/forms.md"
+    ]
+  },
+  {
+    "question": "I want to animate the transition between two different buttons appearing on the screen. Currently, they just jump around and overlap. How can I make one fade out before the other fades in?",
+    "relevant_paths": [
+      "guide/built-ins/transition.md"
+    ],
+    "difficulty": "hard",
+    "relevant_apis": [
+      "Transition"
+    ],
+    "expected_answer": "You can use the built-in <Transition> component. Since you have multiple elements, you should wrap them in <Transition> and use the 'mode' prop set to 'out-in'. This ensures the leaving element finishes its animation before the entering element is inserted, preventing layout jumps.",
+    "intent": "howto"
+  },
+  {
+    "question": "I'm trying to filter a list by using v-if and v-for on the same <li> element, but Vue is throwing an error that the variable is undefined. Why is this happening and how do I fix it?",
+    "relevant_paths": [
+      "guide/essentials/list.md",
+      "guide/essentials/conditional.md"
+    ],
+    "intent": "debugging",
+    "expected_answer": "The v-if directive has a higher priority than v-for. If you place them on the same element, v-if is evaluated first and tries to access variables from the v-for scope, which are not defined yet, causing an error. To fix this, wrap the v-for in a <template> element and move the v-if to the inner element.",
+    "relevant_apis": [
+      "v-if",
+      "v-for"
+    ],
+    "difficulty": "hard"
+  },
+  {
+    "relevant_paths": [
+      "guide/components/props.md",
+      "guide/components/events.md"
+    ],
+    "expected_answer": "The problem is that you are mutating the prop directly. In Vue, props are one-way bindings. You should either emit an event to the parent to request a change, or create a local copy (using ref) or a computed property if you need to transform the data.",
+    "difficulty": "hard",
+    "relevant_apis": [
+      "props",
+      "emit"
+    ],
+    "intent": "debugging",
+    "question": "I'm trying to change a value passed from a parent component via props inside my child component, but I'm getting a warning that 'props are readonly'. What is the correct pattern to handle this?"
+  },
+  {
+    "question": "How do I pass data back from a child component to its parent in a way that is documented and follows Vue best practices?",
+    "relevant_paths": [
+      "guide/essentials/component-basics.md",
+      "guide/components/events.md"
+    ],
+    "expected_answer": "You should use defineEmits() to declare the event in the child component. In the parent, you listen for the event using @event-name. If you need to pass data, include it as an argument in the emit call, and the parent can receive it as an argument in the listener callback.",
+    "relevant_apis": [
+      "defineEmits",
+      "emit",
+      "v-on"
+    ],
+    "difficulty": "hard",
+    "intent": "howto"
+  },
+  {
+    "relevant_paths": [
+      "guide/essentials/list.md"
+    ],
+    "difficulty": "hard",
+    "relevant_apis": [
+      "v-for",
+      "v-if"
+    ],
+    "expected_answer": "The issue is likely due to using v-if and v-for on the same element. Vue's compiler evaluates v-if first, and it cannot access the iterator variable from v-for. Move the v-for to a <template> wrapper or use a computed property to filter the list before rendering.",
+    "intent": "debugging",
+    "question": "I'm getting 'Property is not defined on instance' even though I'm clearly looping over it with v-for. Why is this error appearing?"
+  },
+  {
+    "question": "I'm importing a child component, but the template keeps saying the component is unknown. I've already checked the import path. What else could be wrong?",
+    "relevant_paths": [
+      "guide/essentials/component-basics.md",
+      "guide/components/registration.md"
+    ],
+    "intent": "debugging",
+    "difficulty": "hard",
+    "relevant_apis": [
+      "components"
+    ],
+    "expected_answer": "When using the Composition API with <script setup>, imported components are automatically registered. However, if you are using the Options API, you must explicitly register them in the components option object. Also, if you are in an in-DOM template, you must use kebab-case for the tag name instead of PascalCase."
+  },
+  {
+    "question": "How do I set up a global error handler to catch errors thrown in any of my components, including those in lifecycle hooks?",
+    "expected_answer": "Vue's application instance exposes a .config object. You can set app.config.errorHandler to a function that captures errors. Make sure to define this before calling the .mount() method on your application instance.",
+    "relevant_apis": [
+      "app.config.errorHandler",
+      "createApp"
+    ],
+    "difficulty": "hard",
+    "intent": "howto",
+    "relevant_paths": [
+      "guide/essentials/application.md"
+    ]
+  },
+  {
+    "relevant_paths": [
+      "guide/essentials/computed.md"
+    ],
+    "relevant_apis": [
+      "computed"
+    ],
+    "difficulty": "hard",
+    "expected_answer": "You can use a computed property that defines both a get and a set function. When the component's state changes, the getter runs; when you assign a value to the computed property, the setter runs, allowing you to update the underlying state variables.",
+    "intent": "howto",
+    "question": "How can I create a value that behaves like a computed property but also allows me to write to it to update multiple pieces of state?"
+  },
+  {
+    "question": "I'm using Vue without a build step, and my custom component inside a <table> is breaking the layout and causing errors. What is happening?",
+    "relevant_paths": [
+      "guide/essentials/component-basics.md"
+    ],
+    "expected_answer": "In-DOM templates are subject to browser HTML parsing rules. If your root component has multiple elements or specific elements like <tr> inside a <table>, the browser might hoist them. Using the 'is' attribute (prefixed with 'vue:' for native elements) allows you to use a Vue component in places where HTML restricts custom tags.",
+    "difficulty": "hard",
+    "relevant_apis": [
+      "is"
+    ],
+    "intent": "debugging"
+  },
+  {
+    "relevant_paths": [
+      "guide/essentials/forms.md"
+    ],
+    "difficulty": "hard",
+    "relevant_apis": [
+      "v-model"
+    ],
+    "expected_answer": "The .lazy modifier makes v-model sync after the change event instead of the input event. This is useful for performance or when you only want to update state when the user is finished typing or leaves the field.",
+    "intent": "howto",
+    "question": "My input field is triggering updates on every single keystroke, causing performance issues. How do I make v-model only update when the input loses focus or the enter key is pressed?"
+  },
+  {
+    "question": "How do I dynamically switch between different components in a single location, and how can I ensure they aren't destroyed when I switch away?",
+    "relevant_paths": [
+      "guide/essentials/component-basics.md"
+    ],
+    "difficulty": "hard",
+    "relevant_apis": [
+      "component",
+      "KeepAlive"
+    ],
+    "expected_answer": "You can use the 'is' attribute on the <component> tag. The value can be either the registered name of the component or the imported component object. To keep them from unmounting, wrap the <component> in <KeepAlive>.",
+    "intent": "howto"
+  },
+  {
+    "question": "I'm trying to access a DOM element using a template ref, but it keeps returning null even though I defined the ref in setup(). What is wrong?",
+    "intent": "debugging",
+    "relevant_apis": [
+      "ref",
+      "onMounted"
+    ],
+    "difficulty": "hard",
+    "expected_answer": "The issue is that the element doesn't exist until the component is mounted. Accessing a ref in setup() or before onMounted() will always return null. Make sure your ref access happens inside onMounted().",
+    "relevant_paths": [
+      "guide/essentials/template-refs.md"
+    ]
+  },
+  {
+    "difficulty": "hard",
+    "relevant_apis": [
+      "v-on",
+      "emits",
+      "$attrs"
+    ],
+    "expected_answer": "You should use the @click.native equivalent, but in Vue 3, all event listeners are treated as component events unless explicitly declared in emits. To listen to a native event on a component root, you don't need to do anything special; it automatically falls through. If you disabled inheritAttrs: false, use v-bind=\"$attrs\" to pass them to the desired child element.",
+    "intent": "howto",
+    "relevant_paths": [
+      "guide/components/events.md",
+      "guide/components/attrs.md"
+    ],
+    "question": "How do I listen to native events like 'click' on a custom component I've created, instead of waiting for it to emit a custom event?"
+  },
+  {
+    "intent": "howto",
+    "relevant_apis": [
+      "v-for",
+      "props"
+    ],
+    "difficulty": "hard",
+    "expected_answer": "When using v-for on a component, you must provide a unique :key. Also, note that data is not automatically passed to the component; you must pass it via props explicitly so that the component remains decoupled from the list rendering logic.",
+    "relevant_paths": [
+      "guide/essentials/list.md"
+    ],
+    "question": "I am rendering a list of child components using v-for. How do I properly pass the current item's data to each child, and what is the best practice for performance?"
+  },
+  {
+    "relevant_paths": [
+      "guide/essentials/computed.md"
+    ],
+    "expected_answer": "You are likely using a method instead of a computed property. Methods in expressions run on every re-render, whereas computed properties are cached based on their reactive dependencies. Use a computed property to avoid expensive re-calculations.",
+    "relevant_apis": [
+      "computed"
+    ],
+    "difficulty": "hard",
+    "intent": "comparison",
+    "question": "When should I prefer a computed property over a simple method in my template expression?"
+  },
+  {
+    "relevant_paths": [
+      "guide/essentials/lifecycle.md",
+      "api/composition-api-setup.md"
+    ],
+    "relevant_apis": [
+      "mounted",
+      "setup"
+    ],
+    "difficulty": "hard",
+    "expected_answer": "The 'setup' hook is called before any other lifecycle hooks. The 'mounted' hook runs after the component is rendered. If you need to interact with the DOM, it must be in mounted (or onMounted). If you are using Options API, avoid using arrow functions in lifecycle hooks, as you will lose access to 'this'.",
+    "intent": "conceptual",
+    "question": "I'm confused about the lifecycle of a Vue component. When exactly are my state, methods, and DOM elements available, and are there any pitfalls with 'this'?"
+  },
+  {
+    "question": "I'm assigning a new object to a reactive property in my component, but it's not updating the view. What am I doing wrong?",
+    "expected_answer": "In Vue 3, reactive objects are Proxies. If you reassign a reactive property to a new object, the original object is left intact and not made reactive. You must access the reactive state as a property of the component instance or the reactive proxy, not the local raw object.",
+    "relevant_apis": [
+      "reactive"
+    ],
+    "difficulty": "hard",
+    "intent": "debugging",
+    "relevant_paths": [
+      "guide/essentials/reactivity-fundamentals.md"
+    ]
+  },
+  {
+    "relevant_paths": [
+      "guide/components/attrs.md"
+    ],
+    "intent": "howto",
+    "expected_answer": "You need to use v-bind=\"$attrs\" on the element you want the fallthrough attributes to be applied to. First, set inheritAttrs: false in your component options to stop the default behavior of applying them to the root element.",
+    "relevant_apis": [
+      "$attrs",
+      "inheritAttrs"
+    ],
+    "difficulty": "hard",
+    "question": "I have a component that has a root <div> and a child <input>. I want the attributes like 'class' and 'id' passed by the parent to be applied to the <input>, not the <div>. How do I do this?"
+  },
+  {
+    "question": "What is the standard way for a child component to tell a parent component that something happened, instead of passing a callback function as a prop?",
+    "relevant_paths": [
+      "guide/components/events.md"
+    ],
+    "intent": "howto",
+    "expected_answer": "You should use defineEmits() in the child to declare the event, and then call emit('event-name') to fire it. In the parent, listen to it using @event-name. This keeps the parent and child decoupled and is the standard way to handle communication.",
+    "relevant_apis": [
+      "defineEmits",
+      "emit"
+    ],
+    "difficulty": "hard"
+  },
+  {
+    "relevant_paths": [
+      "guide/essentials/conditional.md",
+      "guide/essentials/list.md"
+    ],
+    "expected_answer": "Use a <template> with v-if or v-for. The <template> acts as an invisible wrapper that doesn't render in the DOM, allowing you to group elements without adding extra HTML nodes.",
+    "relevant_apis": [
+      "v-if",
+      "v-for",
+      "template"
+    ],
+    "difficulty": "hard",
+    "intent": "howto",
+    "question": "How can I render multiple elements conditionally or in a loop without adding an extra wrapper <div> or <span> that messes up my CSS layout?"
+  },
+  {
+    "relevant_apis": [
+      "v-on",
+      "event-modifiers"
+    ],
+    "difficulty": "hard",
+    "expected_answer": "Use the .prevent modifier on the event, e.g., @submit.prevent=\"handler\". This tells Vue to call event.preventDefault() automatically.",
+    "intent": "howto",
+    "relevant_paths": [
+      "guide/essentials/event-handling.md"
+    ],
+    "question": "Every time I submit my form, the page reloads. How do I stop that behavior using Vue's event handling system?"
+  },
+  {
+    "relevant_paths": [
+      "guide/essentials/template-syntax.md"
+    ],
+    "intent": "howto",
+    "relevant_apis": [
+      "v-bind"
+    ],
+    "difficulty": "hard",
+    "expected_answer": "Use dynamic arguments with square brackets, e.g., v-bind:[attributeName]=\"value\". This allows the attribute name to change based on the value of attributeName.",
+    "question": "I have a component where I need to bind to different attributes depending on the state. How do I dynamically set the attribute name?"
+  },
+  {
+    "relevant_paths": [
+      "guide/essentials/conditional.md"
+    ],
+    "intent": "comparison",
+    "expected_answer": "The v-show directive toggles the display CSS property, while v-if is \"real\" conditional rendering, meaning the element is added or removed from the DOM. Prefer v-show for elements that need to be toggled frequently, and v-if if the condition is unlikely to change.",
+    "relevant_apis": [
+      "v-if",
+      "v-show"
+    ],
+    "difficulty": "hard",
+    "question": "What is the functional difference between v-if and v-show, and which one should I use for performance-sensitive toggling?"
+  },
+  {
+    "relevant_paths": [
+      "guide/components/slots.md"
+    ],
+    "intent": "howto",
+    "expected_answer": "You need to wrap the dynamic content in a <template v-slot:header> or use the shorthand #header. In the component template, use a <slot name=\"header\"></slot> outlet to define where the content goes.",
+    "relevant_apis": [
+      "slot",
+      "v-slot"
+    ],
+    "difficulty": "hard",
+    "question": "How do I pass different parts of a template into a child component so they render in different slots?"
+  },
+  {
+    "intent": "conceptual",
+    "relevant_apis": [
+      "emit",
+      "provide",
+      "inject"
+    ],
+    "difficulty": "hard",
+    "expected_answer": "Events do not bubble. They only communicate directly between parent and child. For deep nesting or sibling communication, you should use global state management like Pinia or a provide/inject pattern.",
+    "relevant_paths": [
+      "guide/components/events.md",
+      "guide/components/provide-inject.md"
+    ],
+    "question": "Why can't I listen to an event emitted by a grandchild component in my parent component?"
+  },
+  {
+    "intent": "howto",
+    "difficulty": "hard",
+    "relevant_apis": [
+      "v-model"
+    ],
+    "expected_answer": "Use the .trim modifier on the v-model. This automatically removes whitespace from the user input.",
+    "relevant_paths": [
+      "guide/essentials/forms.md"
+    ],
+    "question": "My users are accidentally entering spaces at the beginning and end of their form inputs. How can I automatically remove those?"
+  },
+  {
+    "question": "My list items have state that gets confused when I sort the list. How can I fix this?",
+    "expected_answer": "Use the :key attribute on the element inside the v-for. This gives Vue a hint to track each node's identity and reorder existing elements instead of patching them in-place.",
+    "relevant_apis": [
+      "v-for",
+      "key"
+    ],
+    "difficulty": "hard",
+    "intent": "howto",
+    "relevant_paths": [
+      "guide/essentials/list.md"
+    ]
+  },
+  {
+    "relevant_paths": [
+      "guide/essentials/template-refs.md"
+    ],
+    "intent": "debugging",
+    "expected_answer": "The ref must be accessed inside onMounted(), or by using watchEffect to wait for the element to exist. Ref access in setup() or before mount will always result in null.",
+    "relevant_apis": [
+      "ref",
+      "onMounted"
+    ],
+    "difficulty": "hard",
+    "question": "I have a ref=\"myRef\" in my template, but 'myRef' is null in my setup() function. Why is that?"
+  },
+  {
+    "question": "How do I create a component that supports multiple v-model bindings at the same time?",
+    "expected_answer": "You should use the v-model argument syntax: v-model:title=\"bookTitle\" and v-model:author=\"bookAuthor\". In the child, use defineModel('title') and defineModel('author').",
+    "relevant_apis": [
+      "v-model",
+      "defineModel"
+    ],
+    "difficulty": "hard",
+    "intent": "howto",
+    "relevant_paths": [
+      "guide/components/v-model.md"
+    ]
+  },
+  {
+    "intent": "howto",
+    "expected_answer": "Use the .lazy modifier on the v-model. This will sync the input with the state only after the change event, not on every input event.",
+    "difficulty": "hard",
+    "relevant_apis": [
+      "v-model"
+    ],
+    "relevant_paths": [
+      "guide/essentials/forms.md"
+    ],
+    "question": "I'm seeing too many API requests while the user is typing in the input field. How do I delay the v-model synchronization?"
+  },
+  {
+    "question": "What is the difference between global and local component registration, and which one is better for tree-shaking?",
+    "intent": "conceptual",
+    "expected_answer": "When using <script setup>, imported components are automatically registered locally. If you register them globally using app.component(), you don't need to import them. If you are using the Options API, you must add them to the components object.",
+    "difficulty": "hard",
+    "relevant_apis": [
+      "components",
+      "createApp"
+    ],
+    "relevant_paths": [
+      "guide/components/registration.md"
+    ]
+  },
+  {
+    "question": "My bundle is too large because I'm importing heavy components that aren't used on every page. How can I lazy-load them?",
+    "relevant_paths": [
+      "guide/components/async.md"
+    ],
+    "relevant_apis": [
+      "defineAsyncComponent"
+    ],
+    "difficulty": "hard",
+    "expected_answer": "Use defineAsyncComponent to wrap the import. This allows the component to be loaded only when it's actually needed, splitting it into a separate chunk.",
+    "intent": "howto"
+  },
+  {
+    "question": "How can I render a component whose type is determined by data at runtime?",
+    "relevant_paths": [
+      "guide/essentials/component-basics.md"
+    ],
+    "intent": "howto",
+    "expected_answer": "Use the :is attribute on the <component> tag. The value can be the registered name or the component object itself.",
+    "difficulty": "hard",
+    "relevant_apis": [
+      "component"
+    ]
+  },
+  {
+    "intent": "conceptual",
+    "expected_answer": "The key attribute helps Vue identify VNodes for diffing. When used in v-for, it tracks identity. When used on a non-list element, it forces the element to be destroyed and recreated, which is useful for triggering transitions or resetting component state.",
+    "relevant_apis": [
+      "key"
+    ],
+    "difficulty": "hard",
+    "relevant_paths": [
+      "api/built-in-special-attributes.md"
+    ],
+    "question": "What are the common uses of the 'key' attribute beyond just v-for lists?"
+  },
+  {
+    "question": "What is the difference between v-once and v-memo, and when should I use v-memo?",
+    "relevant_paths": [
+      "api/built-in-directives.md"
+    ],
+    "intent": "comparison",
+    "relevant_apis": [
+      "v-once",
+      "v-memo"
+    ],
+    "difficulty": "hard",
+    "expected_answer": "The v-once directive renders the element only once and skips all future updates. v-memo is more advanced and allows you to memoize a sub-tree of the template, only re-rendering if a dependency array changes."
+  },
+  {
+    "question": "I need to listen to different events based on the component's state. How can I bind to a dynamic event name?",
+    "expected_answer": "The v-on argument can be dynamic using brackets: @[eventName]=\"handler\". Ensure that eventName is defined in your state.",
+    "relevant_apis": [
+      "v-on"
+    ],
+    "difficulty": "hard",
+    "intent": "howto",
+    "relevant_paths": [
+      "guide/essentials/template-syntax.md"
+    ]
+  },
+  {
+    "question": "How do I create a custom v-model modifier that transforms the input value, like auto-capitalizing it?",
+    "relevant_paths": [
+      "guide/components/v-model.md"
+    ],
+    "expected_answer": "Use defineModel with the set option: const [model, modifiers] = defineModel({ set(value) { return value.toUpperCase() } }). This allows you to transform the value before syncing it back to the parent.",
+    "difficulty": "hard",
+    "relevant_apis": [
+      "defineModel"
+    ],
+    "intent": "howto"
+  }
+]
