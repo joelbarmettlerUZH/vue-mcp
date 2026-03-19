@@ -42,7 +42,9 @@ def reciprocal_rank_fusion(
             rrf_scores[chunk_id] = rrf_scores.get(chunk_id, 0.0) + rrf_score
 
             # Keep payload from the occurrence with the highest original score
-            if chunk_id not in best_payload or hit.score > best_payload[chunk_id].get("_best_score", 0):
+            if chunk_id not in best_payload or hit.score > best_payload[chunk_id].get(
+                "_best_score", 0
+            ):
                 best_payload[chunk_id] = hit.payload
                 best_payload[chunk_id]["_best_score"] = hit.score
 
@@ -51,10 +53,12 @@ def reciprocal_rank_fusion(
     for chunk_id, score in sorted(rrf_scores.items(), key=lambda x: x[1], reverse=True):
         payload = best_payload[chunk_id]
         payload.pop("_best_score", None)
-        fused.append(SearchHit(
-            chunk_id=chunk_id,
-            score=score,
-            payload=payload,
-        ))
+        fused.append(
+            SearchHit(
+                chunk_id=chunk_id,
+                score=score,
+                payload=payload,
+            )
+        )
 
     return fused

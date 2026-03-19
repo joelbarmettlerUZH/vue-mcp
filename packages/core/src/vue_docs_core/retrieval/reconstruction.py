@@ -204,9 +204,7 @@ def reconstruct_results(
             sections.append("\n".join(parts))
 
     # Group by file_path (source page)
-    for file_path, group in groupby(
-        page_level_hits, key=lambda h: h.payload.get("file_path", "")
-    ):
+    for file_path, group in groupby(page_level_hits, key=lambda h: h.payload.get("file_path", "")):
         page_hits = list(group)
         if not page_hits:
             continue

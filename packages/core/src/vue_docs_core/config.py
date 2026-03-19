@@ -28,7 +28,13 @@ class Settings(BaseSettings):
     data_path: str = "./data"
 
     # Server
+    server_transport: str = "stdio"
+    server_host: str = "0.0.0.0"
+    server_port: int = 8000
     mask_error_details: bool = False
+
+    # Database
+    database_url: str = ""
 
     # Pipeline
     pipeline_version: str = "5"  # Bumped: Day 13 RAPTOR hierarchical summaries

@@ -1,5 +1,6 @@
 """FastMCP app setup, tool/resource/prompt registration, and startup hooks."""
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -14,7 +15,7 @@ from vue_docs_server.resources.api_index import vue_api_entity, vue_api_index
 from vue_docs_server.resources.pages import vue_doc_page
 from vue_docs_server.resources.scopes import vue_search_scopes
 from vue_docs_server.resources.topics import vue_section_topics, vue_table_of_contents
-from vue_docs_server.startup import shutdown, startup
+from vue_docs_server.startup import data_reload_loop, shutdown, startup
 from vue_docs_server.tools.api_lookup import vue_api_lookup
 from vue_docs_server.tools.related import vue_get_related
 from vue_docs_server.tools.search import vue_docs_search
@@ -55,8 +56,10 @@ then use `vue_docs_search` for specific questions.\
 async def lifespan(app: FastMCP):
     """Server lifespan: startup and shutdown hooks."""
     startup()
+    reload_task = asyncio.create_task(data_reload_loop())
     logger.info("MCP server ready")
     yield
+    reload_task.cancel()
     shutdown()
 
 
@@ -139,7 +142,11 @@ mcp.prompt(title="Migrate Vue Patterns", tags={"migration", "workflow"})(migrate
 
 def main():
     """Run the MCP server."""
-    mcp.run()
+    mcp.run(
+        transport=settings.server_transport,
+        host=settings.server_host,
+        port=settings.server_port,
+    )
 
 
 if __name__ == "__main__":

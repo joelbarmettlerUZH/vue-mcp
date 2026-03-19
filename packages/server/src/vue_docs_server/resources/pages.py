@@ -7,10 +7,23 @@ from vue_docs_server.startup import state
 
 async def vue_doc_page(path: str) -> str:
     """Return the raw markdown content of a Vue.js documentation page."""
+    if state.db:
+        content = state.db.read_page(path)
+        if content is None:
+            available = ", ".join(p.removesuffix(".md") for p in state.page_paths[:10])
+            raise ResourceError(
+                f"Page not found: {path}. Read vue://topics for available pages. "
+                f"Examples: {available}"
+            )
+        return content
+
+    # File fallback (local dev without PG)
     if state.vue_docs_path is None:
         raise ResourceError("Server not initialized.")
 
-    md_path = state.vue_docs_path / f"{path}.md"
+    md_path = (state.vue_docs_path / f"{path}.md").resolve()
+    if not str(md_path).startswith(str(state.vue_docs_path.resolve())):
+        raise ResourceError("Invalid path.")
     if not md_path.exists():
         available = ", ".join(p.removesuffix(".md") for p in state.page_paths[:10])
         raise ResourceError(

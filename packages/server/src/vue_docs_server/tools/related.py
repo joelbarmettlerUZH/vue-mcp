@@ -38,7 +38,7 @@ async def vue_get_related(
     if not match_result.entities:
         return (
             f"No matching APIs or concepts found for `{topic}`.\n\n"
-            f"**Next step:** Use `vue_docs_search` with query `\"{topic}\"` "
+            f'**Next step:** Use `vue_docs_search` with query `"{topic}"` '
             f"for a broader documentation search."
         )
 
@@ -96,9 +96,7 @@ async def vue_get_related(
     lines.append("---\n")
     lines.append("**Next steps:**")
     api_names = list(seen)[:3]
-    lines.append(
-        f"- `vue_docs_search` with query `\"{topic}\"` for full documentation content"
-    )
+    lines.append(f'- `vue_docs_search` with query `"{topic}"` for full documentation content')
     for name in api_names:
         lines.append(f'- `vue_api_lookup` on `"{name}"` for API details')
 

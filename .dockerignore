@@ -1,0 +1,15 @@
+.venv/
+.git/
+.github/
+data/
+eval/
+tests/
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.env
+.env.production
+.idea/
+*.jsonl

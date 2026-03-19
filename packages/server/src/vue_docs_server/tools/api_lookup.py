@@ -47,7 +47,7 @@ async def vue_api_lookup(
     if entity is None:
         return (
             f"No API entity found for `{api_name}`.\n\n"
-            f"**Next step:** Use `vue_docs_search` with query `\"{api_name}\"` "
+            f'**Next step:** Use `vue_docs_search` with query `"{api_name}"` '
             f"for a broader documentation search."
         )
 
@@ -86,9 +86,7 @@ async def vue_api_lookup(
 
     # Next steps
     lines.append("**Next steps:**")
-    lines.append(
-        f'- `vue_docs_search` with query `"{entity.name}"` for full documentation content'
-    )
+    lines.append(f'- `vue_docs_search` with query `"{entity.name}"` for full documentation content')
     if entity.related:
         related_names = ", ".join(f"`{r}`" for r in entity.related[:3])
         lines.append(f"- `vue_api_lookup` on related APIs: {related_names}")

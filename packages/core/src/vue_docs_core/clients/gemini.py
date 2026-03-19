@@ -221,12 +221,16 @@ class GeminiClient:
         if response.candidates:
             for part in response.candidates[0].content.parts:
                 if part.function_call:
-                    results.append(GeminiFunctionCallResponse(
-                        function_name=part.function_call.name,
-                        arguments=dict(part.function_call.args) if part.function_call.args else {},
-                        input_tokens=input_tokens,
-                        output_tokens=output_tokens,
-                    ))
+                    results.append(
+                        GeminiFunctionCallResponse(
+                            function_name=part.function_call.name,
+                            arguments=dict(part.function_call.args)
+                            if part.function_call.args
+                            else {},
+                            input_tokens=input_tokens,
+                            output_tokens=output_tokens,
+                        )
+                    )
 
         return results
 

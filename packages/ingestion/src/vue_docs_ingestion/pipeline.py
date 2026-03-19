@@ -23,6 +23,7 @@ from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn
 from vue_docs_core.clients.bm25 import BM25Model
 from vue_docs_core.clients.gemini import GeminiClient
 from vue_docs_core.clients.jina import JinaClient
+from vue_docs_core.clients.postgres import PostgresClient
 from vue_docs_core.clients.qdrant import QdrantDocClient
 from vue_docs_core.config import UPSERT_BATCH_SIZE, settings
 from vue_docs_core.models.chunk import Chunk, ChunkMetadata, ChunkType
@@ -111,6 +112,7 @@ async def run_pipeline(
     *,
     full: bool = False,
     dry_run: bool = False,
+    db: PostgresClient | None = None,
 ):
     """Run the ingestion pipeline with incremental update support.
 
@@ -154,7 +156,7 @@ async def run_pipeline(
     current_files = {str(p.relative_to(docs_path)) for p in md_files}
     console.print(f"Found [green]{len(md_files)}[/green] markdown files")
 
-    state = IndexState(state_path)
+    state = IndexState(state_path=state_path if not db else None, db=db)
     previously_indexed = set(state.all_file_paths())
     deleted_files = previously_indexed - current_files
 
@@ -207,6 +209,7 @@ async def run_pipeline(
         console.print("[yellow]Sidebar config not found — using fallback sort keys[/yellow]")
 
     # ---- Step 4: Load / bootstrap entity dictionary -------------------------
+    api_dictionary: dict = {}
     if entity_dict_path.exists():
         with console.status("Loading entity dictionary..."):
             api_dictionary = load_dictionary(entity_dict_path)
@@ -222,7 +225,6 @@ async def run_pipeline(
                 save_dictionary(api_dictionary, entity_dict_path)
             console.print(f"Built entity dictionary: [green]{len(api_dictionary)}[/green] entries")
         else:
-            api_dictionary = {}
             console.print("[red]API directory not found — entity extraction disabled[/red]")
 
     # ---- Step 5: Parse changed markdown files → chunks ----------------------
@@ -272,18 +274,24 @@ async def run_pipeline(
                 f"  [yellow]Warning: {small} chunks < 50 chars (may be undersized)[/yellow]"
             )
 
-    # ---- Step 5b: Contextual enrichment (Gemini) for NEW chunks only --------
+    # ---- Step 5a: Save raw page contents to PG --------------------------------
     page_contents: dict[str, str] = {}
-    if settings.gemini_api_key and new_chunks:
-        console.print()
-        console.print("[bold]Contextual enrichment (Gemini)...[/bold]")
-
+    if to_process:
         for path in to_process:
             rel = str(path.relative_to(docs_path))
             try:
                 page_contents[rel] = path.read_text(encoding="utf-8")
             except Exception as exc:
-                logger.warning("Could not read %s for enrichment: %s", rel, exc)
+                logger.warning("Could not read %s: %s", rel, exc)
+        if db and page_contents:
+            with console.status("Saving page contents to database..."):
+                db.save_pages(page_contents)
+            console.print(f"Saved [green]{len(page_contents)}[/green] pages to database")
+
+    # ---- Step 5b: Contextual enrichment (Gemini) for NEW chunks only --------
+    if settings.gemini_api_key and new_chunks:
+        console.print()
+        console.print("[bold]Contextual enrichment (Gemini)...[/bold]")
 
         gemini_client = GeminiClient(timeout=60.0)
         try:
@@ -465,6 +473,20 @@ async def run_pipeline(
     total_entity_refs = sum(len(v) for v in entity_index.entity_to_chunks.values())
     console.print(f"Entity extraction: [green]{total_entity_refs}[/green] total entity references")
 
+    # Save entities + synonyms to PG if available
+    if db:
+        entity_data = {name: entity.model_dump() for name, entity in api_dictionary.items()}
+        db.save_entities(entity_data)
+        console.print(f"Saved [green]{len(api_dictionary)}[/green] entities to database")
+        # Upload synonym table if it exists on disk
+        syn_path = data_path / "synonym_table.json"
+        if syn_path.exists():
+            import json as _json
+
+            synonyms = _json.loads(syn_path.read_text(encoding="utf-8"))
+            db.save_synonyms(synonyms)
+            console.print(f"Saved [green]{len(synonyms)}[/green] synonyms to database")
+
     with console.status("Extracting cross-references..."):
         crossref_graph = build_crossref_graph(all_chunks)
     total_refs = sum(len(v) for v in crossref_graph.values())
@@ -489,6 +511,8 @@ async def run_pipeline(
         bm25_model = BM25Model()
         bm25_model.fit(all_texts)
         bm25_model.save(bm25_model_path)
+        if db:
+            db.save_bm25_model(bm25_model_path)
     console.print(f"  BM25 vocabulary: [green]{bm25_model.vocab_size}[/green] tokens")
 
     # Sparse vectors only needed for chunks we're indexing

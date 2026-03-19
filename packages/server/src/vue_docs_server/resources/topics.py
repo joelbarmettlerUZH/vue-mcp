@@ -19,9 +19,7 @@ def _build_toc(folders: dict[str, list[str]], *, show_header: bool = True) -> st
         total_pages = sum(len(pages) for pages in folders.values())
         total_sections = len(folders)
         lines.append("# Vue.js Documentation — Table of Contents\n")
-        lines.append(
-            f"> **{total_pages}** pages across **{total_sections}** sections\n"
-        )
+        lines.append(f"> **{total_pages}** pages across **{total_sections}** sections\n")
 
     for folder in sorted(folders.keys()):
         pages = folders[folder]

@@ -48,7 +48,14 @@ TOOL_DECLARATIONS = [
             "properties": {
                 "intent": {
                     "type": "string",
-                    "enum": ["api_lookup", "conceptual", "howto", "debugging", "comparison", "migration"],
+                    "enum": [
+                        "api_lookup",
+                        "conceptual",
+                        "howto",
+                        "debugging",
+                        "comparison",
+                        "migration",
+                    ],
                     "description": (
                         "api_lookup: asking about a specific API signature/behavior. "
                         "conceptual: asking for explanation of a principle or system. "

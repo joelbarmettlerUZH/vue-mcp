@@ -12,6 +12,8 @@ dependencies = [
     "markdown-it-py>=4.0",
     "rapidfuzz>=3.14",
     "bm25s>=0.3",
+    "sqlalchemy>=2.0",
+    "psycopg[binary]>=3.2",
 ]
 
 [build-system]

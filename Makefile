@@ -1,4 +1,4 @@
-.PHONY: help install bootstrap lint lint-fix format-check format check test test-all ingest ingest-full ingest-status serve inspect all pr-ready
+.PHONY: help install bootstrap lint lint-fix format-check format check test test-all ingest ingest-full ingest-status serve inspect all pr-ready docker-build docker-up docker-down
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -61,3 +61,15 @@ inspect: ## Inspect chunks for a file (usage: make inspect FILE=path/to/file.md)
 all: lint-fix format test ## Fix lint + format + test
 
 pr-ready: lint-fix format test ## Verify everything passes before commit
+
+# ── Docker ────────────────────────────────────────────────────────
+
+docker-build: ## Build Docker images locally
+	docker build --target server -t vue-mcp-server .
+	docker build --target ingestion -t vue-mcp-ingestion .
+
+docker-up: ## Start all services via Docker Compose
+	docker compose up -d
+
+docker-down: ## Stop all services
+	docker compose down

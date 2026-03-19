@@ -1,32 +1,22 @@
-"""Load entity dict, synonym table, BM25 model, connect Qdrant on startup."""
+"""Load data from PostgreSQL (or JSON fallback), connect Qdrant on startup."""
 
+import asyncio
 import json
 import logging
+import tempfile
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Annotated
-
-from pydantic import BaseModel, Field
 
 from vue_docs_core.clients.bm25 import BM25Model
+from vue_docs_core.clients.postgres import PostgresClient
 from vue_docs_core.clients.qdrant import QdrantDocClient
 from vue_docs_core.config import settings
 from vue_docs_core.models.entity import ApiEntity, EntityIndex
 from vue_docs_core.retrieval.entity_matcher import EntityMatcher
 
-
-class IndexStateInfo(BaseModel):
-    """Page listing and folder structure loaded from index_state.json."""
-
-    page_paths: Annotated[
-        list[str], Field(description="Sorted list of all indexed page file paths")
-    ]
-    folder_structure: Annotated[
-        dict[str, list[str]],
-        Field(description="Map of folder path to list of page file paths within it"),
-    ]
-
-
 logger = logging.getLogger(__name__)
+
+_RELOAD_CHECK_INTERVAL = 60  # seconds
 
 
 class ServerState:
@@ -38,10 +28,12 @@ class ServerState:
         self.entity_index: EntityIndex = EntityIndex()
         self.synonym_table: dict[str, list[str]] = {}
         self.entity_matcher: EntityMatcher | None = None
-        # Page listing for resources (populated from index_state.json)
         self.page_paths: list[str] = []
         self.folder_structure: dict[str, list[str]] = {}
+        self.db: PostgresClient | None = None
         self.vue_docs_path: Path | None = None
+        # Temporary directory for BM25 model extracted from PG
+        self._bm25_tmp_dir: tempfile.TemporaryDirectory | None = None
 
     @property
     def is_ready(self) -> bool:
@@ -50,6 +42,53 @@ class ServerState:
 
 # Module-level singleton
 state = ServerState()
+
+# Track last reload timestamp for hot reload
+_last_reload_ts: datetime = datetime.min.replace(tzinfo=UTC)
+
+
+# ---------------------------------------------------------------------------
+# PostgreSQL data loading
+# ---------------------------------------------------------------------------
+
+
+def _load_from_pg(db: PostgresClient):
+    """Load all server data from PostgreSQL."""
+    state.entity_index = db.load_entities()
+    state.synonym_table = db.load_synonyms()
+
+    page_paths, folder_structure = db.load_pages_listing()
+    state.page_paths = page_paths
+    state.folder_structure = folder_structure
+
+    # BM25: extract from PG blob to temp directory
+    if state._bm25_tmp_dir:
+        state._bm25_tmp_dir.cleanup()
+    state._bm25_tmp_dir = tempfile.TemporaryDirectory(prefix="vue-mcp-bm25-")
+    model = BM25Model()
+    bm25_path = Path(state._bm25_tmp_dir.name) / "bm25_model"
+    if db.load_bm25_model(bm25_path):
+        model.load(bm25_path)
+        logger.info("BM25 model loaded from PG (%d vocab tokens)", model.vocab_size)
+    else:
+        logger.warning("BM25 model not found in PG")
+    state.bm25 = model
+
+    # Entity matcher
+    state.entity_matcher = EntityMatcher(
+        entity_index=state.entity_index,
+        synonym_table=state.synonym_table,
+    )
+    logger.info(
+        "Entity matcher initialized with %d entities and %d synonyms",
+        len(state.entity_index.entities),
+        len(state.synonym_table),
+    )
+
+
+# ---------------------------------------------------------------------------
+# JSON file loading (for local development without PG)
+# ---------------------------------------------------------------------------
 
 
 def load_entity_dictionary(data_path: Path) -> EntityIndex:
@@ -72,7 +111,7 @@ def load_entity_dictionary(data_path: Path) -> EntityIndex:
             related=info.get("related", []),
         )
 
-    logger.info("Loaded %d API entities", len(entities))
+    logger.info("Loaded %d API entities from files", len(entities))
     return EntityIndex(entities=entities)
 
 
@@ -86,70 +125,68 @@ def load_synonym_table(data_path: Path) -> dict[str, list[str]]:
     with open(syn_path) as f:
         table = json.load(f)
 
-    logger.info("Loaded %d synonym entries", len(table))
+    logger.info("Loaded %d synonym entries from files", len(table))
     return table
 
 
-def load_bm25_model(data_path: Path) -> BM25Model:
-    """Load the fitted BM25 model."""
+def _load_from_files(data_path: Path):
+    """Load server data from JSON files (local dev fallback)."""
+    state.entity_index = load_entity_dictionary(data_path)
+    state.synonym_table = load_synonym_table(data_path)
+
+    # Index state → page paths
+    state_path = data_path / "state" / "index_state.json"
+    if state_path.exists():
+        with open(state_path) as f:
+            raw_state = json.load(f)
+        state.page_paths = sorted(raw_state.keys())
+        state.folder_structure = {}
+        for fp in state.page_paths:
+            folder = fp.rsplit("/", 1)[0] if "/" in fp else ""
+            state.folder_structure.setdefault(folder, []).append(fp)
+        logger.info("Loaded %d page paths from files", len(state.page_paths))
+    else:
+        logger.warning("Index state not found at %s", state_path)
+
+    # BM25 model
     model = BM25Model()
     model_path = data_path / "bm25_model"
     if model_path.exists():
         model.load(model_path)
-        logger.info("BM25 model loaded (%d vocab tokens)", model.vocab_size)
+        logger.info("BM25 model loaded from files (%d vocab tokens)", model.vocab_size)
     else:
         logger.warning("BM25 model not found at %s", model_path)
-    return model
+    state.bm25 = model
 
-
-def load_index_state(data_path: Path) -> IndexStateInfo:
-    """Load page listing and folder structure from index_state.json."""
-    state_path = data_path / "state" / "index_state.json"
-    if not state_path.exists():
-        logger.warning("Index state not found at %s", state_path)
-        return IndexStateInfo(page_paths=[], folder_structure={})
-
-    with open(state_path) as f:
-        raw = json.load(f)
-
-    page_paths = sorted(raw.keys())
-    folder_structure: dict[str, list[str]] = {}
-    for fp in page_paths:
-        folder = fp.rsplit("/", 1)[0] if "/" in fp else ""
-        folder_structure.setdefault(folder, []).append(fp)
-
-    logger.info("Loaded %d page paths across %d folders", len(page_paths), len(folder_structure))
-    return IndexStateInfo(page_paths=page_paths, folder_structure=folder_structure)
-
-
-def startup():
-    """Initialize all server state."""
-    data_path = Path(settings.data_path)
-    logger.info("Starting server, loading data from %s", data_path)
-
-    state.entity_index = load_entity_dictionary(data_path)
-    state.synonym_table = load_synonym_table(data_path)
-
-    # Load page listing for resources
-    index_state_info = load_index_state(data_path)
-    state.page_paths = index_state_info.page_paths
-    state.folder_structure = index_state_info.folder_structure
-    state.vue_docs_path = Path(settings.vue_docs_path).resolve()
-    state.bm25 = load_bm25_model(data_path)
-    state.qdrant = QdrantDocClient()
-
-    # Initialize entity matcher
+    # Entity matcher
     state.entity_matcher = EntityMatcher(
         entity_index=state.entity_index,
         synonym_table=state.synonym_table,
     )
-    logger.info(
-        "Entity matcher initialized with %d entities and %d synonyms",
-        len(state.entity_index.entities),
-        len(state.synonym_table),
-    )
 
-    # Verify Qdrant connection
+
+# ---------------------------------------------------------------------------
+# Startup / Shutdown / Hot Reload
+# ---------------------------------------------------------------------------
+
+
+def startup():
+    """Initialize all server state."""
+    global _last_reload_ts
+
+    if settings.database_url:
+        logger.info("Starting server, loading data from PostgreSQL")
+        state.db = PostgresClient(settings.database_url)
+        _load_from_pg(state.db)
+        _last_reload_ts = state.db.get_max_updated_at()
+    else:
+        data_path = Path(settings.data_path)
+        logger.info("Starting server, loading data from files at %s", data_path)
+        _load_from_files(data_path)
+        state.vue_docs_path = Path(settings.vue_docs_path).resolve()
+
+    # Qdrant
+    state.qdrant = QdrantDocClient()
     try:
         info = state.qdrant.collection_info()
         logger.info(
@@ -158,8 +195,11 @@ def startup():
             info["points_count"],
         )
     except Exception as e:
-        logger.error("Failed to connect to Qdrant: %s", e)
-        raise
+        logger.warning(
+            "Qdrant collection not available: %s. Server will start but search will fail "
+            "until ingestion creates the collection.",
+            e,
+        )
 
     logger.info("Server startup complete")
 
@@ -169,5 +209,38 @@ def shutdown():
     if state.qdrant:
         state.qdrant.close()
         state.qdrant = None
+    if state.db:
+        state.db.close()
+        state.db = None
+    if state._bm25_tmp_dir:
+        state._bm25_tmp_dir.cleanup()
+        state._bm25_tmp_dir = None
     state.entity_matcher = None
     logger.info("Server shutdown complete")
+
+
+async def data_reload_loop():
+    """Background task: poll PG for data changes and reload when detected."""
+    global _last_reload_ts
+
+    if not settings.database_url:
+        logger.info("No DATABASE_URL configured, hot reload disabled")
+        return
+
+    while True:
+        try:
+            await asyncio.sleep(_RELOAD_CHECK_INTERVAL)
+            max_updated = await asyncio.to_thread(state.db.get_max_updated_at)
+            if max_updated > _last_reload_ts:
+                logger.info(
+                    "Data changed in PG (last: %s, new: %s), reloading...",
+                    _last_reload_ts,
+                    max_updated,
+                )
+                await asyncio.to_thread(_load_from_pg, state.db)
+                _last_reload_ts = max_updated
+                logger.info("Hot reload complete")
+        except asyncio.CancelledError:
+            break
+        except Exception:
+            logger.exception("Error in data reload loop")

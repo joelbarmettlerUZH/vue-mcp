@@ -10,3 +10,7 @@ data/state/
 eval/results/
 .idea/
 *.jsonl
+.env.production
+certs/
+docker-compose.override.yml
+traefik-dynamic.yml

@@ -87,9 +87,7 @@ async def vue_docs_search(
             )
 
             if not hits and scope_filter:
-                await ctx.warning(
-                    f"No results in scope '{scope}', expanding to all documentation"
-                )
+                await ctx.warning(f"No results in scope '{scope}', expanding to all documentation")
                 span.set_attribute("search.scope_fallback", True)
                 hits = state.qdrant.hybrid_search(
                     dense_vector=dense_vector,

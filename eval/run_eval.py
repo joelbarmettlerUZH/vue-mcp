@@ -150,13 +150,26 @@ def load_questions(path: Path) -> list[dict]:
 class _NoOpContext:
     """Lightweight no-op context for running tools outside the MCP protocol."""
 
-    async def report_progress(self, *a, **kw): pass
-    async def info(self, *a, **kw): pass
-    async def warning(self, *a, **kw): pass
-    async def error(self, *a, **kw): pass
-    async def debug(self, *a, **kw): pass
-    async def get_state(self, *a, **kw): return None
-    async def set_state(self, *a, **kw): pass
+    async def report_progress(self, *a, **kw):
+        pass
+
+    async def info(self, *a, **kw):
+        pass
+
+    async def warning(self, *a, **kw):
+        pass
+
+    async def error(self, *a, **kw):
+        pass
+
+    async def debug(self, *a, **kw):
+        pass
+
+    async def get_state(self, *a, **kw):
+        return None
+
+    async def set_state(self, *a, **kw):
+        pass
 
 
 _noop_ctx = _NoOpContext()
@@ -354,9 +367,7 @@ def judge_result_stable(
                 if attempt < 4:
                     time.sleep(2**attempt)
                 else:
-                    raise RuntimeError(
-                        f"Judge failed after 5 attempts for: {question[:60]}"
-                    ) from e
+                    raise RuntimeError(f"Judge failed after 5 attempts for: {question[:60]}") from e
 
     # Take median per dimension
     median_scores: dict = {}
@@ -422,17 +433,19 @@ async def run_evaluation(
             runs=judge_runs,
         )
 
-        results.append({
-            "question": question,
-            "intent": intent,
-            "difficulty": difficulty,
-            "latency": round(latency, 3),
-            "recall": recall,
-            "scores": scores,
-            "context_chars": len(retrieved_context),
-            "context_tokens_approx": len(retrieved_context) // 4,
-            "retrieved_preview": retrieved_context[:500],
-        })
+        results.append(
+            {
+                "question": question,
+                "intent": intent,
+                "difficulty": difficulty,
+                "latency": round(latency, 3),
+                "recall": recall,
+                "scores": scores,
+                "context_chars": len(retrieved_context),
+                "context_tokens_approx": len(retrieved_context) // 4,
+                "retrieved_preview": retrieved_context[:500],
+            }
+        )
 
         runs_str = " ".join(
             f"[{r['relevance']}/{r['completeness']}/{r['correctness']}/{r['api_coverage']}]"
@@ -499,7 +512,9 @@ def compute_metrics(results: list[dict]) -> dict:
 
     # Context size
     context_chars = [r.get("context_chars", 0) for r in results if r.get("context_chars", 0) > 0]
-    context_tokens = [r.get("context_tokens_approx", 0) for r in results if r.get("context_tokens_approx", 0) > 0]
+    context_tokens = [
+        r.get("context_tokens_approx", 0) for r in results if r.get("context_tokens_approx", 0) > 0
+    ]
     if context_chars:
         overall["avg_context_chars"] = round(statistics.mean(context_chars))
         overall["avg_context_tokens"] = round(statistics.mean(context_tokens))
@@ -557,8 +572,7 @@ def compute_metrics(results: list[dict]) -> dict:
             passing = sum(1 for r in results if r["scores"].get(dim, 0) >= threshold)
             rates[dim] = round(passing / len(results), 3)
         all_pass = sum(
-            1 for r in results
-            if all(r["scores"].get(d, 0) >= threshold for d in dimensions)
+            1 for r in results if all(r["scores"].get(d, 0) >= threshold for d in dimensions)
         )
         rates["all"] = round(all_pass / len(results), 3)
         pass_rates[key] = rates
@@ -566,19 +580,13 @@ def compute_metrics(results: list[dict]) -> dict:
     # Pass rates by intent (all dims >= 4)
     pass_by_intent: dict[str, float] = {}
     for intent, group in intent_groups.items():
-        passing = sum(
-            1 for r in group
-            if all(r["scores"].get(d, 0) >= 4 for d in dimensions)
-        )
+        passing = sum(1 for r in group if all(r["scores"].get(d, 0) >= 4 for d in dimensions))
         pass_by_intent[intent] = round(passing / len(group), 3)
 
     # Pass rates by difficulty (all dims >= 4)
     pass_by_difficulty: dict[str, float] = {}
     for diff, group in diff_groups.items():
-        passing = sum(
-            1 for r in group
-            if all(r["scores"].get(d, 0) >= 4 for d in dimensions)
-        )
+        passing = sum(1 for r in group if all(r["scores"].get(d, 0) >= 4 for d in dimensions))
         pass_by_difficulty[diff] = round(passing / len(group), 3)
 
     return {
@@ -608,12 +616,16 @@ def format_report(metrics: dict) -> str:
     lines.append(f"Errors: {overall.get('errors', 0)}")
 
     lines.append("\nDETERMINISTIC RETRIEVAL METRICS:")
-    lines.append(f"  Path Recall:  {overall.get('avg_path_recall', 'N/A'):.1%}"
-                 if isinstance(overall.get('avg_path_recall'), float)
-                 else f"  Path Recall:  {overall.get('avg_path_recall', 'N/A')}")
-    lines.append(f"  API Recall:   {overall.get('avg_api_recall', 'N/A'):.1%}"
-                 if isinstance(overall.get('avg_api_recall'), float)
-                 else f"  API Recall:   {overall.get('avg_api_recall', 'N/A')}")
+    lines.append(
+        f"  Path Recall:  {overall.get('avg_path_recall', 'N/A'):.1%}"
+        if isinstance(overall.get("avg_path_recall"), float)
+        else f"  Path Recall:  {overall.get('avg_path_recall', 'N/A')}"
+    )
+    lines.append(
+        f"  API Recall:   {overall.get('avg_api_recall', 'N/A'):.1%}"
+        if isinstance(overall.get("avg_api_recall"), float)
+        else f"  API Recall:   {overall.get('avg_api_recall', 'N/A')}"
+    )
 
     lines.append(f"\nLLM JUDGE — avg composite: {overall.get('avg_composite', 'N/A')}")
 
@@ -648,8 +660,7 @@ def format_report(metrics: dict) -> str:
     if by_intent:
         lines.append("\nBY INTENT:")
         lines.append(
-            f"  {'intent':15s} {'n':>3s}  {'pR%':>4s}  {'aR%':>4s}  "
-            f"{'>=4':>5s}  {'avg':>4s}"
+            f"  {'intent':15s} {'n':>3s}  {'pR%':>4s}  {'aR%':>4s}  {'>=4':>5s}  {'avg':>4s}"
         )
         lines.append("  " + "-" * 42)
         for intent, m in sorted(by_intent.items()):
@@ -673,8 +684,7 @@ def format_report(metrics: dict) -> str:
     if by_difficulty:
         lines.append("\nBY DIFFICULTY:")
         lines.append(
-            f"  {'diff':10s} {'n':>3s}  {'pR%':>4s}  {'aR%':>4s}  "
-            f"{'>=4':>5s}  {'avg':>4s}"
+            f"  {'diff':10s} {'n':>3s}  {'pR%':>4s}  {'aR%':>4s}  {'>=4':>5s}  {'avg':>4s}"
         )
         lines.append("  " + "-" * 37)
         for diff, m in sorted(by_difficulty.items()):

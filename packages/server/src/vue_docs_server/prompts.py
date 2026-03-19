@@ -61,9 +61,7 @@ def compare_vue_apis(
     api_list = [item.strip() for item in items.split(",") if item.strip()]
     formatted = ", ".join(f"`{a}`" for a in api_list)
 
-    lookup_steps = "\n".join(
-        f"   - `vue_api_lookup` → `\"{a}\"`" for a in api_list
-    )
+    lookup_steps = "\n".join(f'   - `vue_api_lookup` → `"{a}"`' for a in api_list)
 
     return PromptResult(
         messages=[
@@ -124,9 +122,9 @@ def migrate_vue_pattern(
                 f"## Migrate: {from_pattern} → {to_pattern}\n\n"
                 f"### Research steps\n\n"
                 f"1. **Understand the source** — `vue_docs_search` for "
-                f"`\"{from_pattern}\"`\n"
+                f'`"{from_pattern}"`\n'
                 f"2. **Understand the target** — `vue_docs_search` for "
-                f"`\"{to_pattern}\"`\n"
+                f'`"{to_pattern}"`\n'
                 f"3. **Look up relevant APIs** — `vue_api_lookup` for key APIs "
                 f"in both patterns\n"
                 f"4. **Find related concepts** — `vue_get_related` to discover "

@@ -1,0 +1,99 @@
+services:
+  mcp-server:
+    image: ghcr.io/${GITHUB_REPOSITORY:-joelbarmettleruzh/vue-mcp}/vue-mcp-server:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      target: server
+    environment:
+      SERVER_TRANSPORT: streamable-http
+      SERVER_HOST: "0.0.0.0"
+      SERVER_PORT: "8000"
+      QDRANT_URL: http://qdrant:6333
+      DATABASE_URL: postgresql+psycopg://vue_mcp:${POSTGRES_PASSWORD:-vue_mcp}@postgres:5432/vue_mcp
+      JINA_API_KEY: ${JINA_API_KEY:-}
+      MASK_ERROR_DETAILS: ${MASK_ERROR_DETAILS:-false}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mcp.rule=Host(`${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.mcp.entrypoints=websecure"
+      - "traefik.http.routers.mcp.tls=true"
+      - "traefik.http.routers.mcp.middlewares=ratelimit"
+      - "traefik.http.services.mcp.loadbalancer.server.port=8000"
+      - "traefik.http.middlewares.ratelimit.ratelimit.average=60"
+      - "traefik.http.middlewares.ratelimit.ratelimit.burst=20"
+      - "traefik.http.middlewares.ratelimit.ratelimit.period=1m"
+    restart: unless-stopped
+
+  ingestion:
+    image: ghcr.io/${GITHUB_REPOSITORY:-joelbarmettleruzh/vue-mcp}/vue-mcp-ingestion:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      target: ingestion
+    command: vue-docs-ingest watch --verbose --interval-hours ${INGESTION_INTERVAL_HOURS:-24}
+    environment:
+      QDRANT_URL: http://qdrant:6333
+      DATABASE_URL: postgresql+psycopg://vue_mcp:${POSTGRES_PASSWORD:-vue_mcp}@postgres:5432/vue_mcp
+      VUE_DOCS_PATH: /app/data/vue-docs/src
+      DATA_PATH: /app/data
+      JINA_API_KEY: ${JINA_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    volumes:
+      - vue-docs-data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: vue_mcp
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vue_mcp}
+      POSTGRES_DB: vue_mcp
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vue_mcp"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  qdrant:
+    image: qdrant/qdrant:v1.14.0
+    volumes:
+      - qdrant-data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/6333'"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  traefik:
+    image: traefik:latest
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+
+volumes:
+  pg-data:
+  qdrant-data:
+  vue-docs-data:
