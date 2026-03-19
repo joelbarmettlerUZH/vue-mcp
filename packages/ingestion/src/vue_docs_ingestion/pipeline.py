@@ -210,6 +210,10 @@ async def run_pipeline(
 
     # ---- Step 4: Load / bootstrap entity dictionary -------------------------
     api_dictionary: dict = {}
+    if not entity_dict_path.exists():
+        seed_dict = Path("seed/entity_dictionary.json")
+        if seed_dict.exists():
+            entity_dict_path = seed_dict
     if entity_dict_path.exists():
         with console.status("Loading entity dictionary..."):
             api_dictionary = load_dictionary(entity_dict_path)
@@ -478,14 +482,11 @@ async def run_pipeline(
         entity_data = {name: entity.model_dump() for name, entity in api_dictionary.items()}
         db.save_entities(entity_data)
         console.print(f"Saved [green]{len(api_dictionary)}[/green] entities to database")
-        # Upload synonym table if it exists on disk
-        syn_path = data_path / "synonym_table.json"
-        if syn_path.exists():
-            import json as _json
+        # Upload curated synonym table from package data
+        from vue_docs_core.data import SYNONYM_TABLE
 
-            synonyms = _json.loads(syn_path.read_text(encoding="utf-8"))
-            db.save_synonyms(synonyms)
-            console.print(f"Saved [green]{len(synonyms)}[/green] synonyms to database")
+        db.save_synonyms(SYNONYM_TABLE)
+        console.print(f"Saved [green]{len(SYNONYM_TABLE)}[/green] synonyms to database")
 
     with console.status("Extracting cross-references..."):
         crossref_graph = build_crossref_graph(all_chunks)

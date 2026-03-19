@@ -522,9 +522,11 @@ class TestStartup:
         assert len(table) == 2
         assert table["two-way binding"] == ["v-model"]
 
-    def test_load_synonym_table_missing(self, tmp_path):
+    def test_load_synonym_table_missing_falls_back_to_package(self, tmp_path):
         table = load_synonym_table(tmp_path)
-        assert table == {}
+        # Falls back to curated package data when file not on disk
+        assert len(table) > 0
+        assert "two-way binding" in table
 
 
 # ---------------------------------------------------------------------------

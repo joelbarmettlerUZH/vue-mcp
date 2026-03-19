@@ -116,17 +116,18 @@ def load_entity_dictionary(data_path: Path) -> EntityIndex:
 
 
 def load_synonym_table(data_path: Path) -> dict[str, list[str]]:
-    """Load the synonym/alias table."""
+    """Load the synonym/alias table from file or package data."""
     syn_path = data_path / "synonym_table.json"
-    if not syn_path.exists():
-        logger.warning("Synonym table not found at %s", syn_path)
-        return {}
+    if syn_path.exists():
+        with open(syn_path) as f:
+            table = json.load(f)
+        logger.info("Loaded %d synonym entries from files", len(table))
+        return table
 
-    with open(syn_path) as f:
-        table = json.load(f)
+    from vue_docs_core.data import SYNONYM_TABLE
 
-    logger.info("Loaded %d synonym entries from files", len(table))
-    return table
+    logger.info("Loaded %d synonym entries from package data", len(SYNONYM_TABLE))
+    return SYNONYM_TABLE
 
 
 def _load_from_files(data_path: Path):
