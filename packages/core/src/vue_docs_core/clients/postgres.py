@@ -178,13 +178,16 @@ class PostgresClient:
         return row
 
     def get_max_updated_at(self) -> datetime:
-        """Get the most recent updated_at across tracked tables (pages + models)."""
+        """Get the most recent updated_at / last_indexed across all tracked tables."""
         with self._session_factory() as session:
             result = session.execute(
                 select(
                     func.greatest(
                         select(func.max(PageRow.updated_at)).correlate(None).scalar_subquery(),
                         select(func.max(ModelRow.updated_at)).correlate(None).scalar_subquery(),
+                        select(func.max(IndexStateRow.last_indexed))
+                        .correlate(None)
+                        .scalar_subquery(),
                     )
                 )
             ).scalar()

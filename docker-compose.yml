@@ -22,11 +22,14 @@ services:
       - "traefik.http.routers.mcp.rule=Host(`${DOMAIN:-localhost}`)"
       - "traefik.http.routers.mcp.entrypoints=websecure"
       - "traefik.http.routers.mcp.tls=true"
-      - "traefik.http.routers.mcp.middlewares=ratelimit"
+      - "traefik.http.routers.mcp.tls.certresolver=${TLS_CERTRESOLVER:-}"
+      - "traefik.http.routers.mcp.middlewares=ratelimit,connlimit,bodylimit"
       - "traefik.http.services.mcp.loadbalancer.server.port=8000"
       - "traefik.http.middlewares.ratelimit.ratelimit.average=60"
       - "traefik.http.middlewares.ratelimit.ratelimit.burst=20"
       - "traefik.http.middlewares.ratelimit.ratelimit.period=1m"
+      - "traefik.http.middlewares.connlimit.inflightreq.amount=10"
+      - "traefik.http.middlewares.bodylimit.buffering.maxRequestBodyBytes=102400"
     restart: unless-stopped
 
   ingestion:
@@ -59,7 +62,6 @@ services:
       POSTGRES_DB: vue_mcp
     volumes:
       - pg-data:/var/lib/postgresql/data
-      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U vue_mcp"]
       interval: 5s
@@ -68,7 +70,7 @@ services:
     restart: unless-stopped
 
   qdrant:
-    image: qdrant/qdrant:v1.14.0
+    image: qdrant/qdrant:v1.17.0
     volumes:
       - qdrant-data:/qdrant/storage
     healthcheck:
@@ -79,21 +81,26 @@ services:
     restart: unless-stopped
 
   traefik:
-    image: traefik:latest
+    image: traefik:v3.6
     command:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-admin@example.com}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - letsencrypt:/letsencrypt
     restart: unless-stopped
 
 volumes:
   pg-data:
   qdrant-data:
   vue-docs-data:
+  letsencrypt:

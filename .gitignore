@@ -5,8 +5,7 @@ dist/
 build/
 .venv/
 .env
-data/vue-docs/
-data/state/
+data/
 eval/results/
 .idea/
 *.jsonl
