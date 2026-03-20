@@ -15,7 +15,6 @@ class Settings(BaseSettings):
 
     # Gemini
     gemini_api_key: str = ""
-    gemini_flash_lite_model: str = "gemini-2.5-flash-lite"
     gemini_flash_model: str = "gemini-2.5-flash"
 
     # Qdrant

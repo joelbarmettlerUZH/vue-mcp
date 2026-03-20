@@ -12,7 +12,6 @@ summary, which may cascade to its folder and top-level summaries.
 """
 
 import contextlib
-import hashlib
 import logging
 from datetime import UTC, datetime
 from pathlib import Path
@@ -98,12 +97,6 @@ def _payload_to_chunk(payload: dict) -> Chunk:
         contextual_prefix=payload.get("contextual_prefix", ""),
         content_hash=payload.get("content_hash", ""),
     )
-
-
-def _summary_input_hash(texts: list[str]) -> str:
-    """Compute a hash of concatenated summary input texts."""
-    combined = "\n".join(texts)
-    return hashlib.sha256(combined.encode()).hexdigest()[:16]
 
 
 async def run_pipeline(

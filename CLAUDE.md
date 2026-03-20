@@ -1,7 +1,7 @@
 # Vue Documentation MCP Server
 
-MCP server providing semantic search and retrieval over Vue.js documentation. Combines dense embeddings (Jina), sparse
-search (BM25), and LLM query transformation (Gemini) to return structure-aware, readable documentation fragments.
+MCP server providing semantic search and retrieval over Vue.js documentation. Combines dense embeddings (Jina) and sparse
+search (BM25) to return structure-aware, readable documentation fragments.
 
 ## Repository Structure
 
@@ -136,7 +136,7 @@ scripts/restore.sh <dump.sql.gz> [snapshot]  # Restore from backup
 - **Readable reconstruction.** Reassemble results into coherent mini-documents using metadata and sort keys, returned in
   documentation reading order, preserving the natural flow of the docs.
 - **Deterministic where possible.** Entity extraction, cross-references, and markdown parsing use deterministic methods.
-  Reserve LLM calls for enrichment, summarization, and query transformation.
+  Reserve LLM calls for enrichment and summarization at indexing time.
 - **Hybrid retrieval.** Every search combines dense semantic embeddings, BM25 sparse search, and entity metadata
   boosting. No single retrieval method is trusted alone.
 - **Unified embedding space.** All content types (prose, code, images, summaries, HyPE questions) share one embedding
@@ -193,8 +193,7 @@ scripts/restore.sh <dump.sql.gz> [snapshot]  # Restore from backup
 | Decision | Rationale |
 |---|---|
 | Jina AI as unified search provider | Single vendor, single token pool, single embedding space |
-| No HyDE at query time | Per-query LLM cost + hallucination risk; vocab gap handled by HyPE at indexing time |
-| Gemini Flash Lite for query-time LLM | ~$0.00025 for 3 parallel transformation calls |
+| No LLM at query time | Per-query LLM cost + hallucination risk; vocab gap handled by HyPE at indexing time |
 | `bm25s` for sparse vectors | Lightweight, no external API needed |
 | `markdown-it-py` for parsing | Token/tree API, heading hierarchy, code blocks, links, images |
 | `rapidfuzz` for entity matching | Sub-millisecond fuzzy matching with typo tolerance |
@@ -211,7 +210,7 @@ scripts/restore.sh <dump.sql.gz> [snapshot]  # Restore from backup
 | Service | Purpose | Client |
 |---|---|---|
 | Jina AI | Embeddings (jina-embeddings-v4) + reranking (jina-reranker-v3) | `httpx` |
-| Google Gemini | Query transformation, contextual enrichment, HyPE generation | `google-genai` |
+| Google Gemini | Contextual enrichment, HyPE generation, RAPTOR summaries (ingestion only) | `google-genai` |
 | Qdrant | Vector database (dense + sparse hybrid search) | `qdrant-client` |
 | PostgreSQL | Shared data layer (entities, synonyms, pages, index state, BM25 model) | `sqlalchemy` + `psycopg` |
 
@@ -235,9 +234,9 @@ Don't manually enforce style rules. Run `make lint-fix && make format` instead.
 cross-refs → enrich with contextual prefixes (Gemini) → generate HyPE questions (Gemini) → embed all (Jina) → generate
 BM25 sparse vectors → upsert to Qdrant → save entities, synonyms, pages, BM25 model, and index state to PostgreSQL.
 
-**Query** (online, per-request): Entity extraction (deterministic) → intent classification → query transformation
-(Gemini, parallel) → hybrid search (Qdrant: dense + BM25 + entity boost) → RRF fusion → cross-reference expansion →
-reranking (Jina) → reconstruction (sort by reading order, merge adjacent, format).
+**Query** (online, per-request): Embed query (Jina) + BM25 sparse vector → hybrid search (Qdrant: dense + BM25, native
+RRF) → resolve HyPE hits → cross-reference expansion → reranking (Jina) → reconstruction (sort by reading order, merge
+adjacent, format). No LLM calls at query time.
 
 ## Do Not
 

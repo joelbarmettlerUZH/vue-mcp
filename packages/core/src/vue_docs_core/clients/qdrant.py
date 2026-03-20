@@ -163,34 +163,18 @@ class QdrantDocClient:
         sparse_vector: SparseVector,
         limit: int = 30,
         scope_filter: str | None = None,
-        entity_boost: list[str] | None = None,
     ) -> list[SearchHit]:
         """Run hybrid dense+sparse search with RRF fusion."""
         # Build optional filter
-        must_conditions = []
-        should_conditions = []
-
-        if scope_filter and scope_filter != "all":
-            must_conditions.append(
-                FieldCondition(
-                    key="folder_path",
-                    match=MatchAny(any=[scope_filter]),
-                )
-            )
-
-        if entity_boost:
-            should_conditions.append(
-                FieldCondition(
-                    key="api_entities",
-                    match=MatchAny(any=entity_boost),
-                )
-            )
-
         query_filter = None
-        if must_conditions or should_conditions:
+        if scope_filter and scope_filter != "all":
             query_filter = Filter(
-                must=must_conditions if must_conditions else None,
-                should=should_conditions if should_conditions else None,
+                must=[
+                    FieldCondition(
+                        key="folder_path",
+                        match=MatchAny(any=[scope_filter]),
+                    )
+                ],
             )
 
         # Prefetch: dense and sparse separately, then fuse with RRF

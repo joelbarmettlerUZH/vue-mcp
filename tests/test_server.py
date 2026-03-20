@@ -36,7 +36,7 @@ from vue_docs_server.startup import (
     load_synonym_table,
 )
 from vue_docs_server.tools.api_lookup import _clean_section_title, vue_api_lookup
-from vue_docs_server.tools.search import _detect_entities, vue_docs_search
+from vue_docs_server.tools.search import vue_docs_search
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -669,63 +669,6 @@ class TestEntityMatcherPriority:
         result = matcher.match("ref and reactivity")
         # "ref" matched by exact AND synonym for "reactivity", but should appear once
         assert result.entities.count("ref") == 1
-
-
-# ---------------------------------------------------------------------------
-# Tests: Entity Detection in Search (integration with server state)
-# ---------------------------------------------------------------------------
-
-
-class TestEntityDetection:
-    def setup_method(self):
-        """Set up server state for entity detection tests."""
-        from vue_docs_server.startup import state as server_state
-
-        entity_index = _make_entity_index()
-        synonym_table = _make_synonym_table()
-
-        server_state.entity_index = entity_index
-        server_state.synonym_table = synonym_table
-        server_state.entity_matcher = EntityMatcher(
-            entity_index=entity_index,
-            synonym_table=synonym_table,
-        )
-
-    def test_detect_inline_entity(self):
-        detected = _detect_entities("how does computed work?")
-        assert "computed" in detected
-
-    def test_detect_backtick_entity(self):
-        detected = _detect_entities("what does `defineProps` do?")
-        assert "defineProps" in detected
-
-    def test_detect_synonym(self):
-        detected = _detect_entities("how to do two-way binding?")
-        assert "v-model" in detected
-
-    def test_detect_multiple(self):
-        detected = _detect_entities("difference between ref and computed")
-        assert "ref" in detected
-        assert "computed" in detected
-
-    def test_no_matches(self):
-        detected = _detect_entities("how to deploy a web app")
-        # May have some matches depending on substrings, but no Vue-specific entities
-        for entity in detected:
-            # Only check that any detected entity is actually in the dictionary
-            assert entity in _make_entity_index().entities
-
-    def test_detect_fuzzy_typo(self):
-        detected = _detect_entities("what is definProps")
-        assert "defineProps" in detected
-
-    def test_detect_with_no_matcher(self):
-        """When entity_matcher is None, returns empty list."""
-        from vue_docs_server.startup import state as server_state
-
-        server_state.entity_matcher = None
-        detected = _detect_entities("computed properties")
-        assert detected == []
 
 
 # ---------------------------------------------------------------------------

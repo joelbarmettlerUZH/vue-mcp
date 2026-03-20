@@ -69,11 +69,6 @@ async def vue_docs_search(
             # Generate BM25 sparse vector
             sparse_vector = state.bm25.get_query_sparse_vector(query)
 
-            # Detect API entities for logging (BM25 handles keyword matching)
-            entity_boost = _detect_entities(query)
-            if entity_boost:
-                span.set_attribute("entities.detected", entity_boost)
-
         # Step 2: Run hybrid search (no entity filter — BM25 covers keyword matching)
         await ctx.report_progress(2, TOTAL_STEPS)
         await ctx.info("Searching documentation")
@@ -243,15 +238,3 @@ def _resolve_hype_hits(hits: list) -> list:
     # Re-sort by score descending
     resolved.sort(key=lambda h: h.score, reverse=True)
     return resolved
-
-
-def _detect_entities(query: str) -> list[str]:
-    """Detect API entity names in the query using the EntityMatcher.
-
-    Uses dictionary matching, bigram matching, synonym lookup, and
-    fuzzy matching (rapidfuzz) for typo tolerance.
-    """
-    if state.entity_matcher is None:
-        return []
-    match_result = state.entity_matcher.match(query)
-    return match_result.entities

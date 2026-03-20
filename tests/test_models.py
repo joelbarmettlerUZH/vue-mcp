@@ -8,9 +8,6 @@ from vue_docs_core.models import (
     CrossReference,
     CrossRefType,
     EntityIndex,
-    QueryIntent,
-    QueryTransformResult,
-    SearchResult,
 )
 from vue_docs_core.models.entity import EntityType
 
@@ -105,41 +102,6 @@ def test_cross_reference():
         ref_type=CrossRefType.HIGH,
     )
     assert xref.ref_type == CrossRefType.HIGH
-
-
-def test_query_intent_enum():
-    assert QueryIntent.API_LOOKUP == "api_lookup"
-    assert QueryIntent.DEBUGGING == "debugging"
-
-
-def test_query_transform_result():
-    result = QueryTransformResult(
-        original_query="how does computed caching work",
-        intent=QueryIntent.CONCEPTUAL,
-        detected_entities=["computed"],
-        sub_questions=["what is a computed property", "how does caching work"],
-        rewritten_queries=["vue computed property caching mechanism"],
-        step_back_query="how does Vue reactivity system work",
-    )
-    assert result.intent == QueryIntent.CONCEPTUAL
-    assert len(result.sub_questions) == 2
-
-
-def test_search_result():
-    meta = ChunkMetadata(
-        file_path="guide/essentials/computed.md",
-        folder_path="guide/essentials",
-        page_title="Computed Properties",
-    )
-    chunk = Chunk(
-        chunk_id="test",
-        chunk_type=ChunkType.SECTION,
-        content="test content",
-        metadata=meta,
-    )
-    sr = SearchResult(chunk=chunk, score=0.95, retrieval_method="hybrid")
-    assert sr.score == 0.95
-    assert sr.retrieval_method == "hybrid"
 
 
 def test_chunk_type_values():

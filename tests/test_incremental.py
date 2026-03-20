@@ -253,35 +253,6 @@ class TestPayloadToChunk:
 
 
 # ---------------------------------------------------------------------------
-# Summary input hash
-# ---------------------------------------------------------------------------
-
-
-class TestSummaryInputHash:
-    def test_same_input_same_hash(self):
-        from vue_docs_ingestion.pipeline import _summary_input_hash
-
-        texts = ["Summary of page A", "Summary of page B"]
-        h1 = _summary_input_hash(texts)
-        h2 = _summary_input_hash(texts)
-        assert h1 == h2
-
-    def test_different_input_different_hash(self):
-        from vue_docs_ingestion.pipeline import _summary_input_hash
-
-        h1 = _summary_input_hash(["Summary A", "Summary B"])
-        h2 = _summary_input_hash(["Summary A", "Summary C"])
-        assert h1 != h2
-
-    def test_order_matters(self):
-        from vue_docs_ingestion.pipeline import _summary_input_hash
-
-        h1 = _summary_input_hash(["A", "B"])
-        h2 = _summary_input_hash(["B", "A"])
-        assert h1 != h2
-
-
-# ---------------------------------------------------------------------------
 # Scanner
 # ---------------------------------------------------------------------------
 
