@@ -7,8 +7,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  SERVER_IMAGE: ghcr.io/${{ github.repository }}/vue-mcp-server
-  INGESTION_IMAGE: ghcr.io/${{ github.repository }}/vue-mcp-ingestion
 
 jobs:
   build:
@@ -19,6 +17,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Compute lowercase image names
+        id: meta
+        run: |
+          REPO="${{ github.repository }}"
+          REPO_LOWER="${REPO,,}"
+          echo "server=${{ env.REGISTRY }}/${REPO_LOWER}/vue-mcp-server" >> "$GITHUB_OUTPUT"
+          echo "ingestion=${{ env.REGISTRY }}/${REPO_LOWER}/vue-mcp-ingestion" >> "$GITHUB_OUTPUT"
 
       - uses: docker/setup-buildx-action@v3
 
@@ -36,8 +42,8 @@ jobs:
           target: server
           push: true
           tags: |
-            ${{ env.SERVER_IMAGE }}:latest
-            ${{ env.SERVER_IMAGE }}:sha-${{ github.sha }}
+            ${{ steps.meta.outputs.server }}:latest
+            ${{ steps.meta.outputs.server }}:sha-${{ github.sha }}
           cache-from: type=gha,scope=server
           cache-to: type=gha,mode=max,scope=server
 
@@ -48,7 +54,7 @@ jobs:
           target: ingestion
           push: true
           tags: |
-            ${{ env.INGESTION_IMAGE }}:latest
-            ${{ env.INGESTION_IMAGE }}:sha-${{ github.sha }}
+            ${{ steps.meta.outputs.ingestion }}:latest
+            ${{ steps.meta.outputs.ingestion }}:sha-${{ github.sha }}
           cache-from: type=gha,scope=ingestion
           cache-to: type=gha,mode=max,scope=ingestion

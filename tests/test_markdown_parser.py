@@ -21,6 +21,10 @@ DOCS_ROOT = Path(__file__).resolve().parent.parent / "data" / "vue-docs" / "src"
 COMPUTED_MD = DOCS_ROOT / "guide" / "essentials" / "computed.md"
 LIFECYCLE_MD = DOCS_ROOT / "guide" / "essentials" / "lifecycle.md"
 
+needs_vue_docs = pytest.mark.skipif(
+    not DOCS_ROOT.exists(), reason="Vue docs not cloned (run make bootstrap)"
+)
+
 
 # ---------------------------------------------------------------------------
 # Unit tests for helpers
@@ -49,6 +53,7 @@ class TestExtractSlug:
         assert slug == ""
 
 
+@needs_vue_docs
 class TestExtractHeadings:
     def test_computed_md_headings(self):
         from markdown_it import MarkdownIt
@@ -126,6 +131,7 @@ def lifecycle_chunks():
     return parse_markdown_file(LIFECYCLE_MD, DOCS_ROOT)
 
 
+@needs_vue_docs
 class TestParseComputedMd:
     def test_page_title(self, computed_chunks):
         sections = [c for c in computed_chunks if c.chunk_type == ChunkType.SECTION]
@@ -198,6 +204,7 @@ class TestParseComputedMd:
             assert len(chunk.content_hash) == 16
 
 
+@needs_vue_docs
 class TestParseLifecycleMd:
     def test_has_image_chunk(self, lifecycle_chunks):
         imgs = [c for c in lifecycle_chunks if c.chunk_type == ChunkType.IMAGE]
@@ -214,6 +221,7 @@ class TestParseLifecycleMd:
         assert len(sections) == 2  # Registering Lifecycle Hooks, Lifecycle Diagram
 
 
+@needs_vue_docs
 class TestLargeSectionSplitting:
     """Test that sections > 3000 chars with H3s get split."""
 
@@ -261,6 +269,7 @@ class TestLargeSectionSplitting:
             assert sub.metadata.parent_chunk_id != ""
 
 
+@needs_vue_docs
 class TestEdgeCases:
     def test_file_without_h2(self):
         """Files with only H1 or no headings should still produce chunks."""
@@ -287,6 +296,7 @@ class TestEdgeCases:
         assert "function ref<T>" in ref_section.content
 
 
+@needs_vue_docs
 class TestContentCleaning:
     def test_collapsed_blank_lines(self):
         """Multiple consecutive blank lines should be collapsed to 2."""

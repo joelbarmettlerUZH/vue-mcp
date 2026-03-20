@@ -28,6 +28,10 @@ DOCS_ROOT = Path(__file__).resolve().parent.parent / "data" / "vue-docs" / "src"
 API_DIR = DOCS_ROOT / "api"
 CONFIG_PATH = DOCS_ROOT.parent / ".vitepress" / "config.ts"
 
+needs_vue_docs = pytest.mark.skipif(
+    not DOCS_ROOT.exists(), reason="Vue docs not cloned (run make bootstrap)"
+)
+
 
 # ===================================================================
 # Entity Extraction
@@ -98,6 +102,7 @@ class TestSplitCompoundHeading:
         assert "useAttrs" in names
 
 
+@needs_vue_docs
 class TestBuildApiDictionary:
     @pytest.fixture(scope="class")
     def dictionary(self):
@@ -139,6 +144,7 @@ class TestBuildApiDictionary:
         assert dictionary["ref"].page_path == "api/reactivity-core.md"
 
 
+@needs_vue_docs
 class TestExtractEntitiesFromChunk:
     @pytest.fixture(scope="class")
     def dictionary(self):
@@ -199,6 +205,7 @@ class TestExtractEntitiesFromChunk:
         assert "reactive" in all_entities
 
 
+@needs_vue_docs
 class TestSavLoadDictionary:
     def test_round_trip(self, tmp_path):
         d = build_api_dictionary(API_DIR)
@@ -280,6 +287,7 @@ class TestClassifyRefType:
         )
 
 
+@needs_vue_docs
 class TestExtractCrossReferences:
     def test_lifecycle_md_has_high_refs(self):
         chunks = parse_markdown_file(DOCS_ROOT / "guide/essentials/lifecycle.md", DOCS_ROOT)
@@ -303,6 +311,7 @@ class TestExtractCrossReferences:
         assert any("watchers" in t for t in targets)
 
 
+@needs_vue_docs
 class TestBuildCrossrefGraph:
     def test_graph_structure(self):
         chunks = parse_markdown_file(DOCS_ROOT / "guide/essentials/computed.md", DOCS_ROOT)
@@ -319,6 +328,7 @@ class TestBuildCrossrefGraph:
 # ===================================================================
 
 
+@needs_vue_docs
 class TestParseSidebarConfig:
     @pytest.fixture(scope="class")
     def sidebar_map(self):
@@ -350,6 +360,7 @@ class TestParseSidebarConfig:
         assert keys == sorted(keys)
 
 
+@needs_vue_docs
 class TestComputeSortKey:
     @pytest.fixture(scope="class")
     def sidebar_map(self):

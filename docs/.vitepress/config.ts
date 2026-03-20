@@ -36,57 +36,47 @@ export default defineConfig({
       { text: "Reference", link: "/reference/tools" },
     ],
 
-    sidebar: {
-      "/guide/": [
-        {
-          text: "Introduction",
-          items: [
-            { text: "What is Vue Docs MCP?", link: "/guide/what-is-vue-mcp" },
-            { text: "Getting Started", link: "/guide/getting-started" },
-          ],
-        },
-        {
-          text: "Setup",
-          items: [
-            { text: "Self-Hosting", link: "/guide/self-hosting" },
-          ],
-        },
-      ],
-      "/clients/": [
-        {
-          text: "MCP Clients",
-          link: "/clients/",
-          items: [
-            { text: "Claude Code", link: "/clients/claude-code" },
-            { text: "Claude Desktop", link: "/clients/claude-desktop" },
-            { text: "Cursor", link: "/clients/cursor" },
-            { text: "Windsurf", link: "/clients/windsurf" },
-            { text: "VS Code (Copilot)", link: "/clients/vscode" },
-            { text: "JetBrains", link: "/clients/jetbrains" },
-            { text: "Zed", link: "/clients/zed" },
-            { text: "Opencode", link: "/clients/opencode" },
-            { text: "Gemini CLI", link: "/clients/gemini-cli" },
-            { text: "ChatGPT", link: "/clients/chatgpt" },
-          ],
-        },
-      ],
-      "/reference/": [
-        {
-          text: "MCP Interface",
-          items: [
-            { text: "Tools", link: "/reference/tools" },
-            { text: "Resources", link: "/reference/resources" },
-            { text: "Prompts", link: "/reference/prompts" },
-          ],
-        },
-        {
-          text: "Details",
-          items: [
-            { text: "How It Works", link: "/reference/how-it-works" },
-          ],
-        },
-      ],
-    },
+    sidebar: [
+      {
+        text: "Introduction",
+        items: [
+          { text: "What is Vue Docs MCP?", link: "/guide/what-is-vue-mcp" },
+          { text: "Getting Started", link: "/guide/getting-started" },
+        ],
+      },
+      {
+        text: "MCP Clients",
+        link: "/clients/",
+        collapsed: false,
+        items: [
+          { text: "Claude Code", link: "/clients/claude-code" },
+          { text: "Claude Desktop", link: "/clients/claude-desktop" },
+          { text: "Cursor", link: "/clients/cursor" },
+          { text: "Windsurf", link: "/clients/windsurf" },
+          { text: "VS Code (Copilot)", link: "/clients/vscode" },
+          { text: "JetBrains", link: "/clients/jetbrains" },
+          { text: "Zed", link: "/clients/zed" },
+          { text: "Opencode", link: "/clients/opencode" },
+          { text: "Gemini CLI", link: "/clients/gemini-cli" },
+          { text: "ChatGPT", link: "/clients/chatgpt" },
+        ],
+      },
+      {
+        text: "Reference",
+        items: [
+          { text: "Tools", link: "/reference/tools" },
+          { text: "Resources", link: "/reference/resources" },
+          { text: "Prompts", link: "/reference/prompts" },
+          { text: "How It Works", link: "/reference/how-it-works" },
+        ],
+      },
+      {
+        text: "Setup",
+        items: [
+          { text: "Self-Hosting", link: "/guide/self-hosting" },
+        ],
+      },
+    ],
 
     socialLinks: [
       { icon: "github", link: "https://github.com/joelbarmettlerUZH/vue-mcp" },

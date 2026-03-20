@@ -5,7 +5,7 @@ from qdrant_client.models import PayloadSchemaType
 
 
 class Settings(BaseSettings):
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
     # Jina AI
     jina_api_key: str = ""
