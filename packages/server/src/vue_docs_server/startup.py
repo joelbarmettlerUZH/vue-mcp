@@ -17,8 +17,7 @@ from vue_docs_core.retrieval.entity_matcher import EntityMatcher
 
 logger = logging.getLogger(__name__)
 
-_RELOAD_CHECK_INTERVAL = 60  # seconds
-_RESOURCE_REFRESH_INTERVAL = 3600  # seconds (1 hour)
+_HOT_RELOAD_INTERVAL = 3600  # seconds (1 hour)
 
 
 class ServerState:
@@ -315,8 +314,8 @@ def shutdown():
     logger.info("Server shutdown complete")
 
 
-async def data_reload_loop():
-    """Background task: poll PG for data changes and reload when detected."""
+async def hot_reload_loop(register_resources_fn):
+    """Background task: reload data from PG and refresh concrete resources hourly."""
     global _last_reload_ts
 
     if not settings.database_url:
@@ -325,7 +324,7 @@ async def data_reload_loop():
 
     while True:
         try:
-            await asyncio.sleep(_RELOAD_CHECK_INTERVAL)
+            await asyncio.sleep(_HOT_RELOAD_INTERVAL)
             max_updated = await asyncio.to_thread(state.db.get_max_updated_at)
             if max_updated > _last_reload_ts:
                 logger.info(
@@ -335,25 +334,9 @@ async def data_reload_loop():
                 )
                 await asyncio.to_thread(_load_from_pg, state.db)
                 _last_reload_ts = max_updated
-                logger.info("Hot reload complete")
+                await asyncio.to_thread(register_resources_fn)
+                logger.info("Hot reload complete (data + resources)")
         except asyncio.CancelledError:
             break
         except Exception:
-            logger.exception("Error in data reload loop")
-
-
-async def resource_refresh_loop(register_fn):
-    """Background task: re-register concrete resources hourly to pick up new pages."""
-    if not settings.database_url:
-        return
-
-    while True:
-        try:
-            await asyncio.sleep(_RESOURCE_REFRESH_INTERVAL)
-            logger.info("Refreshing concrete MCP resources...")
-            await asyncio.to_thread(register_fn)
-            logger.info("Concrete resource refresh complete")
-        except asyncio.CancelledError:
-            break
-        except Exception:
-            logger.exception("Error in resource refresh loop")
+            logger.exception("Error in hot reload loop")

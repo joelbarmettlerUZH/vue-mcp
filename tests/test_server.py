@@ -2031,8 +2031,8 @@ class TestStartupPaths:
         assert state.entity_matcher is not None
 
     @pytest.mark.asyncio
-    async def test_data_reload_loop_reloads_on_change(self):
-        """data_reload_loop triggers reload when PG timestamps change."""
+    async def test_hot_reload_loop_reloads_on_change(self):
+        """hot_reload_loop triggers data reload and resource refresh when PG timestamps change."""
         import vue_docs_server.startup as startup_module
         from vue_docs_server.startup import state
 
@@ -2045,16 +2045,21 @@ class TestStartupPaths:
         new_ts = datetime(2025, 6, 1, tzinfo=UTC)
         mock_db.get_max_updated_at.return_value = new_ts
 
-        original_interval = startup_module._RELOAD_CHECK_INTERVAL
+        original_interval = startup_module._HOT_RELOAD_INTERVAL
         # Patch to make the loop fast
-        startup_module._RELOAD_CHECK_INTERVAL = 0.01
+        startup_module._HOT_RELOAD_INTERVAL = 0.01
         startup_module._last_reload_ts = datetime(2025, 1, 1, tzinfo=UTC)
 
         reload_called = False
+        resources_refreshed = False
 
         def mock_load(db):
             nonlocal reload_called
             reload_called = True
+
+        def mock_register():
+            nonlocal resources_refreshed
+            resources_refreshed = True
 
         try:
             with (
@@ -2062,15 +2067,16 @@ class TestStartupPaths:
                 patch.object(startup_module, "settings") as mock_settings,
             ):
                 mock_settings.database_url = "postgresql://test"
-                task = asyncio.create_task(startup_module.data_reload_loop())
+                task = asyncio.create_task(startup_module.hot_reload_loop(mock_register))
                 await asyncio.sleep(0.1)
                 task.cancel()
                 with contextlib.suppress(asyncio.CancelledError):
                     await task
         finally:
-            startup_module._RELOAD_CHECK_INTERVAL = original_interval
+            startup_module._HOT_RELOAD_INTERVAL = original_interval
 
         assert reload_called
+        assert resources_refreshed
 
 
 # ---------------------------------------------------------------------------

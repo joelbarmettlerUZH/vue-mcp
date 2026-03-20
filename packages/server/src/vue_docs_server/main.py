@@ -23,13 +23,7 @@ from vue_docs_server.resources.topics import (
     make_section_topics_resource,
     make_toc_resource,
 )
-from vue_docs_server.startup import (
-    data_reload_loop,
-    resource_refresh_loop,
-    shutdown,
-    startup,
-    state,
-)
+from vue_docs_server.startup import hot_reload_loop, shutdown, startup, state
 from vue_docs_server.tools.api_lookup import (
     _clean_section_title,
     _find_entity,
@@ -301,14 +295,10 @@ async def lifespan(app: FastMCP):
     """Server lifespan: startup and shutdown hooks."""
     startup()
     _register_concrete_resources(app)
-    reload_task = asyncio.create_task(data_reload_loop())
-    refresh_task = asyncio.create_task(
-        resource_refresh_loop(lambda: _register_concrete_resources(app))
-    )
+    reload_task = asyncio.create_task(hot_reload_loop(lambda: _register_concrete_resources(app)))
     logger.info("MCP server ready")
     yield
     reload_task.cancel()
-    refresh_task.cancel()
     shutdown()
 
 
