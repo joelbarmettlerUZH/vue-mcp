@@ -239,7 +239,7 @@ class PostgresClient:
         content_hash: str,
         pipeline_version: str,
         chunk_ids: list[str],
-        last_indexed: str,
+        last_indexed: str | datetime,
     ):
         """Upsert a single file's index state."""
         with self._session_factory() as session:

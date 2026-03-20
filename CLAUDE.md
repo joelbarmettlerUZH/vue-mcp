@@ -7,13 +7,12 @@ search (BM25), and LLM query transformation (Gemini) to return structure-aware, 
 
 ```
 packages/
-  core/       Shared library: models, clients (Jina, Qdrant, Gemini, BM25), parsing, retrieval
+  core/       Shared library: models, clients (Jina, Qdrant, Gemini, BM25, PostgreSQL), parsing, retrieval
   ingestion/  CLI tool (Typer): scan → parse → enrich → embed → store
   server/     MCP server (FastMCP): tools, resources, prompts, query pipeline
 eval/         Evaluation suite (separate package, not shipped)
-data/         Shared state between ingestion and server (entity dict, synonym table, BM25 model)
 tests/        Root-level pytest suite
-scripts/      Bootstrap and debug utilities
+scripts/      Deployment, backup, restore, and debug utilities
 ```
 
 All packages use `hatchling` build backend, Python ≥3.13, and share `vue-docs-core` via `[tool.uv.sources]` workspace
@@ -38,6 +37,9 @@ All commands are available via `make`. Run `make help` to see the full list.
 | `make serve` | Start the MCP server |
 | `make inspect FILE=<path>` | Debug chunk output for a markdown file |
 | `make pr-ready` | Fix lint + format + test (run before committing) |
+| `make docker-build` | Build both Docker images locally |
+| `make docker-up` | Start all services via Docker Compose |
+| `make docker-down` | Stop all services |
 
 For single-file test runs: `uv run pytest tests/test_server.py -v`
 
@@ -48,6 +50,84 @@ Before committing, always run:
 ```bash
 make pr-ready
 ```
+
+## Deployment
+
+The server is deployed as a Docker Compose stack on an Infomaniak OpenStack VM.
+
+### Architecture
+
+```
+Internet → Traefik (:80/:443, TLS via Let's Encrypt) → MCP Server (:8000, streamable-http)
+                                                             ├── PostgreSQL (shared data layer)
+                                                             ├── Qdrant (vector search)
+                                                             └── Ingestion (self-scheduling, writes to PG + Qdrant)
+```
+
+### Services
+
+| Service | Image | Purpose |
+|---|---|---|
+| `mcp-server` | `ghcr.io/.../vue-mcp-server` | FastMCP server (streamable-http transport) |
+| `ingestion` | `ghcr.io/.../vue-mcp-ingestion` | Self-scheduling pipeline (`watch` command, runs every 24h) |
+| `postgres` | `postgres:17-alpine` | Shared data: entities, synonyms, pages, BM25 model, index state |
+| `qdrant` | `qdrant/qdrant:v1.17.0` | Vector database (dense + sparse hybrid search) |
+| `traefik` | `traefik:v3.6` | Reverse proxy, TLS, rate limiting (60 req/min, 10 concurrent, 100KB body) |
+
+### Docker Images
+
+One multi-target `Dockerfile` produces two images:
+- **server** — `vue-docs-core` + `fastmcp` + `psycopg` + `sqlalchemy`. No git.
+- **ingestion** — `vue-docs-core` + `typer` + `rich` + `psycopg` + `sqlalchemy` + `git`.
+
+Build locally: `make docker-build`
+
+### Data Flow
+
+PostgreSQL is the shared data layer between ingestion (writes) and server (reads). No shared filesystem volumes for
+application data. The `data/` directory is gitignored and only used for local development without PG.
+
+### Local Development with Docker
+
+Uses `docker-compose.override.yml` (gitignored) for mkcert TLS via nip.io:
+
+```bash
+mkcert -install
+mkcert -cert-file certs/local.pem -key-file certs/local-key.pem "$(hostname -I | awk '{print $1}').nip.io"
+DOMAIN=$(hostname -I | awk '{print $1}').nip.io docker compose up -d
+```
+
+### Production Deployment
+
+```bash
+# On the VM: /opt/vue-mcp/.env.production (from .env.production.example)
+# Set TLS_CERTRESOLVER=letsencrypt, ACME_EMAIL, DOMAIN, API keys
+docker compose up -d
+```
+
+### Server Transport
+
+The server supports two transport modes via `SERVER_TRANSPORT` env var:
+- `stdio` (default) — for local MCP client connections
+- `streamable-http` — for production, serves on `SERVER_HOST:SERVER_PORT/mcp`
+
+### Hot Reload
+
+The server polls PostgreSQL every 60 seconds for data changes. When ingestion writes new entities, pages, or BM25
+models, the server reloads them automatically with zero downtime.
+
+### Backup & Restore
+
+```bash
+scripts/backup.sh [backup_dir]    # pg_dump + Qdrant snapshot, 7-day rotation
+scripts/restore.sh <dump.sql.gz> [snapshot]  # Restore from backup
+```
+
+### CI/CD
+
+- `.github/workflows/ci.yml` — Lint + test on PRs
+- `.github/workflows/build-and-push.yml` — Build both images, push to GHCR on push to main
+- `scripts/deploy.sh` — SSH to VM, pull images, restart stack
 
 ## Design Principles
 
@@ -91,7 +171,13 @@ make pr-ready
    Constants live alongside Settings in `config.py`. Reference with `from vue_docs_core.config import settings`.
 
 8. **Server state via singleton.** `vue_docs_server.startup.ServerState` holds loaded resources (entity dict, BM25
-   model, Qdrant client). Initialized at server startup, accessed by tools.
+   model, Qdrant client, PG client). Initialized at server startup, accessed by tools. Supports hot reload from PG.
+
+9. **SQLAlchemy ORM for PostgreSQL.** ORM models in `vue_docs_core.clients.postgres`. Sync `psycopg` driver. Tables
+   created via `Base.metadata.create_all()` — no separate migration tool or SQL scripts.
+
+10. **Curated data as package code.** Static lookup tables (e.g., synonym table) live as Python dicts in
+    `vue_docs_core.data`, not as external files.
 
 ## Testing
 
@@ -113,6 +199,12 @@ make pr-ready
 | `markdown-it-py` for parsing | Token/tree API, heading hierarchy, code blocks, links, images |
 | `rapidfuzz` for entity matching | Sub-millisecond fuzzy matching with typo tolerance |
 | FastMCP with middleware | Error handling, timing, response limiting as composable layers |
+| PostgreSQL as shared data layer | Decouples ingestion and server containers, atomic writes, simple backup (`pg_dump`) |
+| SQLAlchemy ORM | Typed models, `create_tables()` for schema management, no raw SQL |
+| Two Docker images from one Dockerfile | Shared base layer, separate concerns (server vs ingestion), independent restart |
+| Traefik for reverse proxy | Auto TLS via Let's Encrypt, Docker-native service discovery, built-in rate limiting |
+| Self-scheduling ingestion | `watch` command with configurable interval, no host cron jobs needed |
+| Server hot reload | Background task polls PG every 60s, zero-downtime data refresh |
 
 ## External Services
 
@@ -121,8 +213,9 @@ make pr-ready
 | Jina AI | Embeddings (jina-embeddings-v4) + reranking (jina-reranker-v3) | `httpx` |
 | Google Gemini | Query transformation, contextual enrichment, HyPE generation | `google-genai` |
 | Qdrant | Vector database (dense + sparse hybrid search) | `qdrant-client` |
+| PostgreSQL | Shared data layer (entities, synonyms, pages, index state, BM25 model) | `sqlalchemy` + `psycopg` |
 
-API keys configured via `.env` (see `.env.example`). All API calls go through async clients in
+API keys configured via `.env` (see `.env.example`). All API calls go through clients in
 `packages/core/src/vue_docs_core/clients/`.
 
 ## Ruff Configuration
@@ -138,9 +231,9 @@ Don't manually enforce style rules — run `make lint-fix && make format` instea
 
 ## Data Flow
 
-**Ingestion** (offline, batch): Markdown files → parse into structural chunks → extract entities + cross-refs → enrich
-with contextual prefixes (Gemini) → generate HyPE questions (Gemini) → embed all (Jina) → generate BM25 sparse vectors
-→ upsert to Qdrant. State tracked in `data/state/index_state.json`.
+**Ingestion** (offline, self-scheduled): Clone/pull Vue docs → parse into structural chunks → extract entities +
+cross-refs → enrich with contextual prefixes (Gemini) → generate HyPE questions (Gemini) → embed all (Jina) → generate
+BM25 sparse vectors → upsert to Qdrant → save entities, synonyms, pages, BM25 model, and index state to PostgreSQL.
 
 **Query** (online, per-request): Entity extraction (deterministic) → intent classification → query transformation
 (Gemini, parallel) → hybrid search (Qdrant: dense + BM25 + entity boost) → RRF fusion → cross-reference expansion →
@@ -153,5 +246,8 @@ reranking (Jina) → reconstruction (sort by reading order, merge adjacent, form
 - Store HyPE embeddings as additional vectors on existing points. Store them as separate Qdrant points with
   `parent_chunk_id`.
 - Edit `uv.lock` manually. Use `uv add/remove` for dependency changes.
-- Commit `.env` or API keys. Use `.env.example` as the template.
+- Commit `.env`, `.env.production`, or API keys. Use `.env.example` as the template.
 - Return empty results from search tools. Always fall back to broader scope or RAPTOR summary nodes.
+- Write raw SQL. Use SQLAlchemy ORM models in `vue_docs_core.clients.postgres`.
+- Store generated data as files. All ingestion output goes to PostgreSQL and Qdrant.
+- Add `init-db.sql` or migration scripts. SQLAlchemy `create_tables()` is the source of truth for schema.

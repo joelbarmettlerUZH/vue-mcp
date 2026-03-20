@@ -5,7 +5,11 @@
 # ---------------------------------------------------------------------------
 FROM python:3.13-slim AS base
 
+ENV PYTHONUNBUFFERED=1
+
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
+
+RUN groupadd --gid 1000 app && useradd --uid 1000 --gid app --create-home app
 
 WORKDIR /app
 
@@ -27,7 +31,10 @@ RUN uv sync --frozen --no-dev --package vue-docs-server
 
 ENV PATH="/app/.venv/bin:$PATH"
 
+USER app
 EXPOSE 8000
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+    CMD ["python", "-c", "import httpx; httpx.get('http://localhost:8000/mcp', timeout=5)"]
 CMD ["vue-docs-server"]
 
 # ---------------------------------------------------------------------------
@@ -40,7 +47,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends git && \
 
 RUN uv sync --frozen --no-dev --package vue-docs-ingestion
 
+# Ingestion needs write access to /app/data (mounted volume)
+RUN mkdir -p /app/data && chown app:app /app/data
+
 ENV PATH="/app/.venv/bin:$PATH"
 
-# Default: watch mode (scheduled ingestion)
+USER app
 CMD ["vue-docs-ingest", "watch", "--verbose"]

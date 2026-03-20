@@ -103,15 +103,20 @@ class QdrantDocClient:
             logger.info("Collection '%s' already exists", self.collection)
 
         # Create payload indices (may already exist)
-        import contextlib
+        from qdrant_client.http.exceptions import UnexpectedResponse
 
         for field_name, field_type in INDEXED_FIELDS.items():
-            with contextlib.suppress(Exception):
+            try:
                 self.client.create_payload_index(
                     collection_name=self.collection,
                     field_name=field_name,
                     field_schema=field_type,
                 )
+            except UnexpectedResponse as e:
+                if e.status_code == 400:
+                    pass  # Index already exists
+                else:
+                    raise
 
         logger.info("Payload indices ensured for %d fields", len(INDEXED_FIELDS))
 

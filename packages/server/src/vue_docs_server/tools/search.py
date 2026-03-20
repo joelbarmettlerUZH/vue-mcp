@@ -22,10 +22,11 @@ async def vue_docs_search(
     query: Annotated[
         str,
         Field(
+            max_length=2000,
             description="A developer question or topic about Vue.js. "
             "Examples: 'how does computed caching work', "
             "'v-model on custom components', "
-            "'defineProps TypeScript usage'."
+            "'defineProps TypeScript usage'.",
         ),
     ],
     scope: Annotated[

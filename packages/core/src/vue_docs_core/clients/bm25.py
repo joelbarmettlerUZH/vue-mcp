@@ -129,8 +129,10 @@ class BM25Model:
 
         with open(path / "vocab.json") as f:
             saved_vocab = json.load(f)
-            # Verify consistency
             if set(saved_vocab.keys()) != set(self._vocab.keys()):
-                logger.warning("Vocab mismatch between saved and loaded model")
+                raise RuntimeError(
+                    f"BM25 vocab mismatch: saved has {len(saved_vocab)} tokens, "
+                    f"loaded model has {len(self._vocab)} tokens. Re-run ingestion."
+                )
 
         logger.info("BM25 model loaded from %s (%d vocab tokens)", path, len(self._vocab))

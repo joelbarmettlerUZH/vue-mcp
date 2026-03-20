@@ -1,3 +1,9 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   mcp-server:
     image: ghcr.io/${GITHUB_REPOSITORY:-joelbarmettleruzh/vue-mcp}/vue-mcp-server:${IMAGE_TAG:-latest}
@@ -30,6 +36,9 @@ services:
       - "traefik.http.middlewares.ratelimit.ratelimit.period=1m"
       - "traefik.http.middlewares.connlimit.inflightreq.amount=10"
       - "traefik.http.middlewares.bodylimit.buffering.maxRequestBodyBytes=102400"
+    mem_limit: 2g
+    cpus: 1.0
+    logging: *default-logging
     restart: unless-stopped
 
   ingestion:
@@ -52,6 +61,9 @@ services:
         condition: service_healthy
       qdrant:
         condition: service_healthy
+    mem_limit: 4g
+    cpus: 2.0
+    logging: *default-logging
     restart: unless-stopped
 
   postgres:
@@ -67,6 +79,9 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    mem_limit: 2g
+    cpus: 1.0
+    logging: *default-logging
     restart: unless-stopped
 
   qdrant:
@@ -78,6 +93,9 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    mem_limit: 4g
+    cpus: 2.0
+    logging: *default-logging
     restart: unless-stopped
 
   traefik:
@@ -97,6 +115,9 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - letsencrypt:/letsencrypt
+    mem_limit: 512m
+    cpus: 0.5
+    logging: *default-logging
     restart: unless-stopped
 
 volumes:
