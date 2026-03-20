@@ -287,15 +287,13 @@ class TestEnrichChunksContextual:
         assert _result.skipped == 1
 
     @pytest.mark.asyncio
-    async def test_handles_missing_page_content(self):
+    async def test_raises_on_missing_page_content(self):
         chunks = [_make_chunk(chunk_id="page#s1")]
         page_contents = {}  # No page content available
 
         client = GeminiClient(api_key="test-key")
-        _result = await enrich_chunks_contextual(chunks, page_contents, client)
-
-        assert _result.enriched == 0
-        assert _result.skipped >= 1
+        with pytest.raises(RuntimeError, match="error rate too high"):
+            await enrich_chunks_contextual(chunks, page_contents, client)
 
     @pytest.mark.asyncio
     async def test_handles_enrichment_errors_gracefully(self):

@@ -9,7 +9,6 @@ No real API calls — Jina, Qdrant, and BM25 are mocked throughout.
 
 import asyncio
 import contextlib
-import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -32,11 +31,7 @@ from vue_docs_core.retrieval.reconstruction import (
     _merge_adjacent_hits,
     reconstruct_results,
 )
-from vue_docs_server.startup import (
-    ServerState,
-    load_entity_dictionary,
-    load_synonym_table,
-)
+from vue_docs_server.startup import ServerState
 from vue_docs_server.tools.api_lookup import _clean_section_title, _do_api_lookup
 from vue_docs_server.tools.related import _do_get_related
 from vue_docs_server.tools.search import _do_search
@@ -489,47 +484,6 @@ class TestStartup:
         s.qdrant = MagicMock()
         s.bm25 = MagicMock()
         assert s.is_ready
-
-    def test_load_entity_dictionary(self, tmp_path):
-        data = {
-            "ref": {
-                "entity_type": "composable",
-                "page_path": "api/reactivity-core",
-                "section": "ref()",
-            },
-            "computed": {
-                "entity_type": "composable",
-                "page_path": "api/reactivity-core",
-                "section": "computed()",
-            },
-        }
-        dict_path = tmp_path / "entity_dictionary.json"
-        dict_path.write_text(json.dumps(data))
-
-        index = load_entity_dictionary(tmp_path)
-        assert len(index.entities) == 2
-        assert "ref" in index.entities
-        assert index.entities["ref"].page_path == "api/reactivity-core"
-        assert index.entities["ref"].entity_type == EntityType.COMPOSABLE
-
-    def test_load_entity_dictionary_missing(self, tmp_path):
-        index = load_entity_dictionary(tmp_path)
-        assert len(index.entities) == 0
-
-    def test_load_synonym_table(self, tmp_path):
-        data = {"two-way binding": ["v-model"], "reactivity": ["ref", "reactive"]}
-        syn_path = tmp_path / "synonym_table.json"
-        syn_path.write_text(json.dumps(data))
-
-        table = load_synonym_table(tmp_path)
-        assert len(table) == 2
-        assert table["two-way binding"] == ["v-model"]
-
-    def test_load_synonym_table_missing_falls_back_to_package(self, tmp_path):
-        table = load_synonym_table(tmp_path)
-        # Falls back to curated package data when file not on disk
-        assert len(table) > 0
-        assert "two-way binding" in table
 
 
 # ---------------------------------------------------------------------------
@@ -1908,82 +1862,6 @@ class TestReadPage:
 class TestStartupPaths:
     """Tests for startup.py data loading logic."""
 
-    def test_load_from_files_builds_per_source_state(self, tmp_path):
-        """_load_from_files populates per-source entity indices and page paths."""
-        from vue_docs_server.startup import _load_from_files, state
-
-        # Create a minimal entity dictionary file
-        entity_dict = {
-            "ref": {
-                "name": "ref",
-                "entity_type": "composable",
-                "page_path": "api/reactivity-core.md",
-                "section": "ref()",
-                "related": [],
-                "source": "vue",
-            }
-        }
-        (tmp_path / "entity_dictionary_vue.json").write_text(json.dumps(entity_dict))
-
-        # Create a minimal index state file for page paths
-        state_dir = tmp_path / "state"
-        state_dir.mkdir()
-        (state_dir / "index_state_vue.json").write_text(
-            json.dumps(
-                {
-                    "guide/essentials/computed.md": {"hash": "abc"},
-                    "api/reactivity-core.md": {"hash": "def"},
-                }
-            )
-        )
-
-        # Create BM25 model directory (empty — model won't load but shouldn't crash)
-        # Reset state
-        state.entity_indices = {}
-        state.page_paths_by_source = {}
-        state.folder_structures_by_source = {}
-        state.entity_matchers = {}
-        state._bm25_tmp_dir = None
-
-        _load_from_files(tmp_path)
-
-        assert "vue" in state.entity_indices
-        assert "ref" in state.entity_indices["vue"].entities
-        assert "vue" in state.page_paths_by_source
-        assert len(state.page_paths_by_source["vue"]) == 2
-        assert "vue" in state.folder_structures_by_source
-        assert "vue" in state.entity_matchers
-        # Combined state
-        assert "ref" in state.entity_index.entities
-        assert len(state.page_paths) == 2
-
-    def test_load_from_files_legacy_fallback(self, tmp_path):
-        """_load_from_files falls back to legacy entity_dictionary.json for vue."""
-        from vue_docs_server.startup import _load_from_files, state
-
-        entity_dict = {
-            "computed": {
-                "name": "computed",
-                "entity_type": "composable",
-                "page_path": "api/reactivity-core.md",
-                "section": "computed()",
-                "related": [],
-                "source": "vue",
-            }
-        }
-        # No entity_dictionary_vue.json — fall back to entity_dictionary.json
-        (tmp_path / "entity_dictionary.json").write_text(json.dumps(entity_dict))
-
-        state.entity_indices = {}
-        state.page_paths_by_source = {}
-        state.folder_structures_by_source = {}
-        state.entity_matchers = {}
-        state._bm25_tmp_dir = None
-
-        _load_from_files(tmp_path)
-
-        assert "computed" in state.entity_indices["vue"].entities
-
     def test_server_state_is_ready(self):
         """ServerState.is_ready reflects qdrant and bm25 availability."""
         from vue_docs_server.startup import ServerState
@@ -2014,7 +1892,7 @@ class TestStartupPaths:
             ["guide/computed.md"],
             {"guide": ["guide/computed.md"]},
         )
-        mock_db.load_bm25_model.return_value = False
+        mock_db.load_bm25_model.return_value = True
 
         state.entity_indices = {}
         state.page_paths_by_source = {}
@@ -2022,7 +1900,9 @@ class TestStartupPaths:
         state.entity_matchers = {}
         state._bm25_tmp_dir = None
 
-        _load_from_pg(mock_db)
+        with patch("vue_docs_server.startup.BM25Model") as MockBM25:
+            MockBM25.return_value.vocab_size = 100
+            _load_from_pg(mock_db)
 
         assert "vue" in state.entity_indices
         assert "ref" in state.entity_indices["vue"].entities

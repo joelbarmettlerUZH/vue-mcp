@@ -1,7 +1,9 @@
 """Search tool implementation — shared logic + per-source factories."""
 
+import logging
 from typing import Annotated
 
+import httpx
 from fastmcp import Context
 from fastmcp.exceptions import ToolError
 from fastmcp.telemetry import get_tracer
@@ -14,6 +16,8 @@ from vue_docs_core.data.sources import SourceDefinition
 from vue_docs_core.retrieval.expansion import expand_cross_references
 from vue_docs_core.retrieval.reconstruction import reconstruct_results
 from vue_docs_server.startup import state
+
+logger = logging.getLogger(__name__)
 
 TOTAL_STEPS = 6
 _tracer = get_tracer()
@@ -39,7 +43,7 @@ async def _do_search(
             span.set_attribute("query.length", len(query))
             embed_result = await jina.embed([query], task=TASK_RETRIEVAL_QUERY)
             if not embed_result.embeddings:
-                return "Error: Failed to generate query embedding."
+                raise ToolError("Failed to generate query embedding.")
             dense_vector = embed_result.embeddings[0]
 
             # Generate BM25 sparse vector
@@ -261,8 +265,8 @@ async def _rerank_hits(
         await ctx.info(f"Reranked {len(hits)} candidates (tokens: {result.total_tokens})")
         return reranked
 
-    except Exception:
-        await ctx.warning("Reranking failed, falling back to fusion scores")
+    except (httpx.HTTPStatusError, httpx.TimeoutException, RuntimeError):
+        logger.error("Reranking failed, falling back to fusion scores", exc_info=True)
         return hits
 
 

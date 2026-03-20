@@ -172,7 +172,6 @@ class PostgresClient:
             ).scalar_one_or_none()
 
         if row is None:
-            logger.warning("BM25 model not found in PG (source=%s)", source)
             return False
 
         target_dir.mkdir(parents=True, exist_ok=True)

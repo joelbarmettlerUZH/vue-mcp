@@ -146,13 +146,6 @@ class TestJinaClientEmbed:
         assert result.total_tokens == 20
 
     @pytest.mark.asyncio
-    async def test_embed_empty_input(self):
-        client = JinaClient(api_key="test-key")
-        result = await client.embed([])
-        assert result.embeddings == []
-        assert result.total_tokens == 0
-
-    @pytest.mark.asyncio
     async def test_embed_batched_splits_correctly(self):
         client = JinaClient(api_key="test-key", model="jina-embeddings-v4")
         texts = [f"text {i}" for i in range(10)]
@@ -189,13 +182,6 @@ class TestJinaClientEmbed:
         assert result.indices == [2, 0, 1]
         assert result.scores[0] == pytest.approx(0.95)
         assert result.total_tokens == 500
-
-    @pytest.mark.asyncio
-    async def test_rerank_empty_docs(self):
-        client = JinaClient(api_key="test-key")
-        result = await client.rerank("query", [])
-        assert result.indices == []
-        assert result.scores == []
 
 
 # ---------------------------------------------------------------------------

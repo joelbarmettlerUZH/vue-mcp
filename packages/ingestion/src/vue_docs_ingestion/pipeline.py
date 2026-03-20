@@ -11,7 +11,6 @@ file.  Summary regeneration cascades: a changed file triggers its page
 summary, which may cascade to its folder and top-level summaries.
 """
 
-import contextlib
 import logging
 from datetime import UTC, datetime
 from pathlib import Path
@@ -74,18 +73,18 @@ def _payload_to_chunk(payload: dict) -> Chunk:
     extraction, crossref graph, BM25) operate on the full corpus.
     """
     return Chunk(
-        chunk_id=payload.get("chunk_id", ""),
-        chunk_type=ChunkType(payload.get("chunk_type", "section")),
-        content=payload.get("content", ""),
+        chunk_id=payload["chunk_id"],
+        chunk_type=ChunkType(payload["chunk_type"]),
+        content=payload["content"],
         metadata=ChunkMetadata(
-            source=payload.get("source", "vue"),
-            file_path=payload.get("file_path", ""),
-            folder_path=payload.get("folder_path", ""),
-            page_title=payload.get("page_title", ""),
-            section_title=payload.get("section_title", ""),
+            source=payload["source"],
+            file_path=payload["file_path"],
+            folder_path=payload["folder_path"],
+            page_title=payload["page_title"],
+            section_title=payload["section_title"],
             subsection_title=payload.get("subsection_title", ""),
-            breadcrumb=payload.get("breadcrumb", ""),
-            global_sort_key=payload.get("global_sort_key", ""),
+            breadcrumb=payload["breadcrumb"],
+            global_sort_key=payload["global_sort_key"],
             content_type=payload.get("content_type", "text"),
             language_tag=payload.get("language_tag", ""),
             api_style=payload.get("api_style", "both"),
@@ -107,8 +106,8 @@ async def run_pipeline(
     *,
     full: bool = False,
     dry_run: bool = False,
-    db: PostgresClient | None = None,
-    source: SourceDefinition | None = None,
+    db: PostgresClient,
+    source: SourceDefinition,
 ):
     """Run the ingestion pipeline with incremental update support.
 
@@ -128,17 +127,10 @@ async def run_pipeline(
      13. Embed + upsert HyPE questions
      14. Persist state
     """
-    # Default to Vue source for backward compatibility
-    if source is None:
-        from vue_docs_core.data.sources import SOURCE_REGISTRY
-
-        source = SOURCE_REGISTRY["vue"]
-
     source_name = source.name
     framework_context = source.gemini_context
 
     pipeline_version = settings.pipeline_version
-    state_path = data_path / "state" / f"index_state_{source_name}.json"
     entity_dict_path = data_path / f"entity_dictionary_{source_name}.json"
     bm25_model_path = data_path / "bm25_model"
     if source.sidebar_config_path:
@@ -164,7 +156,7 @@ async def run_pipeline(
     current_files = {str(p.relative_to(docs_path)) for p in md_files}
     console.print(f"Found [green]{len(md_files)}[/green] markdown files")
 
-    state = IndexState(state_path=state_path if not db else None, db=db, source=source_name)
+    state = IndexState(db=db, source=source_name)
     previously_indexed = set(state.all_file_paths())
     deleted_files = previously_indexed - current_files
 
@@ -275,6 +267,11 @@ async def run_pipeline(
             + (f" ([red]{len(failed_files)} failed[/red])" if failed_files else "")
         )
 
+        if failed_files:
+            raise RuntimeError(
+                f"Failed to parse {len(failed_files)} file(s): {', '.join(failed_files)}"
+            )
+
         # Warn about unusually large or small chunks
         sizes = [len(c.content) for c in new_chunks]
         large = sum(1 for s in sizes if s > 8000)
@@ -293,17 +290,19 @@ async def run_pipeline(
     if to_process:
         for path in to_process:
             rel = str(path.relative_to(docs_path))
-            try:
-                page_contents[rel] = path.read_text(encoding="utf-8")
-            except Exception as exc:
-                logger.warning("Could not read %s: %s", rel, exc)
-        if db and page_contents:
+            page_contents[rel] = path.read_text(encoding="utf-8")
+        if page_contents:
             with console.status("Saving page contents to database..."):
                 db.save_pages(page_contents, source=source_name)
             console.print(f"Saved [green]{len(page_contents)}[/green] pages to database")
 
     # ---- Step 5b: Contextual enrichment (Gemini) for NEW chunks only --------
-    if settings.gemini_api_key and new_chunks:
+    if not settings.gemini_api_key:
+        raise RuntimeError(
+            "GEMINI_API_KEY is required for enrichment and HyPE generation. "
+            "Set it in .env or as an environment variable."
+        )
+    if new_chunks:
         console.print()
         console.print("[bold]Contextual enrichment (Gemini)...[/bold]")
 
@@ -348,11 +347,6 @@ async def run_pipeline(
             f"skipped: [dim]{hype_result.skipped}[/dim], "
             f"errors: [red]{hype_result.errors}[/red]"
         )
-    elif not settings.gemini_api_key:
-        console.print(
-            "\n[yellow]GEMINI_API_KEY not set — skipping contextual enrichment and HyPE[/yellow]"
-        )
-
     # ---- Step 6: Qdrant setup + load unchanged chunks + delete stale --------
     console.print()
     console.print("[bold]Setting up Qdrant...[/bold]")
@@ -429,7 +423,7 @@ async def run_pipeline(
     all_leaf_chunks = new_chunks + unchanged_chunks
 
     summary_chunks: list[Chunk] = []
-    if settings.gemini_api_key and all_leaf_chunks:
+    if all_leaf_chunks:
         console.print()
         console.print("[bold]Generating RAPTOR summaries (Gemini)...[/bold]")
 
@@ -439,8 +433,7 @@ async def run_pipeline(
         for fp in unchanged_files:
             full_path = docs_path / fp
             if full_path.exists() and fp not in all_page_contents:
-                with contextlib.suppress(Exception):
-                    all_page_contents[fp] = full_path.read_text(encoding="utf-8")
+                all_page_contents[fp] = full_path.read_text(encoding="utf-8")
 
         gemini_client_summary = GeminiClient(timeout=60.0)
         try:
@@ -494,15 +487,14 @@ async def run_pipeline(
     total_entity_refs = sum(len(v) for v in entity_index.entity_to_chunks.values())
     console.print(f"Entity extraction: [green]{total_entity_refs}[/green] total entity references")
 
-    # Save entities + synonyms to PG if available
-    if db:
-        entity_data = {name: entity.model_dump() for name, entity in api_dictionary.items()}
-        db.save_entities(entity_data, source=source_name)
-        console.print(f"Saved [green]{len(api_dictionary)}[/green] entities to database")
-        # Upload curated synonym table from source definition
-        synonym_table = source.synonyms
-        db.save_synonyms(synonym_table, source=source_name)
-        console.print(f"Saved [green]{len(synonym_table)}[/green] synonyms to database")
+    # Save entities + synonyms to PG
+    entity_data = {name: entity.model_dump() for name, entity in api_dictionary.items()}
+    db.save_entities(entity_data, source=source_name)
+    console.print(f"Saved [green]{len(api_dictionary)}[/green] entities to database")
+    # Upload curated synonym table from source definition
+    synonym_table = source.synonyms
+    db.save_synonyms(synonym_table, source=source_name)
+    console.print(f"Saved [green]{len(synonym_table)}[/green] synonyms to database")
 
     with console.status("Extracting cross-references..."):
         crossref_graph = build_crossref_graph(all_chunks)
@@ -528,8 +520,7 @@ async def run_pipeline(
         bm25_model = BM25Model()
         bm25_model.fit(all_texts)
         bm25_model.save(bm25_model_path)
-        if db:
-            db.save_bm25_model(bm25_model_path, source=source_name)
+        db.save_bm25_model(bm25_model_path, source=source_name)
     console.print(f"  BM25 vocabulary: [green]{bm25_model.vocab_size}[/green] tokens")
 
     # Sparse vectors only needed for chunks we're indexing
@@ -651,12 +642,9 @@ async def run_pipeline(
         )
     if deleted_files:
         console.print(f"  Deleted files cleaned up:    [red]{len(deleted_files)}[/red]")
-    try:
-        info = qdrant.collection_info()
-        console.print(f"  Total points in Qdrant: [green]{info['points_count']}[/green]")
-        console.print(f"  Collection status:      [green]{info['status']}[/green]")
-    except Exception:
-        pass
+    info = qdrant.collection_info()
+    console.print(f"  Total points in Qdrant: [green]{info['points_count']}[/green]")
+    console.print(f"  Collection status:      [green]{info['status']}[/green]")
     qdrant.close()
 
 

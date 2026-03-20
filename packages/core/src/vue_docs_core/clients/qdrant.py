@@ -128,9 +128,6 @@ class QdrantDocClient:
         payloads: list[dict],
     ):
         """Upsert chunks with their dense and sparse vectors."""
-        if not chunk_ids:
-            return
-
         points = []
         for i, chunk_id in enumerate(chunk_ids):
             point = PointStruct(
@@ -213,9 +210,6 @@ class QdrantDocClient:
 
     def get_by_chunk_ids(self, chunk_ids: list[str]) -> list[dict]:
         """Retrieve points by their chunk_id payload field."""
-        if not chunk_ids:
-            return []
-
         results = self.client.scroll(
             collection_name=self.collection,
             scroll_filter=Filter(
@@ -240,9 +234,6 @@ class QdrantDocClient:
         source: str | None = None,
     ) -> list[dict]:
         """Retrieve points matching any of the given file_path values."""
-        if not file_paths:
-            return []
-
         conditions = [
             FieldCondition(
                 key="file_path",
@@ -281,8 +272,6 @@ class QdrantDocClient:
 
     def delete_by_chunk_ids(self, chunk_ids: list[str]):
         """Delete points matching any of the given chunk_id values."""
-        if not chunk_ids:
-            return
         # Qdrant point IDs are derived from chunk_id hashes
         point_ids = [_chunk_id_to_point_id(cid) for cid in chunk_ids]
         self.client.delete(

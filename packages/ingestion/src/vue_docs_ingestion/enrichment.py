@@ -77,7 +77,7 @@ async def enrich_chunks_contextual(
     page_sem = asyncio.Semaphore(max_concurrent_pages)
 
     async def process_page(file_path: str, page_chunks: list[Chunk]) -> EnrichmentResult:
-        page_content = page_contents.get(file_path, "")
+        page_content = page_contents[file_path]
         if not page_content:
             logger.warning("No page content for %s, skipping enrichment", file_path)
             return EnrichmentResult(enriched=0, skipped=len(page_chunks), errors=0)
@@ -112,6 +112,13 @@ async def enrich_chunks_contextual(
     non_enrichable = sum(1 for c in chunks if c.chunk_type not in _ENRICHABLE_TYPES)
     skipped += non_enrichable
 
+    total_attempted = enriched + errors
+    if total_attempted > 0 and errors / total_attempted > 0.5:
+        raise RuntimeError(
+            f"Enrichment error rate too high: {errors}/{total_attempted} chunks failed "
+            f"({errors / total_attempted:.0%}). Aborting pipeline."
+        )
+
     return EnrichmentResult(enriched=enriched, skipped=skipped, errors=errors)
 
 
@@ -141,7 +148,7 @@ async def generate_hype_questions(
     page_sem = asyncio.Semaphore(max_concurrent_pages)
 
     async def process_page(file_path: str, page_chunks: list[Chunk]) -> EnrichmentResult:
-        page_content = page_contents.get(file_path, "")
+        page_content = page_contents[file_path]
         if not page_content:
             logger.warning("No page content for %s, skipping HyPE", file_path)
             return EnrichmentResult(enriched=0, skipped=len(page_chunks), errors=0)
@@ -174,6 +181,13 @@ async def generate_hype_questions(
 
     non_enrichable = sum(1 for c in chunks if c.chunk_type not in _ENRICHABLE_TYPES)
     skipped += non_enrichable
+
+    total_attempted = generated + errors
+    if total_attempted > 0 and errors / total_attempted > 0.5:
+        raise RuntimeError(
+            f"HyPE generation error rate too high: {errors}/{total_attempted} chunks failed "
+            f"({errors / total_attempted:.0%}). Aborting pipeline."
+        )
 
     return EnrichmentResult(enriched=generated, skipped=skipped, errors=errors)
 
@@ -209,7 +223,7 @@ async def _generate_hype_page_chunks(
                 chunk.hype_questions = questions
                 return "generated"
             except Exception as exc:
-                logger.warning(
+                logger.error(
                     "Failed to generate HyPE for chunk %s: %s",
                     chunk.chunk_id,
                     exc,
@@ -279,7 +293,7 @@ async def generate_page_summaries(
                     framework_context=framework_context,
                 )
             except Exception as exc:
-                logger.warning("Failed to generate page summary for %s: %s", file_path, exc)
+                logger.error("Failed to generate page summary for %s: %s", file_path, exc)
                 errors += 1
                 return None
 
@@ -363,7 +377,7 @@ async def generate_folder_summaries(
                     framework_context=framework_context,
                 )
             except Exception as exc:
-                logger.warning("Failed to generate folder summary for %s: %s", folder_path, exc)
+                logger.error("Failed to generate folder summary for %s: %s", folder_path, exc)
                 errors += 1
                 return None
 
@@ -450,7 +464,7 @@ async def generate_top_summaries(
                 framework_context=framework_context,
             )
         except Exception as exc:
-            logger.warning("Failed to generate top summary for %s: %s", top_path, exc)
+            logger.error("Failed to generate top summary for %s: %s", top_path, exc)
             errors += 1
             continue
 
@@ -523,7 +537,7 @@ async def _enrich_page_chunks(
                 chunk.contextual_prefix = prefix
                 return "enriched"
             except Exception as exc:
-                logger.warning(
+                logger.error(
                     "Failed to enrich chunk %s: %s",
                     chunk.chunk_id,
                     exc,

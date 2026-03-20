@@ -46,9 +46,6 @@ def upsert_chunks_batch(
     qdrant: QdrantDocClient,
 ):
     """Upsert a batch of chunks with their vectors into Qdrant."""
-    if not chunks:
-        return
-
     chunk_ids = [c.chunk_id for c in chunks]
     payloads = [_chunk_payload(c) for c in chunks]
 
@@ -100,9 +97,6 @@ def upsert_hype_batch(
     Each HyPE question is stored as a separate point with chunk_type
     "hype_question" and a parent_chunk_id reference back to the source chunk.
     """
-    if not hype_embeddings:
-        return
-
     chunk_ids = [f"{h.parent_chunk_id}#hype#{i}" for i, h in enumerate(hype_embeddings)]
     dense_vectors = [h.embedding for h in hype_embeddings]
     payloads = [_hype_payload(h) for h in hype_embeddings]

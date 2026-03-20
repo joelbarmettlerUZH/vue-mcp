@@ -23,9 +23,11 @@ def _configure_logging(verbose: bool):
 
 
 def _get_db():
-    """Create a PostgresClient if DATABASE_URL is configured."""
+    """Create a PostgresClient. Requires DATABASE_URL."""
     if not settings.database_url:
-        return None
+        raise RuntimeError(
+            "DATABASE_URL is required. Set it in .env or as an environment variable."
+        )
     from vue_docs_core.clients.postgres import PostgresClient
 
     db = PostgresClient(settings.database_url)
@@ -131,8 +133,7 @@ def run(
                 )
             )
         finally:
-            if db:
-                db.close()
+            db.close()
 
         console.print()
 
@@ -154,6 +155,8 @@ def watch(
 
     logger = logging.getLogger(__name__)
     first_run = True
+    consecutive_failures: dict[str, int] = {}
+    max_consecutive_failures = 5
 
     while True:
         for source_def in sources:
@@ -178,15 +181,25 @@ def watch(
                         source=source_def,
                     )
                 )
+                consecutive_failures[source_def.name] = 0
             except Exception:
                 logger.exception("Ingestion pipeline failed for %s", source_def.name)
-                console.print(
-                    f"[red]Pipeline failed for {source_def.display_name} — "
-                    "see logs above. Will retry next cycle.[/red]"
+                consecutive_failures[source_def.name] = (
+                    consecutive_failures.get(source_def.name, 0) + 1
                 )
+                count = consecutive_failures[source_def.name]
+                console.print(
+                    f"[red]Pipeline failed for {source_def.display_name} "
+                    f"({count}/{max_consecutive_failures} consecutive failures). "
+                    "Will retry next cycle.[/red]"
+                )
+                if count >= max_consecutive_failures:
+                    raise RuntimeError(
+                        f"Pipeline for {source_def.name} failed "
+                        f"{max_consecutive_failures} consecutive times"
+                    ) from None
             finally:
-                if db:
-                    db.close()
+                db.close()
 
         first_run = False
         console.print(f"\n[dim]Next ingestion in {interval_hours} hours...[/dim]\n")
@@ -194,14 +207,10 @@ def watch(
 
 
 @app.command()
-def status(
-    data_path: str = typer.Option(settings.sources_data_path, help="Path to shared data directory"),
-):
+def status():
     """Show current index status for all sources."""
     from vue_docs_core.clients.qdrant import QdrantDocClient
     from vue_docs_ingestion.state import IndexState
-
-    data = Path(data_path).resolve()
 
     db = _get_db()
     sources = get_enabled_sources(settings.enabled_sources)
@@ -209,14 +218,7 @@ def status(
     for source_def in sources:
         console.print(f"\n[bold]{source_def.display_name}[/bold]")
 
-        if db:
-            state = IndexState(db=db, source=source_def.name)
-        else:
-            state_path = data / "state" / f"index_state_{source_def.name}.json"
-            if not state_path.exists():
-                console.print("  [yellow]No index state found.[/yellow]")
-                continue
-            state = IndexState(state_path=state_path, source=source_def.name)
+        state = IndexState(db=db, source=source_def.name)
 
         all_files = state.all_file_paths()
 
@@ -257,18 +259,14 @@ def status(
     # ---- Qdrant live stats --------------------------------------------------
     console.print()
     console.print("[bold]Qdrant[/bold] —", settings.qdrant_url)
-    try:
-        qdrant = QdrantDocClient()
-        info = qdrant.collection_info()
-        console.print(f"  Collection:   [green]{qdrant.collection}[/green]")
-        console.print(f"  Points count: [green]{info['points_count']}[/green]")
-        console.print(f"  Status:       [green]{info['status']}[/green]")
-        qdrant.close()
-    except Exception as exc:
-        console.print(f"  [red]Could not connect: {exc}[/red]")
+    qdrant = QdrantDocClient()
+    info = qdrant.collection_info()
+    console.print(f"  Collection:   [green]{qdrant.collection}[/green]")
+    console.print(f"  Points count: [green]{info['points_count']}[/green]")
+    console.print(f"  Status:       [green]{info['status']}[/green]")
+    qdrant.close()
 
-    if db:
-        db.close()
+    db.close()
 
 
 if __name__ == "__main__":
