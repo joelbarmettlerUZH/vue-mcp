@@ -8,7 +8,7 @@ You can run your own instance of the Vue Docs MCP server. This gives you full co
 - **[uv](https://docs.astral.sh/uv/)** (Python package manager)
 - **API keys** for:
   - [Jina AI](https://jina.ai/) (embeddings and reranking)
-  - [Google Gemini](https://ai.google.dev/) (query transformation)
+  - [Google Gemini](https://ai.google.dev/) (contextual enrichment and summarization during ingestion)
   - [Qdrant](https://qdrant.tech/) (vector database, cloud or self-hosted)
 
 ## Quick Start

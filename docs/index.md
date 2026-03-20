@@ -19,7 +19,7 @@ hero:
 features:
   - icon: "\U0001F50D"
     title: Semantic Search
-    details: Hybrid retrieval combining dense embeddings, BM25 keyword search, and API entity boosting. Goes far beyond simple keyword matching.
+    details: Hybrid retrieval combining dense embeddings, BM25 keyword search, and cross-reference expansion. Goes far beyond simple keyword matching.
   - icon: "\U0001F4DA"
     title: Full Vue.js Coverage
     details: Every page of the official Vue.js documentation, indexed and searchable. Guide, API reference, tutorial, examples, and more.
