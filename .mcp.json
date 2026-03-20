@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "vue-cmp": {
+      "type": "http",
+      "url": "https://mcp.vue-mcp.org/mcp"
+    }
+  }
+}

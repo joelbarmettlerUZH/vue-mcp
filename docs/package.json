@@ -1,0 +1,14 @@
+{
+  "name": "vue-mcp-docs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview"
+  },
+  "devDependencies": {
+    "vitepress": "2.0.0-alpha.17",
+    "vitepress-plugin-llms": "^1.11.1"
+  }
+}

@@ -13,3 +13,9 @@ eval/results/
 certs/
 docker-compose.override.yml
 traefik-dynamic.yml
+*-clouds.yaml
+*-openrc.txt
+docs/.vitepress/dist/
+docs/.vitepress/cache/
+docs/node_modules/
+scripts/provision.sh
