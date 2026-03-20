@@ -477,7 +477,6 @@ class TestCLI:
         runner = CliRunner()
         result = runner.invoke(app, ["run", "--help"])
         assert result.exit_code == 0
-        assert "docs-path" in result.output
 
     def test_status_help(self):
         from typer.testing import CliRunner

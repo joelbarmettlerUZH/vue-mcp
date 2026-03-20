@@ -42,12 +42,14 @@ Use the [`vue://scopes`](/reference/resources#vue-scopes) resource to get the fu
 
 Each search runs a 6-step pipeline:
 
-1. **Entity extraction** — Detects API names in the query (e.g., `ref`, `computed`)
-2. **Intent classification** — Determines query type
-3. **Query transformation** — Rewrites and expands the query (Gemini Flash)
-4. **Hybrid search** — Dense embeddings + BM25 + entity boosting in Qdrant
-5. **Reranking** — Jina reranker reorders candidates
+1. **Embed & detect entities** — Query is embedded via Jina, BM25 sparse vector generated locally, API names detected deterministically
+2. **Hybrid search** — Dense + BM25 search in Qdrant, retrieving up to 50 candidates
+3. **Resolve HyPE hits** — Synthetic question chunks mapped back to parent content
+4. **Cross-reference expansion** — Related documentation sections pulled in from metadata links
+5. **Reranking** — Jina reranker reorders candidates for precision
 6. **Reconstruction** — Results reassembled in documentation reading order
+
+No LLM is used at query time — only embedding and reranking API calls.
 
 ### Response
 

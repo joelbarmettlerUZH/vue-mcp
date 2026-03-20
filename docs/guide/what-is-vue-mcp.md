@@ -30,8 +30,8 @@ All results include source references so you can verify them.
 The server combines multiple retrieval strategies for high-quality results:
 
 1. **Structure-aware chunking** — Vue docs are parsed respecting their heading hierarchy. Code examples stay paired with their explanations.
-2. **Hybrid search** — Every query runs dense semantic search (Jina embeddings), BM25 keyword search, and API entity boosting simultaneously.
-3. **Query intelligence** — Questions are decomposed, rewritten, and expanded using Gemini Flash before retrieval.
+2. **Hybrid search** — Every query runs dense semantic search (Jina embeddings) and BM25 keyword search simultaneously.
+3. **Smart entity detection** — API names are detected deterministically with typo tolerance, synonym lookup, and bigram matching.
 4. **Reranking** — Candidates are reranked by Jina for precision.
 5. **Readable reconstruction** — Results are reassembled in documentation reading order, not just ranked by score.
 

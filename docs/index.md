@@ -30,8 +30,8 @@ features:
     title: Structure-Aware Results
     details: Results respect the documentation's heading hierarchy and are returned in reading order — not just ranked by score.
   - icon: "\U0001F4A1"
-    title: Query Intelligence
-    details: Questions are decomposed, rewritten, and expanded before retrieval. Typos, abbreviations, and natural language all work.
+    title: Smart Entity Detection
+    details: API names are detected with typo tolerance, synonym lookup, and fuzzy matching. Ask about "watchefect" and it finds watchEffect.
   - icon: "\U0001F6E1\uFE0F"
     title: Free to Use
     details: The hosted server at mcp.vue-mcp.org is free. No API keys, no setup — just connect and ask.
