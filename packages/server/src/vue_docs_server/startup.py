@@ -18,6 +18,7 @@ from vue_docs_core.retrieval.entity_matcher import EntityMatcher
 logger = logging.getLogger(__name__)
 
 _RELOAD_CHECK_INTERVAL = 60  # seconds
+_RESOURCE_REFRESH_INTERVAL = 3600  # seconds (1 hour)
 
 
 class ServerState:
@@ -339,3 +340,20 @@ async def data_reload_loop():
             break
         except Exception:
             logger.exception("Error in data reload loop")
+
+
+async def resource_refresh_loop(register_fn):
+    """Background task: re-register concrete resources hourly to pick up new pages."""
+    if not settings.database_url:
+        return
+
+    while True:
+        try:
+            await asyncio.sleep(_RESOURCE_REFRESH_INTERVAL)
+            logger.info("Refreshing concrete MCP resources...")
+            await asyncio.to_thread(register_fn)
+            logger.info("Concrete resource refresh complete")
+        except asyncio.CancelledError:
+            break
+        except Exception:
+            logger.exception("Error in resource refresh loop")
