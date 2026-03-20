@@ -35,8 +35,9 @@ from vue_docs_server.startup import (
     load_entity_dictionary,
     load_synonym_table,
 )
-from vue_docs_server.tools.api_lookup import _clean_section_title, vue_api_lookup
-from vue_docs_server.tools.search import vue_docs_search
+from vue_docs_server.tools.api_lookup import _clean_section_title, _do_api_lookup
+from vue_docs_server.tools.related import _do_get_related
+from vue_docs_server.tools.search import _do_search
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -680,7 +681,7 @@ class TestApiLookup:
     def setup_method(self):
         from vue_docs_server.startup import state as server_state
 
-        server_state.entity_index = EntityIndex(
+        entity_index = EntityIndex(
             entities={
                 "ref": ApiEntity(
                     name="ref",
@@ -714,17 +715,21 @@ class TestApiLookup:
                 "defineProps": ["api/sfc-script-setup#defineprops"],
             },
         )
+        server_state.entity_index = entity_index
+        server_state.entity_indices = {"vue": entity_index}
         server_state.synonym_table = {"two-way binding": ["v-model"]}
-        server_state.entity_matcher = EntityMatcher(
-            entity_index=server_state.entity_index,
+        matcher = EntityMatcher(
+            entity_index=entity_index,
             synonym_table=server_state.synonym_table,
         )
+        server_state.entity_matcher = matcher
+        server_state.entity_matchers = {"vue": matcher}
         server_state.qdrant = MagicMock()
         server_state.bm25 = MagicMock()
 
     @pytest.mark.asyncio
     async def test_lookup_exact(self):
-        result = await vue_api_lookup("ref", ctx=_mock_ctx())
+        result = await _do_api_lookup("ref", source="vue", ctx=_mock_ctx())
         assert "# `ref`" in result
         assert "Composable" in result
         assert "vuejs.org/api/reactivity-core" in result
@@ -733,30 +738,30 @@ class TestApiLookup:
 
     @pytest.mark.asyncio
     async def test_lookup_case_insensitive(self):
-        result = await vue_api_lookup("REF", ctx=_mock_ctx())
+        result = await _do_api_lookup("REF", source="vue", ctx=_mock_ctx())
         assert "# `ref`" in result
 
     @pytest.mark.asyncio
     async def test_lookup_with_backticks(self):
-        result = await vue_api_lookup("`defineProps`", ctx=_mock_ctx())
+        result = await _do_api_lookup("`defineProps`", source="vue", ctx=_mock_ctx())
         assert "# `defineProps`" in result
         assert "Compiler Macro" in result
 
     @pytest.mark.asyncio
     async def test_lookup_hyphenated(self):
-        result = await vue_api_lookup("v-model", ctx=_mock_ctx())
+        result = await _do_api_lookup("v-model", source="vue", ctx=_mock_ctx())
         assert "# `v-model`" in result
         assert "Directive" in result
 
     @pytest.mark.asyncio
     async def test_lookup_fuzzy_fallback(self):
         """Fuzzy matching catches typos."""
-        result = await vue_api_lookup("onMounte", ctx=_mock_ctx())
+        result = await _do_api_lookup("onMounte", source="vue", ctx=_mock_ctx())
         assert "# `onMounted`" in result
 
     @pytest.mark.asyncio
     async def test_lookup_not_found(self):
-        result = await vue_api_lookup("nonExistentApi", ctx=_mock_ctx())
+        result = await _do_api_lookup("nonExistentApi", source="vue", ctx=_mock_ctx())
         assert "No API entity found" in result
         assert "vue_docs_search" in result
 
@@ -769,11 +774,11 @@ class TestApiLookup:
         server_state.qdrant = None
         server_state.bm25 = None
         with pytest.raises(ToolError, match="not initialized"):
-            await vue_api_lookup("ref", ctx=_mock_ctx())
+            await _do_api_lookup("ref", source="vue", ctx=_mock_ctx())
 
     @pytest.mark.asyncio
     async def test_lookup_section_cleaned(self):
-        result = await vue_api_lookup("defineProps", ctx=_mock_ctx())
+        result = await _do_api_lookup("defineProps", source="vue", ctx=_mock_ctx())
         assert "{#" not in result  # anchor markers removed
         assert "defineProps() & defineEmits()" in result
 
@@ -839,7 +844,9 @@ class TestSearchTool:
             mock_jina_instance.close = AsyncMock()
             MockJina.return_value = mock_jina_instance
 
-            result = await vue_docs_search("how does computed caching work", ctx=_mock_ctx())
+            result = await _do_search(
+                "how does computed caching work", source="vue", ctx=_mock_ctx()
+            )
 
         assert "Computed Properties" in result
         assert "cached" in result
@@ -856,7 +863,7 @@ class TestSearchTool:
         server_state.bm25 = None
 
         with pytest.raises(ToolError, match="not initialized"):
-            await vue_docs_search("test query", ctx=_mock_ctx())
+            await _do_search("test query", source="vue", ctx=_mock_ctx())
 
     @pytest.mark.asyncio
     async def test_search_scope_fallback(self):
@@ -895,7 +902,7 @@ class TestSearchTool:
             mock_jina_instance.close = AsyncMock()
             MockJina.return_value = mock_jina_instance
 
-            result = await vue_docs_search("test", scope="tutorial", ctx=_mock_ctx())
+            result = await _do_search("test", scope="tutorial", source="vue", ctx=_mock_ctx())
 
         assert "broader scope" in result
         assert mock_qdrant.hybrid_search.call_count == 2
@@ -913,7 +920,7 @@ class TestMCPRegistration:
 
         # FastMCP stores tools internally
         assert mcp is not None
-        assert mcp.name == "Vue Docs MCP Server"
+        assert mcp.name == "Vue Ecosystem MCP Server"
 
 
 # ---------------------------------------------------------------------------
@@ -975,20 +982,25 @@ def _setup_server_state():
         synonym_table=server_state.synonym_table,
     )
 
-    # Resource state
-    server_state.page_paths = [
+    # Resource state (per-source and combined)
+    page_paths = [
         "guide/essentials/computed.md",
         "guide/essentials/reactivity-fundamentals.md",
         "api/reactivity-core.md",
     ]
-    server_state.folder_structure = {
+    folder_structure = {
         "guide/essentials": [
             "guide/essentials/computed.md",
             "guide/essentials/reactivity-fundamentals.md",
         ],
         "api": ["api/reactivity-core.md"],
     }
-    server_state.vue_docs_path = None  # No disk access in integration tests
+    server_state.page_paths = page_paths
+    server_state.folder_structure = folder_structure
+    server_state.page_paths_by_source = {"vue": page_paths}
+    server_state.folder_structures_by_source = {"vue": folder_structure}
+    server_state.entity_indices = {"vue": entity_index}
+    server_state.entity_matchers = {"vue": server_state.entity_matcher}
 
     return server_state
 
@@ -1134,10 +1146,11 @@ class TestMCPIntegration:
                     {"query": "ref basics", "scope": "guide/essentials", "max_results": 5},
                 )
 
-        # Verify Qdrant was called with the scope filter
+        # Verify Qdrant was called with the scope filter and source
         call_kwargs = server_state.qdrant.hybrid_search.call_args
         assert call_kwargs.kwargs.get("scope_filter") == "guide/essentials"
         assert call_kwargs.kwargs.get("limit") == 50  # _RETRIEVAL_LIMIT
+        assert call_kwargs.kwargs.get("source") == "vue"
 
     @pytest.mark.asyncio
     async def test_call_search_tool_no_entity_filter(self):
@@ -1178,7 +1191,7 @@ class TestMCPIntegration:
             async with Client(mcp) as client:
                 info = client.initialize_result
                 assert info is not None
-                assert info.serverInfo.name == "Vue Docs MCP Server"
+                assert info.serverInfo.name == "Vue Ecosystem MCP Server"
 
 
 # ---------------------------------------------------------------------------
@@ -1379,42 +1392,39 @@ class TestGetRelated:
 
         entity_index = _make_entity_index()
         server_state.entity_index = entity_index
+        server_state.entity_indices = {"vue": entity_index}
         server_state.synonym_table = _make_synonym_table()
-        server_state.entity_matcher = EntityMatcher(
+        matcher = EntityMatcher(
             entity_index=entity_index,
             synonym_table=server_state.synonym_table,
         )
+        server_state.entity_matcher = matcher
+        server_state.entity_matchers = {"vue": matcher}
         server_state.qdrant = MagicMock()
         server_state.bm25 = MagicMock()
 
     @pytest.mark.asyncio
     async def test_related_by_api_name(self):
-        from vue_docs_server.tools.related import vue_get_related
-
-        result = await vue_get_related("ref", ctx=_mock_ctx())
+        result = await _do_get_related("ref", source="vue", ctx=_mock_ctx())
         assert "`ref`" in result
         assert "Composable" in result
 
     @pytest.mark.asyncio
     async def test_related_shows_related_apis(self):
-        from vue_docs_server.tools.related import vue_get_related
-
-        result = await vue_get_related("ref", ctx=_mock_ctx())
+        result = await _do_get_related("ref", source="vue", ctx=_mock_ctx())
         # ref has related: reactive
         assert "reactive" in result
 
     @pytest.mark.asyncio
     async def test_related_by_synonym(self):
-        from vue_docs_server.tools.related import vue_get_related
-
-        result = await vue_get_related("two-way binding", ctx=_mock_ctx())
+        result = await _do_get_related("two-way binding", source="vue", ctx=_mock_ctx())
         assert "v-model" in result
 
     @pytest.mark.asyncio
     async def test_related_no_match(self):
-        from vue_docs_server.tools.related import vue_get_related
-
-        result = await vue_get_related("completely unrelated topic xyz", ctx=_mock_ctx())
+        result = await _do_get_related(
+            "completely unrelated topic xyz", source="vue", ctx=_mock_ctx()
+        )
         assert "No matching" in result
 
     @pytest.mark.asyncio
@@ -1422,9 +1432,8 @@ class TestGetRelated:
         from fastmcp.exceptions import ToolError
 
         from vue_docs_server.startup import state as server_state
-        from vue_docs_server.tools.related import vue_get_related
 
         server_state.qdrant = None
         server_state.bm25 = None
         with pytest.raises(ToolError, match="not initialized"):
-            await vue_get_related("ref", ctx=_mock_ctx())
+            await _do_get_related("ref", source="vue", ctx=_mock_ctx())

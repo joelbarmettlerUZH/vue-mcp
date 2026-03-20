@@ -26,9 +26,15 @@ class FileState(BaseModel):
 class IndexState:
     """Persistent index state with PG or JSON file backend."""
 
-    def __init__(self, state_path: Path | None = None, db: PostgresClient | None = None):
+    def __init__(
+        self,
+        state_path: Path | None = None,
+        db: PostgresClient | None = None,
+        source: str = "vue",
+    ):
         self._db = db
         self._path = state_path
+        self._source = source
         self._data: dict[str, dict] = {}
 
         if db is None and state_path is not None and state_path.exists():
@@ -36,7 +42,7 @@ class IndexState:
 
     def get(self, file_path: str) -> FileState | None:
         if self._db:
-            row = self._db.load_index_state_entry(file_path)
+            row = self._db.load_index_state_entry(file_path, source=self._source)
             if row is None:
                 return None
             return FileState(
@@ -58,24 +64,25 @@ class IndexState:
                 pipeline_version=state.pipeline_version,
                 chunk_ids=state.chunk_ids,
                 last_indexed=state.last_indexed,
+                source=self._source,
             )
             return
         self._data[file_path] = state.model_dump()
 
     def remove(self, file_path: str):
         if self._db:
-            self._db.remove_index_state(file_path)
+            self._db.remove_index_state(file_path, source=self._source)
             return
         self._data.pop(file_path, None)
 
     def all_file_paths(self) -> list[str]:
         if self._db:
-            return self._db.all_index_file_paths()
+            return self._db.all_index_file_paths(source=self._source)
         return list(self._data.keys())
 
     def total_chunks(self) -> int:
         if self._db:
-            return self._db.total_index_chunks()
+            return self._db.total_index_chunks(source=self._source)
         return sum(len(v.get("chunk_ids", [])) for v in self._data.values())
 
     def save(self):

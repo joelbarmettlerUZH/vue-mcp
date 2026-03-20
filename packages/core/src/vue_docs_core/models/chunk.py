@@ -18,6 +18,9 @@ class ChunkType(str, Enum):
 
 
 class ChunkMetadata(BaseModel):
+    source: Annotated[
+        str, Field(description="Source framework identifier (e.g. 'vue', 'nuxt')")
+    ] = "vue"
     file_path: Annotated[str, Field(description="Relative path to the source markdown file")]
     folder_path: Annotated[str, Field(description="Folder containing the source file")]
     page_title: Annotated[str, Field(description="Title of the documentation page")]

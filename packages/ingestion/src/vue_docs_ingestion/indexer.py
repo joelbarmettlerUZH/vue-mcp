@@ -15,6 +15,7 @@ def _chunk_payload(chunk: Chunk) -> dict:
     """Build the Qdrant payload dict from a chunk."""
     m = chunk.metadata
     return {
+        "source": m.source,
         "file_path": m.file_path,
         "folder_path": m.folder_path,
         "page_title": m.page_title,
@@ -65,6 +66,7 @@ def _hype_payload(hype: HypeEmbedding) -> dict:
     parent = hype.parent_chunk
     m = parent.metadata
     return {
+        "source": m.source,
         "file_path": m.file_path,
         "folder_path": m.folder_path,
         "page_title": m.page_title,

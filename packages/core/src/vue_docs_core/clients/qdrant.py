@@ -35,7 +35,7 @@ class SearchHit(BaseModel):
 
 
 class QdrantDocClient:
-    """Client for Vue docs Qdrant collection."""
+    """Client for Vue ecosystem docs Qdrant collection."""
 
     def __init__(
         self,
@@ -163,19 +163,16 @@ class QdrantDocClient:
         sparse_vector: SparseVector,
         limit: int = 30,
         scope_filter: str | None = None,
+        source: str | None = None,
     ) -> list[SearchHit]:
         """Run hybrid dense+sparse search with RRF fusion."""
         # Build optional filter
-        query_filter = None
+        conditions = []
         if scope_filter and scope_filter != "all":
-            query_filter = Filter(
-                must=[
-                    FieldCondition(
-                        key="folder_path",
-                        match=MatchAny(any=[scope_filter]),
-                    )
-                ],
-            )
+            conditions.append(FieldCondition(key="folder_path", match=MatchAny(any=[scope_filter])))
+        if source:
+            conditions.append(FieldCondition(key="source", match=MatchAny(any=[source])))
+        query_filter = Filter(must=conditions) if conditions else None
 
         # Prefetch: dense and sparse separately, then fuse with RRF
         prefetch = [
@@ -240,6 +237,7 @@ class QdrantDocClient:
         file_paths: list[str],
         chunk_types: list[str] | None = None,
         limit: int = 100,
+        source: str | None = None,
     ) -> list[dict]:
         """Retrieve points matching any of the given file_path values."""
         if not file_paths:
@@ -258,6 +256,8 @@ class QdrantDocClient:
                     match=MatchAny(any=chunk_types),
                 )
             )
+        if source:
+            conditions.append(FieldCondition(key="source", match=MatchAny(any=[source])))
 
         results = self.client.scroll(
             collection_name=self.collection,
@@ -268,20 +268,16 @@ class QdrantDocClient:
 
         return [point.payload for point in results[0]]
 
-    def delete_by_file_path(self, file_path: str):
+    def delete_by_file_path(self, file_path: str, source: str | None = None):
         """Delete all points originating from a given file."""
+        conditions = [FieldCondition(key="file_path", match=MatchAny(any=[file_path]))]
+        if source:
+            conditions.append(FieldCondition(key="source", match=MatchAny(any=[source])))
         self.client.delete(
             collection_name=self.collection,
-            points_selector=Filter(
-                must=[
-                    FieldCondition(
-                        key="file_path",
-                        match=MatchAny(any=[file_path]),
-                    )
-                ]
-            ),
+            points_selector=Filter(must=conditions),
         )
-        logger.info("Deleted points for file_path='%s'", file_path)
+        logger.info("Deleted points for file_path='%s' (source=%s)", file_path, source or "all")
 
     def delete_by_chunk_ids(self, chunk_ids: list[str]):
         """Delete points matching any of the given chunk_id values."""

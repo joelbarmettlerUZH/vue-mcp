@@ -55,6 +55,7 @@ async def enrich_chunks_contextual(
     gemini_client: GeminiClient,
     *,
     max_concurrent_pages: int = 3,
+    framework_context: str = "Vue.js",
 ) -> EnrichmentResult:
     """Add contextual prefixes to all enrichable chunks.
 
@@ -89,6 +90,7 @@ async def enrich_chunks_contextual(
                 page_title=page_title,
                 page_chunks=page_chunks,
                 gemini_client=gemini_client,
+                framework_context=framework_context,
             )
 
     # Process all pages concurrently (bounded by semaphore)
@@ -120,6 +122,7 @@ async def generate_hype_questions(
     *,
     max_concurrent_pages: int = 3,
     num_questions: int = 5,
+    framework_context: str = "Vue.js",
 ) -> EnrichmentResult:
     """Generate hypothetical questions for all enrichable chunks.
 
@@ -152,6 +155,7 @@ async def generate_hype_questions(
                 page_chunks=page_chunks,
                 gemini_client=gemini_client,
                 num_questions=num_questions,
+                framework_context=framework_context,
             )
 
     tasks = [
@@ -180,6 +184,7 @@ async def _generate_hype_page_chunks(
     page_chunks: list[Chunk],
     gemini_client: GeminiClient,
     num_questions: int = 5,
+    framework_context: str = "Vue.js",
 ) -> EnrichmentResult:
     """Generate HyPE questions for all chunks from a single page."""
     generated = 0
@@ -199,6 +204,7 @@ async def _generate_hype_page_chunks(
                     chunk_content=chunk.content,
                     page_title=page_title,
                     num_questions=num_questions,
+                    framework_context=framework_context,
                 )
                 chunk.hype_questions = questions
                 return "generated"
@@ -232,6 +238,7 @@ async def generate_page_summaries(
     gemini_client: GeminiClient,
     *,
     max_concurrent: int = 5,
+    framework_context: str = "Vue.js",
 ) -> list[Chunk]:
     """Generate page-level summaries (RAPTOR Layer 1).
 
@@ -269,6 +276,7 @@ async def generate_page_summaries(
                     content,
                     level="page",
                     title=page_title,
+                    framework_context=framework_context,
                 )
             except Exception as exc:
                 logger.warning("Failed to generate page summary for %s: %s", file_path, exc)
@@ -316,6 +324,7 @@ async def generate_folder_summaries(
     gemini_client: GeminiClient,
     *,
     max_concurrent: int = 5,
+    framework_context: str = "Vue.js",
 ) -> list[Chunk]:
     """Generate folder-level summaries (RAPTOR Layer 2).
 
@@ -351,6 +360,7 @@ async def generate_folder_summaries(
                     combined,
                     level="folder",
                     title=folder_title,
+                    framework_context=framework_context,
                 )
             except Exception as exc:
                 logger.warning("Failed to generate folder summary for %s: %s", folder_path, exc)
@@ -402,6 +412,7 @@ async def generate_folder_summaries(
 async def generate_top_summaries(
     folder_summaries: list[Chunk],
     gemini_client: GeminiClient,
+    framework_context: str = "Vue.js",
 ) -> list[Chunk]:
     """Generate top-level summaries (RAPTOR Layer 3).
 
@@ -436,6 +447,7 @@ async def generate_top_summaries(
                 combined,
                 level="top",
                 title=top_title,
+                framework_context=framework_context,
             )
         except Exception as exc:
             logger.warning("Failed to generate top summary for %s: %s", top_path, exc)
@@ -480,6 +492,7 @@ async def _enrich_page_chunks(
     page_title: str,
     page_chunks: list[Chunk],
     gemini_client: GeminiClient,
+    framework_context: str = "Vue.js",
 ) -> EnrichmentResult:
     """Enrich all chunks from a single page.
 
@@ -505,6 +518,7 @@ async def _enrich_page_chunks(
                     page_content=page_content,
                     chunk_content=chunk.content,
                     page_title=page_title,
+                    framework_context=framework_context,
                 )
                 chunk.contextual_prefix = prefix
                 return "enriched"

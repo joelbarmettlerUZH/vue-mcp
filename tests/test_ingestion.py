@@ -384,7 +384,7 @@ class TestPipelineDryRun:
         from vue_docs_ingestion.scanner import hash_file
         from vue_docs_ingestion.state import FileState, IndexState
 
-        state = IndexState(data / "state" / "index_state.json")
+        state = IndexState(data / "state" / "index_state_vue.json")
         state.set(
             "test.md",
             FileState(
@@ -423,7 +423,7 @@ class TestPipelineDryRun:
         from vue_docs_ingestion.scanner import hash_file
         from vue_docs_ingestion.state import FileState, IndexState
 
-        state = IndexState(data / "state" / "index_state.json")
+        state = IndexState(data / "state" / "index_state_vue.json")
         state.set(
             "test.md",
             FileState(

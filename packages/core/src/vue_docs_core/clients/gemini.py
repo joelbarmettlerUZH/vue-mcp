@@ -217,6 +217,7 @@ class GeminiClient:
         chunk_content: str,
         page_title: str,
         num_questions: int = 5,
+        framework_context: str = "Vue.js",
     ) -> list[str]:
         """Generate hypothetical developer questions that a chunk would answer.
 
@@ -224,7 +225,7 @@ class GeminiClient:
         avoiding brittle newline-based parsing.
         """
         system_instruction = (
-            "You are a Vue.js documentation expert. Your task is to generate "
+            f"You are a {framework_context} documentation expert. Your task is to generate "
             f"{num_questions} hypothetical developer questions that the given "
             "documentation chunk would answer. The questions should:\n"
             "- Sound like real developer questions (natural, conversational)\n"
@@ -270,30 +271,31 @@ class GeminiClient:
         *,
         level: str = "page",
         title: str = "",
+        framework_context: str = "Vue.js",
     ) -> str:
         """Generate a summary for a page, folder, or top-level section."""
         level_instructions = {
             "page": (
-                "Generate a 3-5 sentence summary of this Vue.js documentation page. "
+                f"Generate a 3-5 sentence summary of this {framework_context} documentation page. "
                 "The summary should capture what the page teaches, which APIs it covers, "
                 "and what a developer would learn from reading it. Be specific about "
-                "Vue concepts and API names mentioned."
+                "concepts and API names mentioned."
             ),
             "folder": (
-                "Generate a 3-5 sentence summary of this Vue.js documentation section. "
+                f"Generate a 3-5 sentence summary of this {framework_context} documentation section. "
                 "You are given summaries of all pages within this section. "
                 "Capture the overall theme, the key concepts taught, and the progression "
                 "of topics. Mention the most important APIs and patterns covered."
             ),
             "top": (
-                "Generate a 2-3 sentence summary of this top-level Vue.js documentation area. "
-                "You are given summaries of all sub-sections. Capture the overall purpose "
-                "and scope of this documentation area at a high level."
+                f"Generate a 2-3 sentence summary of this top-level {framework_context} "
+                "documentation area. You are given summaries of all sub-sections. Capture "
+                "the overall purpose and scope of this documentation area at a high level."
             ),
         }
 
         system_instruction = (
-            "You are a Vue.js documentation expert. "
+            f"You are a {framework_context} documentation expert. "
             + level_instructions.get(level, level_instructions["page"])
             + "\n\nOutput ONLY the summary, nothing else."
         )
@@ -316,19 +318,20 @@ class GeminiClient:
         page_content: str,
         chunk_content: str,
         page_title: str,
+        framework_context: str = "Vue.js",
     ) -> str:
         """Generate a contextual prefix for a chunk.
 
         Uses the full page as context to produce 2-3 sentences that situate
-        the chunk within the page's topic, mentioning relevant Vue concepts
+        the chunk within the page's topic, mentioning relevant concepts
         and API names.
         """
         system_instruction = (
             "You are a technical documentation expert. Your task is to generate "
             "a brief contextual summary (2-3 sentences) that situates a specific "
             "documentation chunk within its parent page. The summary should:\n"
-            "- Mention the Vue.js concept or feature being discussed\n"
-            "- Reference any API names (e.g., ref, computed, v-model) relevant to the chunk\n"
+            f"- Mention the {framework_context} concept or feature being discussed\n"
+            "- Reference any API names relevant to the chunk\n"
             "- Explain how this chunk relates to the page's overall topic\n"
             "- Be concise and factual — no opinions or filler\n\n"
             "Output ONLY the contextual summary, nothing else."

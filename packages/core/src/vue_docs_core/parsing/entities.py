@@ -3,21 +3,19 @@
 Tier 1 — backtick-wrapped inline code and heading text.
 Tier 2 — import statements and directive usage in code blocks.
 
-The API dictionary is bootstrapped by scanning H2/H3 headings in the
-``/api/`` folder of the Vue documentation.
+The API dictionary is bootstrapped by source-specific extractors in
+``vue_docs_core.parsing.extractors``.
 """
 
 import json
 import re
 from pathlib import Path
 
-from markdown_it import MarkdownIt
-
 from vue_docs_core.models.chunk import Chunk, ChunkType
-from vue_docs_core.models.entity import ApiEntity, EntityIndex, EntityType
+from vue_docs_core.models.entity import ApiEntity, EntityIndex
 
 # ---------------------------------------------------------------------------
-# Heading → API name cleaning
+# Heading → API name cleaning (kept for backward compat)
 # ---------------------------------------------------------------------------
 
 _SLUG_RE = re.compile(r"\{#[\w-]+\}\s*$")
@@ -25,48 +23,6 @@ _SUP_RE = re.compile(r"<sup[^>]*/>|<sup[^>]*>.*?</sup>", re.DOTALL)
 _ANGLE_BRACKETS_RE = re.compile(r"^`?<(.+?)>`?$")
 _BACKTICK_RE = re.compile(r"^`(.+)`$")
 _TRAILING_PARENS_RE = re.compile(r"\(\)$")
-
-# File-stem → EntityType mapping
-_FILE_TYPE_MAP: dict[str, EntityType] = {
-    "application": EntityType.GLOBAL_API,
-    "general": EntityType.GLOBAL_API,
-    "composition-api-setup": EntityType.COMPOSABLE,
-    "composition-api-lifecycle": EntityType.LIFECYCLE_HOOK,
-    "composition-api-dependency-injection": EntityType.COMPOSABLE,
-    "composition-api-helpers": EntityType.COMPOSABLE,
-    "reactivity-core": EntityType.COMPOSABLE,
-    "reactivity-advanced": EntityType.COMPOSABLE,
-    "reactivity-utilities": EntityType.COMPOSABLE,
-    "options-state": EntityType.OPTION,
-    "options-rendering": EntityType.OPTION,
-    "options-lifecycle": EntityType.LIFECYCLE_HOOK,
-    "options-composition": EntityType.OPTION,
-    "options-misc": EntityType.OPTION,
-    "component-instance": EntityType.INSTANCE_PROPERTY,
-    "built-in-directives": EntityType.DIRECTIVE,
-    "built-in-components": EntityType.COMPONENT,
-    "built-in-special-elements": EntityType.COMPONENT,
-    "built-in-special-attributes": EntityType.DIRECTIVE,
-    "sfc-script-setup": EntityType.COMPILER_MACRO,
-    "render-function": EntityType.GLOBAL_API,
-    "custom-elements": EntityType.GLOBAL_API,
-    "ssr": EntityType.GLOBAL_API,
-    "utility-types": EntityType.OTHER,
-    "custom-renderer": EntityType.GLOBAL_API,
-    "compile-time-flags": EntityType.OTHER,
-    "sfc-css-features": EntityType.OTHER,
-    "sfc-spec": EntityType.OTHER,
-}
-
-
-# Files where only explicit API-looking headings should be extracted
-# (these files mix API definitions with explanatory prose sections)
-_STRICT_FILES = {
-    "sfc-script-setup",
-    "sfc-spec",
-    "sfc-css-features",
-    "compile-time-flags",
-}
 
 
 def _is_api_name_candidate(text: str, *, strict: bool = False) -> bool:
@@ -150,62 +106,24 @@ def _split_compound_heading(heading_text: str, *, strict: bool = False) -> list[
     return names
 
 
-def _entity_type_for_file(file_stem: str, name: str) -> EntityType:
-    """Determine the EntityType based on file and entity name."""
-    base_type = _FILE_TYPE_MAP.get(file_stem, EntityType.OTHER)
-
-    # Refine component-instance entries
-    if file_stem == "component-instance":
-        if (name.startswith("$") and "(" in name) or name.endswith("()"):
-            return EntityType.INSTANCE_METHOD
-        return EntityType.INSTANCE_PROPERTY
-
-    # Refine sfc-script-setup: useSlots/useAttrs are composables
-    if file_stem == "sfc-script-setup" and name.startswith("use"):
-        return EntityType.COMPOSABLE
-
-    return base_type
-
-
 # ---------------------------------------------------------------------------
-# Dictionary bootstrap
+# Legacy dictionary bootstrap (Vue-specific, kept for backward compat)
 # ---------------------------------------------------------------------------
+
+# Import these from the extractor for backward compatibility
+from vue_docs_core.parsing.extractors.vue import (  # noqa: E402
+    VueEntityExtractor as _VueExtractor,
+)
 
 
 def build_api_dictionary(api_dir: Path) -> dict[str, ApiEntity]:
-    """Scan H2 headings in all API markdown files to build the entity dictionary."""
-    md = MarkdownIt()
-    dictionary: dict[str, ApiEntity] = {}
+    """Scan H2 headings in all API markdown files to build the entity dictionary.
 
-    for md_file in sorted(api_dir.glob("*.md")):
-        if md_file.name in ("index.md", "api.data.ts"):
-            continue
-
-        file_stem = md_file.stem
-        raw = md_file.read_text(encoding="utf-8")
-        tokens = md.parse(raw)
-
-        i = 0
-        while i < len(tokens):
-            tok = tokens[i]
-            if tok.type == "heading_open" and tok.tag == "h2" and i + 1 < len(tokens):
-                inline = tokens[i + 1]
-                heading_text = inline.content if inline.type == "inline" else ""
-
-                strict = file_stem in _STRICT_FILES
-                names = _split_compound_heading(heading_text, strict=strict)
-                for name in names:
-                    entity_type = _entity_type_for_file(file_stem, name)
-                    re.sub(r"\{#([\w-]+)\}", r"\1", heading_text)
-                    dictionary[name] = ApiEntity(
-                        name=name,
-                        entity_type=entity_type,
-                        page_path=f"api/{md_file.name}",
-                        section=heading_text.strip(),
-                    )
-            i += 1
-
-    return dictionary
+    Backward-compatible wrapper — delegates to VueEntityExtractor.
+    """
+    extractor = _VueExtractor()
+    # The extractor expects docs_path (parent of api/), so pass api_dir's parent
+    return extractor.build_dictionary(api_dir.parent)
 
 
 def save_dictionary(dictionary: dict[str, ApiEntity], path: Path):
@@ -226,13 +144,16 @@ def load_dictionary(path: Path) -> dict[str, ApiEntity]:
 # ---------------------------------------------------------------------------
 
 _INLINE_CODE_RE = re.compile(r"`([^`]+)`")
-_IMPORT_VUE_RE = re.compile(r"import\s*\{([^}]+)\}\s*from\s*['\"]vue['\"]")
 _DIRECTIVE_USE_RE = re.compile(r"\bv-(\w[\w-]*)")
+
+# Default import pattern (Vue) — used when no import_patterns provided
+_IMPORT_VUE_RE = re.compile(r"import\s*\{([^}]+)\}\s*from\s*['\"]vue['\"]")
 
 
 def extract_entities_from_chunk(
     chunk: Chunk,
     dictionary: dict[str, ApiEntity],
+    import_patterns: list[re.Pattern] | None = None,
 ) -> list[str]:
     """Extract API entity references from a chunk's content.
 
@@ -258,13 +179,15 @@ def extract_entities_from_chunk(
 
     # --- Tier 2: code block patterns ---
     if chunk.chunk_type == ChunkType.CODE_BLOCK or "```" in content:
-        # Import statements
-        for m in _IMPORT_VUE_RE.finditer(content):
-            imports = [s.strip() for s in m.group(1).split(",")]
-            for imp in imports:
-                imp_clean = imp.split(" as ")[0].strip()
-                if imp_clean.lower() in dict_lower:
-                    found.add(dict_lower[imp_clean.lower()])
+        # Import statements — use provided patterns or default
+        patterns = import_patterns if import_patterns is not None else [_IMPORT_VUE_RE]
+        for pattern in patterns:
+            for m in pattern.finditer(content):
+                imports = [s.strip() for s in m.group(1).split(",")]
+                for imp in imports:
+                    imp_clean = imp.split(" as ")[0].strip()
+                    if imp_clean.lower() in dict_lower:
+                        found.add(dict_lower[imp_clean.lower()])
 
         # Directive usage (v-model, v-for, etc.)
         for m in _DIRECTIVE_USE_RE.finditer(content):
@@ -278,12 +201,13 @@ def extract_entities_from_chunk(
 def build_entity_index(
     chunks: list[Chunk],
     dictionary: dict[str, ApiEntity],
+    import_patterns: list[re.Pattern] | None = None,
 ) -> EntityIndex:
     """Build a full entity index mapping API names to chunk IDs."""
     entity_to_chunks: dict[str, list[str]] = {}
 
     for chunk in chunks:
-        entities = extract_entities_from_chunk(chunk, dictionary)
+        entities = extract_entities_from_chunk(chunk, dictionary, import_patterns)
         chunk.metadata.api_entities = entities
 
         for entity_name in entities:

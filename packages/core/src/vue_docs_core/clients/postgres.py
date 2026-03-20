@@ -36,6 +36,7 @@ class Base(DeclarativeBase):
 class PageRow(Base):
     __tablename__ = "pages"
 
+    source: Mapped[str] = mapped_column(String, primary_key=True)
     path: Mapped[str] = mapped_column(String, primary_key=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
@@ -46,6 +47,7 @@ class PageRow(Base):
 class EntityRow(Base):
     __tablename__ = "entities"
 
+    source: Mapped[str] = mapped_column(String, primary_key=True)
     name: Mapped[str] = mapped_column(String, primary_key=True)
     entity_type: Mapped[str] = mapped_column(String, nullable=False)
     page_path: Mapped[str] = mapped_column(String, nullable=False, default="")
@@ -56,6 +58,7 @@ class EntityRow(Base):
 class SynonymRow(Base):
     __tablename__ = "synonyms"
 
+    source: Mapped[str] = mapped_column(String, primary_key=True)
     alias: Mapped[str] = mapped_column(String, primary_key=True)
     entity_names: Mapped[list] = mapped_column(JSONB, nullable=False)
 
@@ -63,6 +66,7 @@ class SynonymRow(Base):
 class IndexStateRow(Base):
     __tablename__ = "index_state"
 
+    source: Mapped[str] = mapped_column(String, primary_key=True)
     file_path: Mapped[str] = mapped_column(String, primary_key=True)
     content_hash: Mapped[str] = mapped_column(String, nullable=False)
     pipeline_version: Mapped[str] = mapped_column(String, nullable=False)
@@ -75,6 +79,7 @@ class IndexStateRow(Base):
 class ModelRow(Base):
     __tablename__ = "models"
 
+    source: Mapped[str] = mapped_column(String, primary_key=True)
     name: Mapped[str] = mapped_column(String, primary_key=True)
     data: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
@@ -103,40 +108,48 @@ class PostgresClient:
 
     # ---- Read (used by server) -----------------------------------------------
 
-    def load_entities(self) -> EntityIndex:
-        """Load all API entities."""
+    def load_entities(self, source: str | None = None) -> EntityIndex:
+        """Load API entities, optionally filtered by source."""
         with self._session_factory() as session:
-            rows = session.execute(select(EntityRow)).scalars().all()
+            stmt = select(EntityRow)
+            if source is not None:
+                stmt = stmt.where(EntityRow.source == source)
+            rows = session.execute(stmt).scalars().all()
 
         entities: dict[str, ApiEntity] = {}
         for row in rows:
             entities[row.name] = ApiEntity(
                 name=row.name,
+                source=row.source,
                 entity_type=row.entity_type,
                 page_path=row.page_path,
                 section=row.section,
                 related=row.related,
             )
-        logger.info("Loaded %d entities from PG", len(entities))
+        logger.info("Loaded %d entities from PG (source=%s)", len(entities), source or "all")
         return EntityIndex(entities=entities)
 
-    def load_synonyms(self) -> dict[str, list[str]]:
-        """Load the synonym/alias table."""
+    def load_synonyms(self, source: str | None = None) -> dict[str, list[str]]:
+        """Load the synonym/alias table, optionally filtered by source."""
         with self._session_factory() as session:
-            rows = session.execute(select(SynonymRow)).scalars().all()
+            stmt = select(SynonymRow)
+            if source is not None:
+                stmt = stmt.where(SynonymRow.source == source)
+            rows = session.execute(stmt).scalars().all()
 
         table = {row.alias: row.entity_names for row in rows}
-        logger.info("Loaded %d synonym entries from PG", len(table))
+        logger.info("Loaded %d synonym entries from PG (source=%s)", len(table), source or "all")
         return table
 
-    def load_pages_listing(self) -> tuple[list[str], dict[str, list[str]]]:
+    def load_pages_listing(
+        self, source: str | None = None
+    ) -> tuple[list[str], dict[str, list[str]]]:
         """Load page paths and folder structure from index_state table."""
         with self._session_factory() as session:
-            rows = (
-                session.execute(select(IndexStateRow.file_path).order_by(IndexStateRow.file_path))
-                .scalars()
-                .all()
-            )
+            stmt = select(IndexStateRow.file_path).order_by(IndexStateRow.file_path)
+            if source is not None:
+                stmt = stmt.where(IndexStateRow.source == source)
+            rows = session.execute(stmt).scalars().all()
 
         folder_structure: dict[str, list[str]] = {}
         for fp in rows:
@@ -144,19 +157,22 @@ class PostgresClient:
             folder_structure.setdefault(folder, []).append(fp)
 
         logger.info(
-            "Loaded %d page paths across %d folders from PG", len(rows), len(folder_structure)
+            "Loaded %d page paths across %d folders from PG (source=%s)",
+            len(rows),
+            len(folder_structure),
+            source or "all",
         )
         return list(rows), folder_structure
 
-    def load_bm25_model(self, target_dir: Path) -> bool:
+    def load_bm25_model(self, target_dir: Path, source: str = "combined") -> bool:
         """Extract BM25 model blob into target directory. Returns True if found."""
         with self._session_factory() as session:
             row = session.execute(
-                select(ModelRow).where(ModelRow.name == "bm25")
+                select(ModelRow).where(ModelRow.source == source, ModelRow.name == "bm25")
             ).scalar_one_or_none()
 
         if row is None:
-            logger.warning("BM25 model not found in PG")
+            logger.warning("BM25 model not found in PG (source=%s)", source)
             return False
 
         target_dir.mkdir(parents=True, exist_ok=True)
@@ -166,14 +182,14 @@ class PostgresClient:
         ):
             tar.extractall(path=target_dir, filter="data")
 
-        logger.info("Extracted BM25 model from PG to %s", target_dir)
+        logger.info("Extracted BM25 model from PG to %s (source=%s)", target_dir, source)
         return True
 
-    def read_page(self, path: str) -> str | None:
-        """Read a single doc page by path."""
+    def read_page(self, path: str, source: str = "vue") -> str | None:
+        """Read a single doc page by path and source."""
         with self._session_factory() as session:
             row = session.execute(
-                select(PageRow.content).where(PageRow.path == path)
+                select(PageRow.content).where(PageRow.source == source, PageRow.path == path)
             ).scalar_one_or_none()
         return row
 
@@ -195,13 +211,16 @@ class PostgresClient:
 
     # ---- Write (used by ingestion) -------------------------------------------
 
-    def save_entities(self, entities: dict[str, dict]):
-        """Replace all API entities."""
+    def save_entities(self, entities: dict[str, dict], source: str = "vue"):
+        """Replace all API entities for a source."""
         with self._session_factory() as session:
-            session.execute(EntityRow.__table__.delete())
+            session.execute(
+                EntityRow.__table__.delete().where(EntityRow.__table__.c.source == source)
+            )
             for name, info in entities.items():
                 session.add(
                     EntityRow(
+                        source=source,
                         name=name,
                         entity_type=info.get("entity_type", "other"),
                         page_path=info.get("page_path", ""),
@@ -210,28 +229,30 @@ class PostgresClient:
                     )
                 )
             session.commit()
-        logger.info("Saved %d entities to PG", len(entities))
+        logger.info("Saved %d entities to PG (source=%s)", len(entities), source)
 
-    def save_synonyms(self, synonyms: dict[str, list[str]]):
-        """Replace all synonyms."""
+    def save_synonyms(self, synonyms: dict[str, list[str]], source: str = "vue"):
+        """Replace all synonyms for a source."""
         with self._session_factory() as session:
-            session.execute(SynonymRow.__table__.delete())
+            session.execute(
+                SynonymRow.__table__.delete().where(SynonymRow.__table__.c.source == source)
+            )
             for alias, names in synonyms.items():
-                session.add(SynonymRow(alias=alias, entity_names=names))
+                session.add(SynonymRow(source=source, alias=alias, entity_names=names))
             session.commit()
-        logger.info("Saved %d synonyms to PG", len(synonyms))
+        logger.info("Saved %d synonyms to PG (source=%s)", len(synonyms), source)
 
-    def save_pages(self, pages: dict[str, str]):
+    def save_pages(self, pages: dict[str, str], source: str = "vue"):
         """Upsert doc pages. pages = {path: markdown_content}."""
         with self._session_factory() as session:
             for path, content in pages.items():
-                existing = session.get(PageRow, path)
+                existing = session.get(PageRow, (source, path))
                 if existing:
                     existing.content = content
                 else:
-                    session.add(PageRow(path=path, content=content))
+                    session.add(PageRow(source=source, path=path, content=content))
             session.commit()
-        logger.info("Saved %d pages to PG", len(pages))
+        logger.info("Saved %d pages to PG (source=%s)", len(pages), source)
 
     def save_index_state(
         self,
@@ -240,10 +261,11 @@ class PostgresClient:
         pipeline_version: str,
         chunk_ids: list[str],
         last_indexed: str | datetime,
+        source: str = "vue",
     ):
         """Upsert a single file's index state."""
         with self._session_factory() as session:
-            existing = session.get(IndexStateRow, file_path)
+            existing = session.get(IndexStateRow, (source, file_path))
             if existing:
                 existing.content_hash = content_hash
                 existing.pipeline_version = pipeline_version
@@ -252,6 +274,7 @@ class PostgresClient:
             else:
                 session.add(
                     IndexStateRow(
+                        source=source,
                         file_path=file_path,
                         content_hash=content_hash,
                         pipeline_version=pipeline_version,
@@ -261,18 +284,18 @@ class PostgresClient:
                 )
             session.commit()
 
-    def remove_index_state(self, file_path: str):
+    def remove_index_state(self, file_path: str, source: str = "vue"):
         """Remove a file from the index state."""
         with self._session_factory() as session:
-            row = session.get(IndexStateRow, file_path)
+            row = session.get(IndexStateRow, (source, file_path))
             if row:
                 session.delete(row)
                 session.commit()
 
-    def load_index_state_entry(self, file_path: str) -> dict | None:
+    def load_index_state_entry(self, file_path: str, source: str = "vue") -> dict | None:
         """Load a single file's index state as a dict."""
         with self._session_factory() as session:
-            row = session.get(IndexStateRow, file_path)
+            row = session.get(IndexStateRow, (source, file_path))
             if row is None:
                 return None
             return {
@@ -282,22 +305,24 @@ class PostgresClient:
                 "last_indexed": row.last_indexed,
             }
 
-    def all_index_file_paths(self) -> list[str]:
-        """Get all indexed file paths."""
+    def all_index_file_paths(self, source: str | None = None) -> list[str]:
+        """Get all indexed file paths, optionally filtered by source."""
         with self._session_factory() as session:
-            return list(
-                session.execute(select(IndexStateRow.file_path).order_by(IndexStateRow.file_path))
-                .scalars()
-                .all()
-            )
+            stmt = select(IndexStateRow.file_path).order_by(IndexStateRow.file_path)
+            if source is not None:
+                stmt = stmt.where(IndexStateRow.source == source)
+            return list(session.execute(stmt).scalars().all())
 
-    def total_index_chunks(self) -> int:
+    def total_index_chunks(self, source: str | None = None) -> int:
         """Get total chunk count across all indexed files."""
         with self._session_factory() as session:
-            rows = session.execute(select(IndexStateRow.chunk_ids)).scalars().all()
+            stmt = select(IndexStateRow.chunk_ids)
+            if source is not None:
+                stmt = stmt.where(IndexStateRow.source == source)
+            rows = session.execute(stmt).scalars().all()
         return sum(len(ids) for ids in rows)
 
-    def save_bm25_model(self, model_dir: Path):
+    def save_bm25_model(self, model_dir: Path, source: str = "combined"):
         """Tar + gzip the BM25 model directory and store as blob."""
         buf = io.BytesIO()
         with gzip.open(buf, "wb") as gz, tarfile.open(fileobj=gz, mode="w:") as tar:
@@ -305,10 +330,10 @@ class PostgresClient:
         blob = buf.getvalue()
 
         with self._session_factory() as session:
-            existing = session.get(ModelRow, "bm25")
+            existing = session.get(ModelRow, (source, "bm25"))
             if existing:
                 existing.data = blob
             else:
-                session.add(ModelRow(name="bm25", data=blob))
+                session.add(ModelRow(source=source, name="bm25", data=blob))
             session.commit()
-        logger.info("Saved BM25 model to PG (%d bytes compressed)", len(blob))
+        logger.info("Saved BM25 model to PG (%d bytes compressed, source=%s)", len(blob), source)

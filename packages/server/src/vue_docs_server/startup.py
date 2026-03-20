@@ -11,6 +11,7 @@ from vue_docs_core.clients.bm25 import BM25Model
 from vue_docs_core.clients.postgres import PostgresClient
 from vue_docs_core.clients.qdrant import QdrantDocClient
 from vue_docs_core.config import settings
+from vue_docs_core.data.sources import SOURCE_REGISTRY, get_enabled_sources
 from vue_docs_core.models.entity import ApiEntity, EntityIndex
 from vue_docs_core.retrieval.entity_matcher import EntityMatcher
 
@@ -25,13 +26,21 @@ class ServerState:
     def __init__(self):
         self.qdrant: QdrantDocClient | None = None
         self.bm25: BM25Model | None = None
+
+        # Per-source data
+        self.entity_indices: dict[str, EntityIndex] = {}
+        self.entity_matchers: dict[str, EntityMatcher] = {}
+        self.page_paths_by_source: dict[str, list[str]] = {}
+        self.folder_structures_by_source: dict[str, dict[str, list[str]]] = {}
+
+        # Combined (merged from all sources, for ecosystem_search and backward compat)
         self.entity_index: EntityIndex = EntityIndex()
         self.synonym_table: dict[str, list[str]] = {}
         self.entity_matcher: EntityMatcher | None = None
         self.page_paths: list[str] = []
         self.folder_structure: dict[str, list[str]] = {}
+
         self.db: PostgresClient | None = None
-        self.vue_docs_path: Path | None = None
         # Temporary directory for BM25 model extracted from PG
         self._bm25_tmp_dir: tempfile.TemporaryDirectory | None = None
 
@@ -47,6 +56,15 @@ state = ServerState()
 _last_reload_ts: datetime = datetime.min.replace(tzinfo=UTC)
 
 
+def _source_names() -> list[str]:
+    """Return enabled source names."""
+    try:
+        sources = get_enabled_sources(settings.enabled_sources)
+        return [s.name for s in sources]
+    except ValueError:
+        return list(SOURCE_REGISTRY.keys())
+
+
 # ---------------------------------------------------------------------------
 # PostgreSQL data loading
 # ---------------------------------------------------------------------------
@@ -54,12 +72,40 @@ _last_reload_ts: datetime = datetime.min.replace(tzinfo=UTC)
 
 def _load_from_pg(db: PostgresClient):
     """Load all server data from PostgreSQL."""
-    state.entity_index = db.load_entities()
-    state.synonym_table = db.load_synonyms()
+    source_names = _source_names()
 
-    page_paths, folder_structure = db.load_pages_listing()
-    state.page_paths = page_paths
-    state.folder_structure = folder_structure
+    # Per-source entities and synonyms
+    merged_entities: dict[str, ApiEntity] = {}
+    merged_synonyms: dict[str, list[str]] = {}
+
+    for sn in source_names:
+        idx = db.load_entities(source=sn)
+        state.entity_indices[sn] = idx
+        merged_entities.update(idx.entities)
+
+        syns = db.load_synonyms(source=sn)
+        merged_synonyms.update(syns)
+
+        page_paths, folder_structure = db.load_pages_listing(source=sn)
+        state.page_paths_by_source[sn] = page_paths
+        state.folder_structures_by_source[sn] = folder_structure
+
+    # Also try loading without source filter to catch anything not source-specific
+    all_entities = db.load_entities()
+    merged_entities.update(all_entities.entities)
+
+    state.entity_index = EntityIndex(entities=merged_entities)
+    state.synonym_table = merged_synonyms
+
+    # Merged page paths and folder structures
+    all_page_paths: list[str] = []
+    all_folder_structure: dict[str, list[str]] = {}
+    for sn in source_names:
+        all_page_paths.extend(state.page_paths_by_source.get(sn, []))
+        for folder, pages in state.folder_structures_by_source.get(sn, {}).items():
+            all_folder_structure.setdefault(folder, []).extend(pages)
+    state.page_paths = sorted(set(all_page_paths))
+    state.folder_structure = all_folder_structure
 
     # BM25: extract from PG blob to temp directory
     if state._bm25_tmp_dir:
@@ -74,13 +120,23 @@ def _load_from_pg(db: PostgresClient):
         logger.warning("BM25 model not found in PG")
     state.bm25 = model
 
-    # Entity matcher
+    # Per-source entity matchers
+    for sn in source_names:
+        source_def = SOURCE_REGISTRY.get(sn)
+        source_syns = source_def.synonyms if source_def else {}
+        state.entity_matchers[sn] = EntityMatcher(
+            entity_index=state.entity_indices.get(sn, EntityIndex()),
+            synonym_table=source_syns,
+        )
+
+    # Combined entity matcher
     state.entity_matcher = EntityMatcher(
         entity_index=state.entity_index,
         synonym_table=state.synonym_table,
     )
     logger.info(
-        "Entity matcher initialized with %d entities and %d synonyms",
+        "Entity matchers initialized: %d per-source + combined (%d entities, %d synonyms)",
+        len(state.entity_matchers),
         len(state.entity_index.entities),
         len(state.synonym_table),
     )
@@ -91,9 +147,12 @@ def _load_from_pg(db: PostgresClient):
 # ---------------------------------------------------------------------------
 
 
-def load_entity_dictionary(data_path: Path) -> EntityIndex:
+def load_entity_dictionary(data_path: Path, source: str = "vue") -> EntityIndex:
     """Load the entity dictionary built by ingestion."""
-    dict_path = data_path / "entity_dictionary.json"
+    dict_path = data_path / f"entity_dictionary_{source}.json"
+    # Fall back to legacy path
+    if not dict_path.exists():
+        dict_path = data_path / "entity_dictionary.json"
     if not dict_path.exists():
         logger.warning("Entity dictionary not found at %s", dict_path)
         return EntityIndex()
@@ -109,9 +168,10 @@ def load_entity_dictionary(data_path: Path) -> EntityIndex:
             page_path=info.get("page_path", ""),
             section=info.get("section", ""),
             related=info.get("related", []),
+            source=source,
         )
 
-    logger.info("Loaded %d API entities from files", len(entities))
+    logger.info("Loaded %d API entities from files for source '%s'", len(entities), source)
     return EntityIndex(entities=entities)
 
 
@@ -132,22 +192,48 @@ def load_synonym_table(data_path: Path) -> dict[str, list[str]]:
 
 def _load_from_files(data_path: Path):
     """Load server data from JSON files (local dev fallback)."""
-    state.entity_index = load_entity_dictionary(data_path)
-    state.synonym_table = load_synonym_table(data_path)
+    source_names = _source_names()
 
-    # Index state → page paths
-    state_path = data_path / "state" / "index_state.json"
-    if state_path.exists():
-        with open(state_path) as f:
-            raw_state = json.load(f)
-        state.page_paths = sorted(raw_state.keys())
-        state.folder_structure = {}
-        for fp in state.page_paths:
-            folder = fp.rsplit("/", 1)[0] if "/" in fp else ""
-            state.folder_structure.setdefault(folder, []).append(fp)
-        logger.info("Loaded %d page paths from files", len(state.page_paths))
-    else:
-        logger.warning("Index state not found at %s", state_path)
+    merged_entities: dict[str, ApiEntity] = {}
+    merged_synonyms: dict[str, list[str]] = {}
+
+    for sn in source_names:
+        idx = load_entity_dictionary(data_path, source=sn)
+        state.entity_indices[sn] = idx
+        merged_entities.update(idx.entities)
+
+        source_def = SOURCE_REGISTRY.get(sn)
+        if source_def:
+            merged_synonyms.update(source_def.synonyms)
+
+        # Per-source page paths from index state
+        state_path = data_path / "state" / f"index_state_{sn}.json"
+        if not state_path.exists() and sn == "vue":
+            state_path = data_path / "state" / "index_state.json"
+        if state_path.exists():
+            with open(state_path) as f:
+                raw_state = json.load(f)
+            page_paths = sorted(raw_state.keys())
+            folder_struct: dict[str, list[str]] = {}
+            for fp in page_paths:
+                folder = fp.rsplit("/", 1)[0] if "/" in fp else ""
+                folder_struct.setdefault(folder, []).append(fp)
+            state.page_paths_by_source[sn] = page_paths
+            state.folder_structures_by_source[sn] = folder_struct
+            logger.info("Loaded %d page paths from files for source '%s'", len(page_paths), sn)
+
+    state.entity_index = EntityIndex(entities=merged_entities)
+    state.synonym_table = merged_synonyms
+
+    # Merged page paths and folder structures
+    all_page_paths: list[str] = []
+    all_folder_structure: dict[str, list[str]] = {}
+    for sn in source_names:
+        all_page_paths.extend(state.page_paths_by_source.get(sn, []))
+        for folder, pages in state.folder_structures_by_source.get(sn, {}).items():
+            all_folder_structure.setdefault(folder, []).extend(pages)
+    state.page_paths = sorted(set(all_page_paths))
+    state.folder_structure = all_folder_structure
 
     # BM25 model
     model = BM25Model()
@@ -159,7 +245,16 @@ def _load_from_files(data_path: Path):
         logger.warning("BM25 model not found at %s", model_path)
     state.bm25 = model
 
-    # Entity matcher
+    # Per-source entity matchers
+    for sn in source_names:
+        source_def = SOURCE_REGISTRY.get(sn)
+        source_syns = source_def.synonyms if source_def else {}
+        state.entity_matchers[sn] = EntityMatcher(
+            entity_index=state.entity_indices.get(sn, EntityIndex()),
+            synonym_table=source_syns,
+        )
+
+    # Combined entity matcher
     state.entity_matcher = EntityMatcher(
         entity_index=state.entity_index,
         synonym_table=state.synonym_table,
@@ -184,7 +279,6 @@ def startup():
         data_path = Path(settings.data_path)
         logger.info("Starting server, loading data from files at %s", data_path)
         _load_from_files(data_path)
-        state.vue_docs_path = Path(settings.vue_docs_path).resolve()
 
     # Qdrant
     state.qdrant = QdrantDocClient()
