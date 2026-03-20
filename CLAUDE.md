@@ -77,8 +77,8 @@ Internet → Traefik (:80/:443, TLS via Let's Encrypt) → MCP Server (:8000, st
 ### Docker Images
 
 One multi-target `Dockerfile` produces two images:
-- **server** — `vue-docs-core` + `fastmcp` + `psycopg` + `sqlalchemy`. No git.
-- **ingestion** — `vue-docs-core` + `typer` + `rich` + `psycopg` + `sqlalchemy` + `git`.
+- **server**: `vue-docs-core` + `fastmcp` + `psycopg` + `sqlalchemy`. No git.
+- **ingestion**: `vue-docs-core` + `typer` + `rich` + `psycopg` + `sqlalchemy` + `git`.
 
 Build locally: `make docker-build`
 
@@ -108,8 +108,8 @@ docker compose up -d
 ### Server Transport
 
 The server supports two transport modes via `SERVER_TRANSPORT` env var:
-- `stdio` (default) — for local MCP client connections
-- `streamable-http` — for production, serves on `SERVER_HOST:SERVER_PORT/mcp`
+- `stdio` (default): for local MCP client connections
+- `streamable-http`: for production, serves on `SERVER_HOST:SERVER_PORT/mcp`
 
 ### Hot Reload
 
@@ -125,16 +125,16 @@ scripts/restore.sh <dump.sql.gz> [snapshot]  # Restore from backup
 
 ### CI/CD
 
-- `.github/workflows/ci.yml` — Lint + test on PRs
-- `.github/workflows/build-and-push.yml` — Build both images, push to GHCR on push to main
-- `scripts/deploy.sh` — SSH to VM, pull images, restart stack
+- `.github/workflows/ci.yml`: Lint + test on PRs
+- `.github/workflows/build-and-push.yml`: Build both images, push to GHCR on push to main
+- `scripts/deploy.sh`: SSH to VM, pull images, restart stack
 
 ## Design Principles
 
 - **Structure-aware chunking.** Respect the documentation's heading hierarchy (page → section → subsection → block).
   Never use fixed-size token chunking.
 - **Readable reconstruction.** Reassemble results into coherent mini-documents using metadata and sort keys, returned in
-  documentation reading order — not ranked by score alone.
+  documentation reading order, preserving the natural flow of the docs.
 - **Deterministic where possible.** Entity extraction, cross-references, and markdown parsing use deterministic methods.
   Reserve LLM calls for enrichment, summarization, and query transformation.
 - **Hybrid retrieval.** Every search combines dense semantic embeddings, BM25 sparse search, and entity metadata
@@ -174,7 +174,7 @@ scripts/restore.sh <dump.sql.gz> [snapshot]  # Restore from backup
    model, Qdrant client, PG client). Initialized at server startup, accessed by tools. Supports hot reload from PG.
 
 9. **SQLAlchemy ORM for PostgreSQL.** ORM models in `vue_docs_core.clients.postgres`. Sync `psycopg` driver. Tables
-   created via `Base.metadata.create_all()` — no separate migration tool or SQL scripts.
+   created via `Base.metadata.create_all()`. No separate migration tool or SQL scripts.
 
 10. **Curated data as package code.** Static lookup tables (e.g., synonym table) live as Python dicts in
     `vue_docs_core.data`, not as external files.
@@ -227,7 +227,7 @@ Ruff handles both linting and formatting. Config lives in root `pyproject.toml`:
 - Quote style: double
 - isort knows: `vue_docs_core`, `vue_docs_ingestion`, `vue_docs_server`
 
-Don't manually enforce style rules — run `make lint-fix && make format` instead.
+Don't manually enforce style rules. Run `make lint-fix && make format` instead.
 
 ## Data Flow
 

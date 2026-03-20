@@ -59,11 +59,11 @@ A structured comparison including:
 
 ### Example Comparisons
 
-- `"ref, reactive"` — When to use which reactivity primitive
-- `"computed, watch"` — Derived state vs side effects
-- `"v-if, v-show"` — Conditional rendering strategies
-- `"props, provide/inject"` — Data passing patterns
-- `"Options API, Composition API"` — API style comparison
+- `"ref, reactive"`: When to use which reactivity primitive
+- `"computed, watch"`: Derived state vs side effects
+- `"v-if, v-show"`: Conditional rendering strategies
+- `"props, provide/inject"`: Data passing patterns
+- `"Options API, Composition API"`: API style comparison
 
 ---
 
@@ -80,10 +80,10 @@ Step-by-step migration guide between Vue patterns.
 
 ### Output
 
-1. **Why migrate** — Benefits of the target pattern
-2. **Concept mapping** — Table mapping old concepts to new equivalents
-3. **Step-by-step migration** — Before/after code examples
-4. **Common gotchas** — Pitfalls to watch for during migration
+1. **Why migrate.** Benefits of the target pattern.
+2. **Concept mapping.** Table mapping old concepts to new equivalents.
+3. **Step-by-step migration.** Before/after code examples.
+4. **Common gotchas.** Pitfalls to watch for during migration.
 
 ### Example Migrations
 

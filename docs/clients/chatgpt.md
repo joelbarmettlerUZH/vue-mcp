@@ -30,7 +30,7 @@ Start a new chat > click the **+** icon > hover over **More** > select the **Vue
 
 ## Desktop App
 
-The ChatGPT desktop app shares apps configured on the web. Complete the setup on [chatgpt.com](https://chatgpt.com) first — the app will automatically be available in the desktop client.
+The ChatGPT desktop app shares apps configured on the web. Complete the setup on [chatgpt.com](https://chatgpt.com) first, then the app will automatically be available in the desktop client.
 
 ## Usage
 

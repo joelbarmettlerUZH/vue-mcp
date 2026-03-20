@@ -4,15 +4,15 @@ Vue Docs MCP exposes three tools that your AI assistant can call to search and r
 
 ## `vue_docs_search`
 
-Semantic search across the full Vue.js documentation. This is the primary tool — your AI assistant will use it most often.
+Semantic search across the full Vue.js documentation. This is the primary tool, and the one your AI assistant will use most often.
 
 ### Parameters
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `query` | `string` | Yes | — | Developer question or topic (max 2000 chars) |
+| `query` | `string` | Yes | | Developer question or topic (max 2000 chars) |
 | `scope` | `string` | No | `"all"` | Documentation section to search |
-| `max_results` | `integer` | No | `3` | Number of sections to return (1–20) |
+| `max_results` | `integer` | No | `3` | Number of sections to return (1-20) |
 
 ### Scope Values
 
@@ -42,18 +42,18 @@ Use the [`vue://scopes`](/reference/resources#vue-scopes) resource to get the fu
 
 Each search runs a 6-step pipeline:
 
-1. **Embed & detect entities** — Query is embedded via Jina, BM25 sparse vector generated locally, API names detected deterministically
-2. **Hybrid search** — Dense + BM25 search in Qdrant, retrieving up to 50 candidates
-3. **Resolve HyPE hits** — Synthetic question chunks mapped back to parent content
-4. **Cross-reference expansion** — Related documentation sections pulled in from metadata links
-5. **Reranking** — Jina reranker reorders candidates for precision
-6. **Reconstruction** — Results reassembled in documentation reading order
+1. **Embed & detect entities.** Query is embedded via Jina, BM25 sparse vector generated locally, API names detected deterministically.
+2. **Hybrid search.** Dense + BM25 search in Qdrant, retrieving up to 50 candidates.
+3. **Resolve HyPE hits.** Synthetic question chunks mapped back to parent content.
+4. **Cross-reference expansion.** Related documentation sections pulled in from metadata links.
+5. **Reranking.** Jina reranker reorders candidates for precision.
+6. **Reconstruction.** Results reassembled in documentation reading order.
 
-No LLM is used at query time — only embedding and reranking API calls.
+No LLM is used at query time. Only embedding and reranking API calls are made.
 
 ### Response
 
-Returns reconstructed documentation fragments as readable markdown. Results are ordered by their position in the documentation, not by score — so they read naturally.
+Returns reconstructed documentation fragments as readable markdown. Results are ordered by their position in the documentation (by reading order, not by score), so they read naturally.
 
 ---
 
@@ -94,11 +94,11 @@ Discover related APIs, concepts, and documentation pages for a given topic.
 
 ### Example Topics
 
-- `"ref"` — Related reactivity APIs
-- `"reactivity"` — All reactivity-related APIs
-- `"component lifecycle"` — Lifecycle hooks and related APIs
-- `"Transition"` — Transition-related components and directives
-- `"two-way binding"` — v-model and related patterns
+- `"ref"`: Related reactivity APIs
+- `"reactivity"`: All reactivity-related APIs
+- `"component lifecycle"`: Lifecycle hooks and related APIs
+- `"Transition"`: Transition-related components and directives
+- `"two-way binding"`: v-model and related patterns
 
 ### Response
 

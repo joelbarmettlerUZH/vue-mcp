@@ -5,11 +5,11 @@ You can run your own instance of the Vue Docs MCP server. This gives you full co
 ## Prerequisites
 
 - **Python 3.13+**
-- **[uv](https://docs.astral.sh/uv/)** — Python package manager
+- **[uv](https://docs.astral.sh/uv/)** (Python package manager)
 - **API keys** for:
-  - [Jina AI](https://jina.ai/) — embeddings and reranking
-  - [Google Gemini](https://ai.google.dev/) — query transformation
-  - [Qdrant](https://qdrant.tech/) — vector database (cloud or self-hosted)
+  - [Jina AI](https://jina.ai/) (embeddings and reranking)
+  - [Google Gemini](https://ai.google.dev/) (query transformation)
+  - [Qdrant](https://qdrant.tech/) (vector database, cloud or self-hosted)
 
 ## Quick Start
 
@@ -43,7 +43,7 @@ VUE_DOCS_PATH=./data/vue-docs/src
 Parse the Vue documentation, generate embeddings, and index into Qdrant:
 
 ```bash
-make ingest       # Incremental — skips unchanged files
+make ingest       # Incremental (skips unchanged files)
 make ingest-full  # Full re-index from scratch
 ```
 
@@ -145,13 +145,13 @@ Backups are rotated on a 7-day schedule.
 
 | Variable | Default | Description |
 |---|---|---|
-| `JINA_API_KEY` | — | Jina AI API key (required) |
-| `GEMINI_API_KEY` | — | Google Gemini API key (required) |
+| `JINA_API_KEY` | *required* | Jina AI API key |
+| `GEMINI_API_KEY` | *required* | Google Gemini API key |
 | `QDRANT_URL` | `http://localhost:6333` | Qdrant server URL |
-| `QDRANT_API_KEY` | — | Qdrant authentication key |
+| `QDRANT_API_KEY` | *none* | Qdrant authentication key |
 | `QDRANT_COLLECTION` | `vue_docs` | Qdrant collection name |
 | `VUE_DOCS_PATH` | `./data/vue-docs/src` | Path to Vue docs source |
-| `DATABASE_URL` | — | PostgreSQL connection string |
+| `DATABASE_URL` | *none* | PostgreSQL connection string |
 | `SERVER_TRANSPORT` | `stdio` | `stdio` or `streamable-http` |
 | `SERVER_HOST` | `0.0.0.0` | Server bind address |
 | `SERVER_PORT` | `8000` | Server port |

@@ -17,9 +17,9 @@ Returns a hierarchical markdown listing of all documentation pages and sections.
 `vue://topics/{section}` returns the table of contents for a specific section.
 
 **Examples:**
-- `vue://topics/guide` — Guide table of contents
-- `vue://topics/guide/essentials` — Essentials section only
-- `vue://topics/api` — API reference table of contents
+- `vue://topics/guide`: Guide table of contents
+- `vue://topics/guide/essentials`: Essentials section only
+- `vue://topics/api`: API reference table of contents
 
 If the section is not found, the response lists all available top-level sections.
 

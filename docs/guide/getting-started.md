@@ -61,7 +61,7 @@ Look for tool calls like `vue_docs_search` or `vue_api_lookup` in the response.
 
 ## Next Steps
 
-- [MCP Clients](/clients/) — Setup guides for all supported clients
-- [Tools Reference](/reference/tools) — Full documentation of search tools
-- [How It Works](/reference/how-it-works) — Technical details of the search pipeline
-- [Self-Hosting](/guide/self-hosting) — Run your own instance
+- [MCP Clients](/clients/): Setup guides for all supported clients
+- [Tools Reference](/reference/tools): Full documentation of search tools
+- [How It Works](/reference/how-it-works): Technical details of the search pipeline
+- [Self-Hosting](/guide/self-hosting): Run your own instance

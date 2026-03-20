@@ -1,6 +1,6 @@
 # MCP Clients
 
-Vue Docs MCP works with any client that supports the [Model Context Protocol](https://modelcontextprotocol.io/). The hosted server is free — no API key required.
+Vue Docs MCP works with any client that supports the [Model Context Protocol](https://modelcontextprotocol.io/). The hosted server is free and requires no API key.
 
 ::: tip Quickest Setup
 Most clients just need this URL:

@@ -17,7 +17,7 @@ Add to your Windsurf MCP configuration file. See [Windsurf MCP docs](https://doc
 ```
 
 ::: warning Note
-Windsurf uses `serverUrl` instead of `url` — this is different from most other clients.
+Windsurf uses `serverUrl` instead of `url`. This differs from most other clients.
 :::
 
 ## Verify
