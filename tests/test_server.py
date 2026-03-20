@@ -7,6 +7,8 @@ protocol integration tests using fastmcp.Client for in-process testing.
 No real API calls — Jina, Qdrant, and BM25 are mocked throughout.
 """
 
+import asyncio
+import contextlib
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -1486,3 +1488,647 @@ class TestGetRelated:
         server_state.bm25 = None
         with pytest.raises(ToolError, match="not initialized"):
             await _do_get_related("ref", source="vue", ctx=_mock_ctx())
+
+
+# ---------------------------------------------------------------------------
+# Tests: Concrete resource enumeration (Gap 1)
+# ---------------------------------------------------------------------------
+
+
+class TestConcreteResources:
+    """Verify that _register_concrete_resources creates concrete resources from state."""
+
+    @pytest.mark.asyncio
+    async def test_concrete_page_resources_listed(self):
+        """Concrete page resources appear in list_resources."""
+        from vue_docs_server.main import mcp
+
+        _setup_server_state()
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                resources = await client.list_resources()
+
+        uris = [str(r.uri) for r in resources]
+        # Pages from _setup_server_state have .md stripped
+        assert "vue://pages/guide/essentials/computed" in uris
+        assert "vue://pages/api/reactivity-core" in uris
+
+    @pytest.mark.asyncio
+    async def test_concrete_entity_resources_listed(self):
+        """Concrete API entity resources appear in list_resources."""
+        from vue_docs_server.main import mcp
+
+        _setup_server_state()
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                resources = await client.list_resources()
+
+        uris = [str(r.uri) for r in resources]
+        assert "vue://api/entities/ref" in uris
+        assert "vue://api/entities/computed" in uris
+
+    @pytest.mark.asyncio
+    async def test_concrete_section_resources_listed(self):
+        """Concrete section topics resources appear in list_resources."""
+        from vue_docs_server.main import mcp
+
+        _setup_server_state()
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                resources = await client.list_resources()
+
+        uris = [str(r.uri) for r in resources]
+        # Sections are top-level folders: "guide" and "api"
+        assert "vue://topics/guide" in uris
+        assert "vue://topics/api" in uris
+
+    @pytest.mark.asyncio
+    async def test_concrete_page_resource_readable(self):
+        """A concrete page resource returns content when read."""
+        from vue_docs_server.main import mcp
+
+        server_state = _setup_server_state()
+        server_state.db = MagicMock()
+        server_state.db.read_page.return_value = "# Computed Properties\n\nContent here."
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                result = await client.read_resource("vue://pages/guide/essentials/computed")
+
+        text = result[0].text if hasattr(result[0], "text") else str(result[0])
+        assert "Computed Properties" in text
+
+    @pytest.mark.asyncio
+    async def test_concrete_entity_resource_readable(self):
+        """A concrete entity resource returns entity details when read."""
+        from vue_docs_server.main import mcp
+
+        _setup_server_state()
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                result = await client.read_resource("vue://api/entities/ref")
+
+        text = result[0].text if hasattr(result[0], "text") else str(result[0])
+        assert "`ref`" in text
+        assert "Composable" in text
+
+    def test_register_concrete_resources_empty_state(self):
+        """_register_concrete_resources adds nothing when state is empty."""
+        from vue_docs_server.main import _register_concrete_resources
+        from vue_docs_server.startup import state as server_state
+
+        server_state.page_paths_by_source = {"vue": []}
+        server_state.entity_indices = {"vue": EntityIndex()}
+        server_state.folder_structures_by_source = {"vue": {}}
+
+        mock_app = MagicMock()
+        _register_concrete_resources(mock_app)
+
+        mock_app.add_resource.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Tests: Framework preferences visibility (Gap 2)
+# ---------------------------------------------------------------------------
+
+
+class TestFrameworkPreferences:
+    """Verify the set_framework_preferences tool and ecosystem://preferences resource."""
+
+    @pytest.mark.asyncio
+    async def test_preferences_tool_enables_vue(self):
+        """set_framework_preferences enables vue when vue=True."""
+        from vue_docs_server.main import set_framework_preferences
+
+        ctx = _mock_ctx()
+        ctx.enable_components = AsyncMock()
+        ctx.disable_components = AsyncMock()
+
+        result = await set_framework_preferences(vue=True, ctx=ctx)
+
+        assert "Preferences Updated" in result
+        ctx.enable_components.assert_any_call(tags={"vue"})
+
+    @pytest.mark.asyncio
+    async def test_preferences_tool_disables_vue(self):
+        """set_framework_preferences disables vue when vue=False."""
+        from vue_docs_server.main import set_framework_preferences
+
+        ctx = _mock_ctx()
+        ctx.enable_components = AsyncMock()
+        ctx.disable_components = AsyncMock()
+
+        result = await set_framework_preferences(vue=False, ctx=ctx)
+
+        ctx.disable_components.assert_any_call(tags={"vue"})
+        assert "Inactive" in result
+
+    @pytest.mark.asyncio
+    async def test_preferences_skips_unknown_sources(self):
+        """Sources not in enabled_sources are silently skipped."""
+        from vue_docs_server.main import set_framework_preferences
+
+        ctx = _mock_ctx()
+        ctx.enable_components = AsyncMock()
+        ctx.disable_components = AsyncMock()
+
+        # vue_router is not in enabled_sources (default is "vue" only)
+        result = await set_framework_preferences(vue=True, vue_router=True, ctx=ctx)
+
+        # Only vue should be activated (vue-router is not in _source_info)
+        assert "Vue.js" in result
+        ctx.enable_components.assert_called_once_with(tags={"vue"})
+
+    @pytest.mark.asyncio
+    async def test_preferences_stores_state(self):
+        """Preferences are stored in session state."""
+        from vue_docs_server.main import set_framework_preferences
+
+        ctx = _mock_ctx()
+        ctx.enable_components = AsyncMock()
+        ctx.disable_components = AsyncMock()
+
+        await set_framework_preferences(vue=True, vue_router=False, ctx=ctx)
+
+        ctx.set_state.assert_called_once_with(
+            "framework_preferences", {"vue": True, "vue-router": False}
+        )
+
+    @pytest.mark.asyncio
+    async def test_preferences_resource_content(self):
+        """ecosystem://preferences resource shows framework info."""
+        from vue_docs_server.main import mcp
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                result = await client.read_resource("ecosystem://preferences")
+
+        text = result[0].text if hasattr(result[0], "text") else str(result[0])
+        assert "Framework Preferences" in text
+        assert "Vue.js" in text
+        assert "set_framework_preferences" in text
+
+
+# ---------------------------------------------------------------------------
+# Tests: HyPE resolution (Gap 4)
+# ---------------------------------------------------------------------------
+
+
+class TestHypeResolution:
+    """Tests for _resolve_hype_hits in search.py."""
+
+    def setup_method(self):
+        from vue_docs_server.startup import state as server_state
+
+        self.mock_qdrant = MagicMock()
+        server_state.qdrant = self.mock_qdrant
+
+    def test_no_hype_hits_passthrough(self):
+        """Regular hits pass through unchanged."""
+        from vue_docs_server.tools.search import _resolve_hype_hits
+
+        hits = [
+            _make_hit(chunk_id="guide/a#section", score=0.9),
+            _make_hit(chunk_id="guide/b#section", score=0.8),
+        ]
+        result = _resolve_hype_hits(hits)
+        assert len(result) == 2
+        assert result[0].score == 0.9
+        assert result[1].score == 0.8
+
+    def test_hype_hit_replaced_by_parent(self):
+        """A hype_question hit is replaced by its parent chunk."""
+        from vue_docs_server.tools.search import _resolve_hype_hits
+
+        hype_hit = SearchHit(
+            chunk_id="hype-q-1",
+            score=0.85,
+            payload={
+                "chunk_id": "hype-q-1",
+                "chunk_type": "hype_question",
+                "parent_chunk_id": "guide/essentials/computed#caching",
+                "content": "How does computed caching work?",
+            },
+        )
+
+        self.mock_qdrant.get_by_chunk_ids.return_value = [
+            {
+                "chunk_id": "guide/essentials/computed#caching",
+                "chunk_type": "section",
+                "content": "Computed properties cache their result.",
+                "file_path": "guide/essentials/computed.md",
+            }
+        ]
+
+        result = _resolve_hype_hits([hype_hit])
+
+        self.mock_qdrant.get_by_chunk_ids.assert_called_once_with(
+            ["guide/essentials/computed#caching"]
+        )
+        assert len(result) == 1
+        assert result[0].chunk_id == "guide/essentials/computed#caching"
+        assert result[0].score == 0.85
+
+    def test_hype_hit_dedup_with_existing(self):
+        """If parent is already in results, the HyPE hit is skipped."""
+        from vue_docs_server.tools.search import _resolve_hype_hits
+
+        regular_hit = _make_hit(chunk_id="guide/essentials/computed#caching", score=0.9)
+        hype_hit = SearchHit(
+            chunk_id="hype-q-1",
+            score=0.85,
+            payload={
+                "chunk_id": "hype-q-1",
+                "chunk_type": "hype_question",
+                "parent_chunk_id": "guide/essentials/computed#caching",
+                "content": "How does computed caching work?",
+            },
+        )
+
+        result = _resolve_hype_hits([regular_hit, hype_hit])
+        # Parent already present, no Qdrant fetch needed for that parent
+        assert len(result) == 1
+        assert result[0].chunk_id == "guide/essentials/computed#caching"
+
+    def test_hype_hit_missing_parent_id_skipped(self):
+        """A HyPE hit with empty parent_chunk_id is silently skipped."""
+        from vue_docs_server.tools.search import _resolve_hype_hits
+
+        hype_hit = SearchHit(
+            chunk_id="hype-q-1",
+            score=0.85,
+            payload={
+                "chunk_id": "hype-q-1",
+                "chunk_type": "hype_question",
+                "parent_chunk_id": "",
+                "content": "Some question",
+            },
+        )
+
+        result = _resolve_hype_hits([hype_hit])
+        assert len(result) == 0
+
+    def test_multiple_hype_hits_same_parent_deduped(self):
+        """Multiple HyPE questions pointing to the same parent produce one result."""
+        from vue_docs_server.tools.search import _resolve_hype_hits
+
+        parent_id = "guide/essentials/computed#caching"
+        hype1 = SearchHit(
+            chunk_id="hype-q-1",
+            score=0.9,
+            payload={
+                "chunk_id": "hype-q-1",
+                "chunk_type": "hype_question",
+                "parent_chunk_id": parent_id,
+            },
+        )
+        hype2 = SearchHit(
+            chunk_id="hype-q-2",
+            score=0.8,
+            payload={
+                "chunk_id": "hype-q-2",
+                "chunk_type": "hype_question",
+                "parent_chunk_id": parent_id,
+            },
+        )
+
+        self.mock_qdrant.get_by_chunk_ids.return_value = [
+            {"chunk_id": parent_id, "chunk_type": "section", "content": "Caching."},
+        ]
+
+        result = _resolve_hype_hits([hype1, hype2])
+        assert len(result) == 1
+        assert result[0].chunk_id == parent_id
+
+    def test_mixed_regular_and_hype_sorted_by_score(self):
+        """Results are sorted by score with regular and resolved HyPE mixed."""
+        from vue_docs_server.tools.search import _resolve_hype_hits
+
+        regular = _make_hit(chunk_id="guide/a#section", score=0.7)
+        hype = SearchHit(
+            chunk_id="hype-q-1",
+            score=0.95,
+            payload={
+                "chunk_id": "hype-q-1",
+                "chunk_type": "hype_question",
+                "parent_chunk_id": "guide/b#section",
+            },
+        )
+
+        self.mock_qdrant.get_by_chunk_ids.return_value = [
+            {"chunk_id": "guide/b#section", "chunk_type": "section", "content": "B content."},
+        ]
+
+        result = _resolve_hype_hits([regular, hype])
+        assert len(result) == 2
+        # Higher score first
+        assert result[0].chunk_id == "guide/b#section"
+        assert result[0].score == 0.95
+        assert result[1].chunk_id == "guide/a#section"
+
+
+# ---------------------------------------------------------------------------
+# Tests: _do_read_page (Gap 5)
+# ---------------------------------------------------------------------------
+
+
+class TestReadPage:
+    """Tests for the page resource read implementation."""
+
+    @pytest.mark.asyncio
+    async def test_read_page_from_db(self):
+        """_do_read_page returns content from DB."""
+        from vue_docs_server.resources.pages import _do_read_page
+        from vue_docs_server.startup import state as server_state
+
+        server_state.db = MagicMock()
+        server_state.db.read_page.return_value = "# Page Title\n\nContent here."
+
+        result = await _do_read_page("guide/essentials/computed", source="vue")
+        assert "Page Title" in result
+        server_state.db.read_page.assert_called_once_with("guide/essentials/computed", source="vue")
+
+    @pytest.mark.asyncio
+    async def test_read_page_not_found_raises(self):
+        """_do_read_page raises ResourceError when page not found."""
+        from fastmcp.exceptions import ResourceError
+
+        from vue_docs_server.resources.pages import _do_read_page
+        from vue_docs_server.startup import state as server_state
+
+        server_state.db = MagicMock()
+        server_state.db.read_page.return_value = None
+        server_state.page_paths_by_source = {
+            "vue": ["guide/essentials/computed.md", "api/reactivity-core.md"]
+        }
+
+        with pytest.raises(ResourceError, match="Page not found"):
+            await _do_read_page("nonexistent/page", source="vue")
+
+    @pytest.mark.asyncio
+    async def test_read_page_no_db_raises(self):
+        """_do_read_page raises ResourceError when no DB configured."""
+        from fastmcp.exceptions import ResourceError
+
+        from vue_docs_server.resources.pages import _do_read_page
+        from vue_docs_server.startup import state as server_state
+
+        server_state.db = None
+
+        with pytest.raises(ResourceError, match="Database not configured"):
+            await _do_read_page("guide/essentials/computed", source="vue")
+
+    @pytest.mark.asyncio
+    async def test_read_page_error_includes_examples(self):
+        """Page not found error includes example available pages."""
+        from fastmcp.exceptions import ResourceError
+
+        from vue_docs_server.resources.pages import _do_read_page
+        from vue_docs_server.startup import state as server_state
+
+        server_state.db = MagicMock()
+        server_state.db.read_page.return_value = None
+        server_state.page_paths_by_source = {
+            "vue": ["guide/essentials/computed.md", "api/reactivity-core.md"]
+        }
+
+        with pytest.raises(ResourceError, match="guide/essentials/computed"):
+            await _do_read_page("wrong/path", source="vue")
+
+
+# ---------------------------------------------------------------------------
+# Tests: Startup paths (Gap 3)
+# ---------------------------------------------------------------------------
+
+
+class TestStartupPaths:
+    """Tests for startup.py data loading logic."""
+
+    def test_load_from_files_builds_per_source_state(self, tmp_path):
+        """_load_from_files populates per-source entity indices and page paths."""
+        from vue_docs_server.startup import _load_from_files, state
+
+        # Create a minimal entity dictionary file
+        entity_dict = {
+            "ref": {
+                "name": "ref",
+                "entity_type": "composable",
+                "page_path": "api/reactivity-core.md",
+                "section": "ref()",
+                "related": [],
+                "source": "vue",
+            }
+        }
+        (tmp_path / "entity_dictionary_vue.json").write_text(json.dumps(entity_dict))
+
+        # Create a minimal index state file for page paths
+        state_dir = tmp_path / "state"
+        state_dir.mkdir()
+        (state_dir / "index_state_vue.json").write_text(
+            json.dumps(
+                {
+                    "guide/essentials/computed.md": {"hash": "abc"},
+                    "api/reactivity-core.md": {"hash": "def"},
+                }
+            )
+        )
+
+        # Create BM25 model directory (empty — model won't load but shouldn't crash)
+        # Reset state
+        state.entity_indices = {}
+        state.page_paths_by_source = {}
+        state.folder_structures_by_source = {}
+        state.entity_matchers = {}
+        state._bm25_tmp_dir = None
+
+        _load_from_files(tmp_path)
+
+        assert "vue" in state.entity_indices
+        assert "ref" in state.entity_indices["vue"].entities
+        assert "vue" in state.page_paths_by_source
+        assert len(state.page_paths_by_source["vue"]) == 2
+        assert "vue" in state.folder_structures_by_source
+        assert "vue" in state.entity_matchers
+        # Combined state
+        assert "ref" in state.entity_index.entities
+        assert len(state.page_paths) == 2
+
+    def test_load_from_files_legacy_fallback(self, tmp_path):
+        """_load_from_files falls back to legacy entity_dictionary.json for vue."""
+        from vue_docs_server.startup import _load_from_files, state
+
+        entity_dict = {
+            "computed": {
+                "name": "computed",
+                "entity_type": "composable",
+                "page_path": "api/reactivity-core.md",
+                "section": "computed()",
+                "related": [],
+                "source": "vue",
+            }
+        }
+        # No entity_dictionary_vue.json — fall back to entity_dictionary.json
+        (tmp_path / "entity_dictionary.json").write_text(json.dumps(entity_dict))
+
+        state.entity_indices = {}
+        state.page_paths_by_source = {}
+        state.folder_structures_by_source = {}
+        state.entity_matchers = {}
+        state._bm25_tmp_dir = None
+
+        _load_from_files(tmp_path)
+
+        assert "computed" in state.entity_indices["vue"].entities
+
+    def test_server_state_is_ready(self):
+        """ServerState.is_ready reflects qdrant and bm25 availability."""
+        from vue_docs_server.startup import ServerState
+
+        s = ServerState()
+        assert not s.is_ready
+
+        s.qdrant = MagicMock()
+        assert not s.is_ready
+
+        s.bm25 = MagicMock()
+        assert s.is_ready
+
+    def test_load_from_pg_builds_per_source_state(self):
+        """_load_from_pg populates per-source state from mocked PG client."""
+        from vue_docs_server.startup import _load_from_pg, state
+
+        mock_db = MagicMock()
+
+        entity_index = EntityIndex(
+            entities={"ref": ApiEntity(name="ref", entity_type=EntityType.COMPOSABLE, source="vue")}
+        )
+        mock_db.load_entities.side_effect = lambda source=None: (
+            entity_index if source == "vue" else EntityIndex()
+        )
+        mock_db.load_synonyms.return_value = {"reactivity": ["ref"]}
+        mock_db.load_pages_listing.return_value = (
+            ["guide/computed.md"],
+            {"guide": ["guide/computed.md"]},
+        )
+        mock_db.load_bm25_model.return_value = False
+
+        state.entity_indices = {}
+        state.page_paths_by_source = {}
+        state.folder_structures_by_source = {}
+        state.entity_matchers = {}
+        state._bm25_tmp_dir = None
+
+        _load_from_pg(mock_db)
+
+        assert "vue" in state.entity_indices
+        assert "ref" in state.entity_indices["vue"].entities
+        assert "vue" in state.page_paths_by_source
+        assert "vue" in state.entity_matchers
+        assert state.entity_matcher is not None
+
+    @pytest.mark.asyncio
+    async def test_data_reload_loop_reloads_on_change(self):
+        """data_reload_loop triggers reload when PG timestamps change."""
+        import vue_docs_server.startup as startup_module
+        from vue_docs_server.startup import state
+
+        mock_db = MagicMock()
+        state.db = mock_db
+
+        # First call returns a newer timestamp than the initial _last_reload_ts
+        from datetime import UTC, datetime
+
+        new_ts = datetime(2025, 6, 1, tzinfo=UTC)
+        mock_db.get_max_updated_at.return_value = new_ts
+
+        original_interval = startup_module._RELOAD_CHECK_INTERVAL
+        # Patch to make the loop fast
+        startup_module._RELOAD_CHECK_INTERVAL = 0.01
+        startup_module._last_reload_ts = datetime(2025, 1, 1, tzinfo=UTC)
+
+        reload_called = False
+
+        def mock_load(db):
+            nonlocal reload_called
+            reload_called = True
+
+        try:
+            with (
+                patch.object(startup_module, "_load_from_pg", mock_load),
+                patch.object(startup_module, "settings") as mock_settings,
+            ):
+                mock_settings.database_url = "postgresql://test"
+                task = asyncio.create_task(startup_module.data_reload_loop())
+                await asyncio.sleep(0.1)
+                task.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await task
+        finally:
+            startup_module._RELOAD_CHECK_INTERVAL = original_interval
+
+        assert reload_called
+
+
+# ---------------------------------------------------------------------------
+# Tests: Scopes aggregation (Gap 10)
+# ---------------------------------------------------------------------------
+
+
+class TestScopesAggregation:
+    """Tests for the scopes resource parent-path aggregation."""
+
+    @pytest.mark.asyncio
+    async def test_scopes_parent_path_counts(self):
+        """Scopes resource correctly counts pages in parent paths."""
+        from vue_docs_core.data.sources import SOURCE_REGISTRY
+        from vue_docs_server.resources.scopes import make_scopes_resource
+        from vue_docs_server.startup import state as server_state
+
+        server_state.folder_structures_by_source = {
+            "vue": {
+                "guide/essentials": [
+                    "guide/essentials/computed.md",
+                    "guide/essentials/class-and-style.md",
+                ],
+                "guide/components": ["guide/components/registration.md"],
+                "api": ["api/reactivity-core.md", "api/built-in-directives.md"],
+            }
+        }
+        server_state.page_paths_by_source = {
+            "vue": [
+                "guide/essentials/computed.md",
+                "guide/essentials/class-and-style.md",
+                "guide/components/registration.md",
+                "api/reactivity-core.md",
+                "api/built-in-directives.md",
+            ]
+        }
+
+        scopes_fn = make_scopes_resource(SOURCE_REGISTRY["vue"])
+        result = await scopes_fn()
+
+        # "guide" parent should count all 3 guide pages
+        assert '"guide"' in result
+        assert '"api"' in result
+        # Total pages in "all"
+        assert "| 5 |" in result
+
+    @pytest.mark.asyncio
+    async def test_scopes_empty_raises(self):
+        """Scopes resource raises when no docs indexed."""
+        from fastmcp.exceptions import ResourceError
+
+        from vue_docs_core.data.sources import SOURCE_REGISTRY
+        from vue_docs_server.resources.scopes import make_scopes_resource
+        from vue_docs_server.startup import state as server_state
+
+        server_state.folder_structures_by_source = {"vue": {}}
+        server_state.page_paths_by_source = {"vue": []}
+
+        scopes_fn = make_scopes_resource(SOURCE_REGISTRY["vue"])
+        with pytest.raises(ResourceError, match=r"No Vue\.js documentation indexed"):
+            await scopes_fn()
