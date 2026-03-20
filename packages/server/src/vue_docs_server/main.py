@@ -5,6 +5,7 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastmcp import FastMCP
+from fastmcp.resources.function_resource import FunctionResource
 from fastmcp.server.middleware.error_handling import ErrorHandlingMiddleware
 from fastmcp.server.middleware.response_limiting import ResponseLimitingMiddleware
 from fastmcp.server.middleware.timing import DetailedTimingMiddleware
@@ -13,11 +14,20 @@ from vue_docs_core.config import settings
 from vue_docs_core.data.sources import get_enabled_sources
 from vue_docs_server.prompts import make_compare_prompt, make_debug_prompt, make_migrate_prompt
 from vue_docs_server.resources.api_index import make_api_entity_resource, make_api_index_resource
-from vue_docs_server.resources.pages import make_page_resource
+from vue_docs_server.resources.pages import _do_read_page, make_page_resource
 from vue_docs_server.resources.scopes import make_scopes_resource
-from vue_docs_server.resources.topics import make_section_topics_resource, make_toc_resource
-from vue_docs_server.startup import data_reload_loop, shutdown, startup
-from vue_docs_server.tools.api_lookup import make_api_lookup_tool
+from vue_docs_server.resources.topics import (
+    _build_toc,
+    make_section_topics_resource,
+    make_toc_resource,
+)
+from vue_docs_server.startup import data_reload_loop, shutdown, startup, state
+from vue_docs_server.tools.api_lookup import (
+    _clean_section_title,
+    _find_entity,
+    _page_path_to_url,
+    make_api_lookup_tool,
+)
 from vue_docs_server.tools.related import make_related_tool
 from vue_docs_server.tools.search import _tool_prefix, make_ecosystem_search_tool, make_search_tool
 
@@ -84,10 +94,159 @@ def _build_instructions() -> str:
     return "\n".join(lines)
 
 
+def _register_concrete_resources(app: FastMCP):
+    """Register every known page, entity, and section as concrete MCP resources.
+
+    Template resources (e.g. ``vue://pages/{path}``) remain as fallbacks, but
+    LLMs cannot guess valid paths.  Concrete resources appear in
+    ``list_resources`` so clients can discover them without searching first.
+    """
+    sources = get_enabled_sources(settings.enabled_sources)
+    total = 0
+
+    for source_def in sources:
+        sn = source_def.name
+        display = source_def.display_name
+
+        # --- Concrete page resources ---
+        for page_path in state.page_paths_by_source.get(sn, []):
+            uri_path = page_path.removesuffix(".md")
+            total += _register_page(app, sn, display, page_path, uri_path)
+
+        # --- Concrete API entity resources ---
+        entity_index = state.entity_indices.get(sn)
+        if entity_index:
+            for entity_name in entity_index.entities:
+                total += _register_entity(app, sn, display, entity_name)
+
+        # --- Concrete section topics resources ---
+        folders = state.folder_structures_by_source.get(sn, {})
+        sections = sorted({f.split("/")[0] for f in folders if f})
+        for section in sections:
+            total += _register_section(app, sn, display, section, folders)
+
+    logger.info("Registered %d concrete resources for discoverability", total)
+
+
+def _register_page(app: FastMCP, sn: str, display: str, page_path: str, uri_path: str) -> int:
+    """Register a single concrete page resource. Returns 1 on success, 0 on skip."""
+    _path, _source = page_path, sn
+
+    async def read_page() -> str:
+        return await _do_read_page(_path, _source)
+
+    read_page.__name__ = f"{sn}_page_{uri_path.replace('/', '_')}"
+    read_page.__doc__ = f"{display} doc page: {uri_path}"
+
+    app.add_resource(
+        FunctionResource.from_function(
+            read_page,
+            uri=f"{sn}://pages/{uri_path}",
+            name=f"{sn}_page_{uri_path.replace('/', '_')}",
+            title=uri_path.rsplit("/", 1)[-1].replace("-", " ").title(),
+            description=f"{display} documentation page: {uri_path}",
+            mime_type="text/markdown",
+            tags={"content", "pages", sn},
+        )
+    )
+    return 1
+
+
+def _register_entity(app: FastMCP, sn: str, display: str, entity_name: str) -> int:
+    """Register a single concrete API entity resource."""
+    _name, _source = entity_name, sn
+
+    async def read_entity() -> str:
+        entity_index = state.entity_indices.get(_source)
+        if entity_index is None:
+            entity_index = state.entity_index
+        entity = _find_entity(_name, entity_index)
+        if entity is None:
+            return f"Entity `{_name}` not found."
+
+        type_label = entity.entity_type.replace("_", " ").title()
+        chunk_ids = entity_index.entity_to_chunks.get(entity.name, [])
+        lines: list[str] = [f"# `{entity.name}`\n"]
+        lines.append("| Property | Value |")
+        lines.append("|----------|-------|")
+        lines.append(f"| **Type** | {type_label} |")
+        if entity.page_path:
+            url = _page_path_to_url(entity.page_path, source=_source)
+            page_uri = entity.page_path.removesuffix(".md")
+            lines.append(f"| **Documentation** | [{url}]({url}) |")
+            lines.append(f"| **Page resource** | `{_source}://pages/{page_uri}` |")
+        if entity.section:
+            lines.append(f"| **Section** | {_clean_section_title(entity.section)} |")
+        if chunk_ids:
+            lines.append(f"| **References** | {len(chunk_ids)} documentation chunks |")
+        lines.append("")
+        if entity.related:
+            lines.append("## Related APIs\n")
+            lines.append(", ".join(f"`{r}`" for r in entity.related))
+            lines.append("")
+        return "\n".join(lines)
+
+    safe_name = entity_name.replace(" ", "_").replace("/", "_")
+    read_entity.__name__ = f"{sn}_entity_{safe_name}"
+    read_entity.__doc__ = f"{display} API entity: {entity_name}"
+
+    app.add_resource(
+        FunctionResource.from_function(
+            read_entity,
+            uri=f"{sn}://api/entities/{entity_name}",
+            name=f"{sn}_entity_{safe_name}",
+            title=entity_name,
+            description=f"{display} API entity details: {entity_name}",
+            mime_type="text/markdown",
+            tags={"api", "reference", sn},
+        )
+    )
+    return 1
+
+
+def _register_section(
+    app: FastMCP,
+    sn: str,
+    display: str,
+    section: str,
+    folders: dict[str, list[str]],
+) -> int:
+    """Register a single concrete section topics resource."""
+    _section, _source, _display = section, sn, display
+
+    async def read_section() -> str:
+        current_folders = state.folder_structures_by_source.get(_source, {})
+        matching = {
+            f: p
+            for f, p in current_folders.items()
+            if f == _section or f.startswith(_section + "/")
+        }
+        if not matching:
+            return f"Section `{_section}` not found."
+        return _build_toc(matching, source_name=_source, display_name=_display)
+
+    read_section.__name__ = f"{sn}_section_{section.replace('/', '_')}"
+    read_section.__doc__ = f"{display} section topics: {section}"
+
+    app.add_resource(
+        FunctionResource.from_function(
+            read_section,
+            uri=f"{sn}://topics/{section}",
+            name=f"{sn}_section_{section.replace('/', '_')}",
+            title=f"{section.replace('/', ' > ').title()}",
+            description=f"{display} documentation section: {section}",
+            mime_type="text/markdown",
+            tags={"navigation", "index", sn},
+        )
+    )
+    return 1
+
+
 @asynccontextmanager
 async def lifespan(app: FastMCP):
     """Server lifespan: startup and shutdown hooks."""
     startup()
+    _register_concrete_resources(app)
     reload_task = asyncio.create_task(data_reload_loop())
     logger.info("MCP server ready")
     yield
