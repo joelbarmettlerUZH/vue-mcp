@@ -4,11 +4,12 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
-from fastmcp import FastMCP
+from fastmcp import Context, FastMCP
 from fastmcp.resources.function_resource import FunctionResource
 from fastmcp.server.middleware.error_handling import ErrorHandlingMiddleware
 from fastmcp.server.middleware.response_limiting import ResponseLimitingMiddleware
 from fastmcp.server.middleware.timing import DetailedTimingMiddleware
+from fastmcp.server.transforms.visibility import Visibility
 
 from vue_docs_core.config import settings
 from vue_docs_core.data.sources import get_enabled_sources
@@ -37,6 +38,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Default source that is always visible without explicit activation
+_DEFAULT_SOURCE = "vue"
+
 
 def _build_instructions() -> str:
     """Build server instructions dynamically based on enabled sources."""
@@ -45,14 +49,21 @@ def _build_instructions() -> str:
     lines: list[str] = [
         "This server provides comprehensive access to the Vue ecosystem documentation.",
         "",
+        "## Getting Started",
+        "",
+        "By default, only **Vue.js** documentation is active. If the project uses "
+        "other Vue ecosystem frameworks, call `set_framework_preferences` first to "
+        "activate them. Read `ecosystem://preferences` to see current settings.",
+        "",
     ]
 
     for source_def in sources:
         sn = source_def.name
         display = source_def.display_name
         prefix = _tool_prefix(sn)
+        active_note = "" if sn == _DEFAULT_SOURCE else " *(activate first)*"
 
-        lines.append(f"## {display}")
+        lines.append(f"## {display}{active_note}")
         lines.append("")
         lines.append("**Resources** (browse without searching):")
         lines.append(f"- `{sn}://topics` — Full table of contents")
@@ -76,12 +87,14 @@ def _build_instructions() -> str:
         lines.append("")
 
     if len(sources) > 1:
-        lines.append("## Cross-Ecosystem")
+        lines.append("## Cross-Ecosystem (always visible)")
         lines.append("")
         lines.append("**Tools:**")
+        lines.append("- `set_framework_preferences` — Activate/deactivate framework documentation")
         lines.append("- `ecosystem_search` — Search across all frameworks at once")
         lines.append("")
         lines.append("**Resources:**")
+        lines.append("- `ecosystem://preferences` — Current active framework settings")
         lines.append("- `ecosystem://sources` — List all available documentation sources")
         lines.append("")
 
@@ -92,6 +105,11 @@ def _build_instructions() -> str:
     )
 
     return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Concrete resource enumeration (pages, entities, sections from DB state)
+# ---------------------------------------------------------------------------
 
 
 def _register_concrete_resources(app: FastMCP):
@@ -242,6 +260,11 @@ def _register_section(
     return 1
 
 
+# ---------------------------------------------------------------------------
+# Lifespan
+# ---------------------------------------------------------------------------
+
+
 @asynccontextmanager
 async def lifespan(app: FastMCP):
     """Server lifespan: startup and shutdown hooks."""
@@ -253,6 +276,10 @@ async def lifespan(app: FastMCP):
     reload_task.cancel()
     shutdown()
 
+
+# ---------------------------------------------------------------------------
+# Server instance
+# ---------------------------------------------------------------------------
 
 mcp = FastMCP(
     "Vue Ecosystem MCP Server",
@@ -268,12 +295,20 @@ mcp.add_middleware(DetailedTimingMiddleware())
 mcp.add_middleware(ResponseLimitingMiddleware(max_size=500_000))
 
 # ---------------------------------------------------------------------------
+# Visibility: hide non-default sources initially, per-session activation
+# ---------------------------------------------------------------------------
+
+_sources = get_enabled_sources(settings.enabled_sources)
+_non_default_source_names = [s.name for s in _sources if s.name != _DEFAULT_SOURCE]
+
+for _hidden_source in _non_default_source_names:
+    mcp.add_transform(Visibility(False, tags={_hidden_source}))
+
+# ---------------------------------------------------------------------------
 # Dynamic per-source registration
 # ---------------------------------------------------------------------------
 
 _TOOL_ANNOTATIONS = {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": False}
-
-_sources = get_enabled_sources(settings.enabled_sources)
 
 for _source_def in _sources:
     _sn = _source_def.name
@@ -368,8 +403,89 @@ for _source_def in _sources:
     )(make_migrate_prompt(_source_def))
 
 # ---------------------------------------------------------------------------
-# Cross-ecosystem tools and resources (when multiple sources enabled)
+# Cross-ecosystem: preferences tool, ecosystem search, sources resource
 # ---------------------------------------------------------------------------
+
+# Build source info for preference tool descriptions
+_source_info = {s.name: s.display_name for s in _sources}
+
+
+@mcp.tool(
+    name="set_framework_preferences",
+    title="Set Framework Preferences",
+    tags={"preferences", "ecosystem"},
+    annotations={"readOnlyHint": False, "idempotentHint": True, "openWorldHint": False},
+    timeout=5.0,
+)
+async def set_framework_preferences(
+    vue: bool = True,
+    vue_router: bool = False,
+    ctx: Context = None,
+) -> str:
+    """Activate or deactivate Vue ecosystem framework documentation.
+
+    Call this at the start of a session to match the project's tech stack.
+    Only activated frameworks appear as tools, resources, and prompts.
+
+    Vue is active by default. Set other frameworks to true to activate them.
+    """
+    prefs = {"vue": vue, "vue-router": vue_router}
+
+    # Map param names to source registry names
+    activated = []
+    deactivated = []
+
+    for source_name, enabled in prefs.items():
+        if source_name not in _source_info:
+            continue
+        display = _source_info[source_name]
+        if enabled:
+            await ctx.enable_components(tags={source_name})
+            activated.append(display)
+        else:
+            await ctx.disable_components(tags={source_name})
+            deactivated.append(display)
+
+    # Store preferences for the get resource
+    await ctx.set_state("framework_preferences", prefs)
+
+    lines = ["# Framework Preferences Updated\n"]
+    if activated:
+        lines.append(f"**Active:** {', '.join(activated)}")
+    if deactivated:
+        lines.append(f"**Inactive:** {', '.join(deactivated)}")
+    lines.append("")
+    lines.append("The available tools, resources, and prompts have been updated for this session.")
+    return "\n".join(lines)
+
+
+@mcp.resource(
+    "ecosystem://preferences",
+    mime_type="text/markdown",
+    tags={"preferences", "ecosystem"},
+    title="Framework Preferences",
+)
+async def _ecosystem_preferences() -> str:
+    """Current framework activation settings for this session."""
+    lines = [
+        "# Framework Preferences\n",
+        "| Framework | Status |",
+        "|-----------|--------|",
+    ]
+    for source_def in _sources:
+        is_default = source_def.name == _DEFAULT_SOURCE
+        status = "Active (default)" if is_default else "Inactive"
+        if not is_default:
+            status += " — call `set_framework_preferences` to activate"
+        lines.append(f"| {source_def.display_name} | {status} |")
+
+    lines.append("")
+    lines.append(
+        "Call `set_framework_preferences` with the frameworks your project uses "
+        "to activate their documentation, tools, and prompts."
+    )
+    return "\n".join(lines)
+
 
 if len(_sources) > 1:
     mcp.tool(
@@ -388,7 +504,6 @@ if len(_sources) > 1:
             "|--------|-------------|----------|",
         ]
         for src in _sources:
-            prefix = _tool_prefix(src.name)
             lines.append(f"| `{src.name}` | {src.display_name} | {src.base_url} |")
         lines.append("")
         lines.append("## Available per-source tools\n")
@@ -399,7 +514,7 @@ if len(_sources) > 1:
                 f"`{prefix}_api_lookup`, `{prefix}_get_related`"
             )
         lines.append("")
-        lines.append("**Cross-ecosystem:** `ecosystem_search`")
+        lines.append("**Cross-ecosystem:** `ecosystem_search`, `set_framework_preferences`")
         return "\n".join(lines)
 
     mcp.resource(

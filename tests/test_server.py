@@ -1302,13 +1302,62 @@ class TestMCPResources:
         # Should NOT include api pages
         assert "api/reactivity-core" not in text
 
+    @pytest.mark.asyncio
+    async def test_preferences_tool_registered(self):
+        """The set_framework_preferences tool is always visible."""
+        from vue_docs_server.main import mcp
 
-# ---------------------------------------------------------------------------
-# Tests: MCP Prompts
-# ---------------------------------------------------------------------------
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                tools = await client.list_tools()
 
+        tool_names = [t.name for t in tools]
+        assert "set_framework_preferences" in tool_names
 
-class TestMCPPrompts:
+    @pytest.mark.asyncio
+    async def test_preferences_resource_registered(self):
+        """The ecosystem://preferences resource is always visible."""
+        from vue_docs_server.main import mcp
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                resources = await client.list_resources()
+
+        resource_uris = [str(r.uri) for r in resources]
+        assert "ecosystem://preferences" in resource_uris
+
+    @pytest.mark.asyncio
+    async def test_read_preferences_resource(self):
+        """Preferences resource returns framework activation status."""
+        from vue_docs_server.main import mcp
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                result = await client.read_resource("ecosystem://preferences")
+
+        text = result[0].text if hasattr(result[0], "text") else str(result[0])
+        assert "Framework Preferences" in text
+        assert "Vue.js" in text
+
+    @pytest.mark.asyncio
+    async def test_call_set_framework_preferences(self):
+        """Calling set_framework_preferences returns confirmation."""
+        from vue_docs_server.main import mcp
+
+        _setup_server_state()
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                result = await client.call_tool(
+                    "set_framework_preferences",
+                    {"vue": True},
+                )
+
+        assert not result.is_error
+        text = result.content[0].text
+        assert "Preferences Updated" in text
+        assert "Vue.js" in text
+
     """Test MCP prompt registration and rendering via fastmcp.Client."""
 
     @pytest.mark.asyncio
