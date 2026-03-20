@@ -1,6 +1,7 @@
 """FastMCP app setup, dynamic per-source registration, and startup hooks."""
 
 import asyncio
+import contextlib
 import logging
 from contextlib import asynccontextmanager
 
@@ -117,6 +118,9 @@ def _build_instructions() -> str:
 # Concrete resource enumeration (pages, entities, sections from DB state)
 # ---------------------------------------------------------------------------
 
+# Track URIs managed by _register_concrete_resources so we can prune stale ones.
+_concrete_resource_uris: set[str] = set()
+
 
 def _register_concrete_resources(app: FastMCP):
     """Register every known page, entity, and section as concrete MCP resources.
@@ -124,9 +128,13 @@ def _register_concrete_resources(app: FastMCP):
     Template resources (e.g. ``vue://pages/{path}``) remain as fallbacks, but
     LLMs cannot guess valid paths.  Concrete resources appear in
     ``list_resources`` so clients can discover them without searching first.
+
+    On subsequent calls (hourly refresh), new resources are added and resources
+    that no longer exist in the current state are removed.
     """
     sources = get_enabled_sources(settings.enabled_sources)
-    total = 0
+    current_uris: set[str] = set()
+    added = 0
 
     for source_def in sources:
         sn = source_def.name
@@ -135,21 +143,38 @@ def _register_concrete_resources(app: FastMCP):
         # --- Concrete page resources ---
         for page_path in state.page_paths_by_source.get(sn, []):
             uri_path = page_path.removesuffix(".md")
-            total += _register_page(app, sn, display, page_path, uri_path)
+            uri = f"{sn}://pages/{uri_path}"
+            current_uris.add(uri)
+            added += _register_page(app, sn, display, page_path, uri_path)
 
         # --- Concrete API entity resources ---
         entity_index = state.entity_indices.get(sn)
         if entity_index:
             for entity_name in entity_index.entities:
-                total += _register_entity(app, sn, display, entity_name)
+                uri = f"{sn}://api/entities/{entity_name}"
+                current_uris.add(uri)
+                added += _register_entity(app, sn, display, entity_name)
 
         # --- Concrete section topics resources ---
         folders = state.folder_structures_by_source.get(sn, {})
         sections = sorted({f.split("/")[0] for f in folders if f})
         for section in sections:
-            total += _register_section(app, sn, display, section, folders)
+            uri = f"{sn}://topics/{section}"
+            current_uris.add(uri)
+            added += _register_section(app, sn, display, section, folders)
 
-    logger.info("Registered %d concrete resources for discoverability", total)
+    # Prune resources that were previously registered but no longer in state
+    stale_uris = _concrete_resource_uris - current_uris
+    if stale_uris:
+        for uri in stale_uris:
+            with contextlib.suppress(KeyError):
+                app.local_provider.remove_resource(uri)
+        logger.info("Removed %d stale concrete resources", len(stale_uris))
+
+    _concrete_resource_uris.clear()
+    _concrete_resource_uris.update(current_uris)
+
+    logger.info("Concrete resources: %d total (%d new)", len(current_uris), added)
 
 
 def _register_page(app: FastMCP, sn: str, display: str, page_path: str, uri_path: str) -> int:
