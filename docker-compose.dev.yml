@@ -1,0 +1,30 @@
+# Infrastructure-only for local development and integration tests.
+# Usage: docker compose -f docker-compose.dev.yml up -d
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: vue_mcp
+      POSTGRES_PASSWORD: vue_mcp
+      POSTGRES_DB: vue_mcp
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vue_mcp"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  qdrant:
+    image: qdrant/qdrant:v1.17.0
+    ports:
+      - "6333:6333"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/6333'"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    tmpfs:
+      - /qdrant/storage

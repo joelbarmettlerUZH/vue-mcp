@@ -17,7 +17,7 @@ echo "=== Backup started at $(date) ==="
 # 1. PostgreSQL dump
 echo "Dumping PostgreSQL..."
 PG_FILE="$BACKUP_DIR/pg-$DATE.sql.gz"
-docker compose -f "$COMPOSE_DIR/docker-compose.yml" exec -T postgres \
+docker compose -f "$COMPOSE_DIR/docker-compose.prod.yml" exec -T postgres \
   pg_dump -U vue_mcp vue_mcp | gzip > "$PG_FILE"
 
 if [ ! -s "$PG_FILE" ]; then

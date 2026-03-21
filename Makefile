@@ -1,4 +1,4 @@
-.PHONY: help install bootstrap lint lint-fix format-check format check test test-all ingest ingest-full ingest-status serve inspect all pr-ready docker-build docker-up docker-down docs docs-build
+.PHONY: help install bootstrap lint lint-fix format-check format check test test-all test-integration ingest ingest-full ingest-status serve inspect all pr-ready docker-build docker-dev-up docker-dev-down docker-local-up docker-local-down docker-prod-up docker-prod-down docs docs-build
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -34,6 +34,9 @@ test: ## Run tests (skip integration tests requiring live APIs)
 
 test-all: ## Run all tests including integration tests (requires API keys)
 	uv run pytest
+
+test-integration: docker-dev-up ## Run integration tests against local infra
+	uv run pytest -m integration -v
 
 # ── Ingestion ──────────────────────────────────────────────────────
 
@@ -76,8 +79,20 @@ docker-build: ## Build Docker images locally
 	docker build --target server -t vue-mcp-server .
 	docker build --target ingestion -t vue-mcp-ingestion .
 
-docker-up: ## Start all services via Docker Compose
-	docker compose up -d
+docker-dev-up: ## Start dev infra (postgres + qdrant only)
+	docker compose -f docker-compose.dev.yml up -d --wait
 
-docker-down: ## Stop all services
-	docker compose down
+docker-dev-down: ## Stop dev infra
+	docker compose -f docker-compose.dev.yml down
+
+docker-local-up: ## Start full local stack with mkcert TLS
+	docker compose -f docker-compose.local.yml up -d
+
+docker-local-down: ## Stop full local stack
+	docker compose -f docker-compose.local.yml down
+
+docker-prod-up: ## Start production stack
+	docker compose -f docker-compose.prod.yml up -d
+
+docker-prod-down: ## Stop production stack
+	docker compose -f docker-compose.prod.yml down

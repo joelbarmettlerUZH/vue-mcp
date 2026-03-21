@@ -38,8 +38,13 @@ All commands are available via `make`. Run `make help` to see the full list.
 | `make inspect FILE=<path>` | Debug chunk output for a markdown file |
 | `make pr-ready` | Fix lint + format + test (run before committing) |
 | `make docker-build` | Build both Docker images locally |
-| `make docker-up` | Start all services via Docker Compose |
-| `make docker-down` | Stop all services |
+| `make docker-dev-up` | Start dev infra (postgres + qdrant only) |
+| `make docker-dev-down` | Stop dev infra |
+| `make docker-local-up` | Start full local stack with mkcert TLS |
+| `make docker-local-down` | Stop full local stack |
+| `make docker-prod-up` | Start production stack |
+| `make docker-prod-down` | Stop production stack |
+| `make test-integration` | Start dev infra + run integration tests |
 
 For single-file test runs: `uv run pytest tests/test_server.py -v`
 
@@ -87,22 +92,37 @@ Build locally: `make docker-build`
 PostgreSQL is the shared data layer between ingestion (writes) and server (reads). No shared filesystem volumes for
 application data. The `data/` directory is gitignored and only used for local development without PG.
 
+### Docker Compose Files
+
+| File | Services | Use case |
+|---|---|---|
+| `docker-compose.dev.yml` | postgres + qdrant (ports exposed, tmpfs) | Local dev, integration tests |
+| `docker-compose.local.yml` | all services + Traefik (mkcert TLS) | Full local stack |
+| `docker-compose.prod.yml` | all services + Traefik (Let's Encrypt) | Production deployment |
+
 ### Local Development with Docker
 
-Uses `docker-compose.override.yml` (gitignored) for mkcert TLS via nip.io:
+For development and integration tests, start just the infrastructure:
+
+```bash
+make docker-dev-up    # postgres:5432, qdrant:6333
+make test-integration # runs integration-marked tests
+```
+
+For a full local stack with TLS:
 
 ```bash
 mkcert -install
 mkcert -cert-file certs/local.pem -key-file certs/local-key.pem "$(hostname -I | awk '{print $1}').nip.io"
-DOMAIN=$(hostname -I | awk '{print $1}').nip.io docker compose up -d
+DOMAIN=$(hostname -I | awk '{print $1}').nip.io make docker-local-up
 ```
 
 ### Production Deployment
 
 ```bash
 # On the VM: /opt/vue-mcp/.env.production (from .env.production.example)
-# Set TLS_CERTRESOLVER=letsencrypt, ACME_EMAIL, DOMAIN, API keys
-docker compose up -d
+# Set ACME_EMAIL, DOMAIN, POSTGRES_PASSWORD, API keys
+make docker-prod-up
 ```
 
 ### Server Transport

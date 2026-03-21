@@ -1,3 +1,9 @@
+# Full local stack with mkcert TLS via Traefik.
+# Prerequisites:
+#   mkcert -install
+#   mkcert -cert-file certs/local.pem -key-file certs/local-key.pem "$(hostname -I | awk '{print $1}').nip.io"
+# Usage: DOMAIN=$(hostname -I | awk '{print $1}').nip.io docker compose -f docker-compose.local.yml up -d
+
 x-logging: &default-logging
   driver: json-file
   options:
@@ -28,14 +34,7 @@ services:
       - "traefik.http.routers.mcp.rule=Host(`${DOMAIN:-localhost}`)"
       - "traefik.http.routers.mcp.entrypoints=websecure"
       - "traefik.http.routers.mcp.tls=true"
-      - "traefik.http.routers.mcp.tls.certresolver=${TLS_CERTRESOLVER:-}"
-      - "traefik.http.routers.mcp.middlewares=ratelimit,connlimit,bodylimit"
       - "traefik.http.services.mcp.loadbalancer.server.port=8000"
-      - "traefik.http.middlewares.ratelimit.ratelimit.average=60"
-      - "traefik.http.middlewares.ratelimit.ratelimit.burst=20"
-      - "traefik.http.middlewares.ratelimit.ratelimit.period=1m"
-      - "traefik.http.middlewares.connlimit.inflightreq.amount=10"
-      - "traefik.http.middlewares.bodylimit.buffering.maxRequestBodyBytes=102400"
     mem_limit: 2g
     cpus: 1.0
     logging: *default-logging
@@ -106,15 +105,14 @@ services:
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
-      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-admin@example.com}"
-      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
-      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--providers.file.filename=/etc/traefik/dynamic.yml"
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - letsencrypt:/letsencrypt
+      - ./certs:/certs:ro
+      - ./traefik-dynamic.yml:/etc/traefik/dynamic.yml:ro
     mem_limit: 512m
     cpus: 0.5
     logging: *default-logging
@@ -124,4 +122,3 @@ volumes:
   pg-data:
   qdrant-data:
   vue-docs-data:
-  letsencrypt:
