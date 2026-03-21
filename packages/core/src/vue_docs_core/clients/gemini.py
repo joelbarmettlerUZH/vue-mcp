@@ -1,15 +1,41 @@
 """Async wrapper for Gemini using the official google-genai SDK."""
 
+import asyncio
 import logging
+import re
 from typing import Annotated, Any
 
 from google import genai
 from google.genai import types
+from google.genai.errors import ClientError
 from pydantic import BaseModel, Field
 
 from vue_docs_core.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+def _parse_retry_delay(error: ClientError) -> float | None:
+    """Extract retryDelay from a Gemini 429 error response."""
+    details = getattr(error, "details", None)
+    if not details:
+        return None
+    # details can be a dict with 'error.details' containing RetryInfo
+    error_details = details if isinstance(details, list) else []
+    if isinstance(details, dict):
+        error_details = details.get("error", {}).get("details", [])
+    for detail in error_details:
+        if isinstance(detail, dict) and "retryDelay" in detail:
+            delay_str = detail["retryDelay"]
+            match = re.search(r"(\d+)", str(delay_str))
+            if match:
+                return float(match.group(1))
+    # Also try parsing from the message string
+    msg = str(error)
+    match = re.search(r"retry in (\d+(?:\.\d+)?)s", msg, re.IGNORECASE)
+    if match:
+        return float(match.group(1))
+    return None
 
 
 class GeminiResponse(BaseModel):
@@ -51,6 +77,27 @@ class GeminiClient:
     async def close(self):
         """No-op for SDK client (no persistent connection to close)."""
 
+    async def _call_with_retry(self, coro_factory):
+        """Execute a Gemini API call with retry on 429 rate limit errors.
+
+        Parses the retryDelay from Gemini's error response when available,
+        otherwise uses exponential backoff.
+        """
+        for attempt in range(self.max_retries + 1):
+            try:
+                return await coro_factory()
+            except ClientError as e:
+                if e.code != 429 or attempt == self.max_retries:
+                    raise
+                delay = _parse_retry_delay(e) or min(2**attempt * 5, 60)
+                logger.warning(
+                    "Gemini rate limited (429), retrying in %.0fs (attempt %d/%d)",
+                    delay,
+                    attempt + 1,
+                    self.max_retries,
+                )
+                await asyncio.sleep(delay)
+
     async def generate(
         self,
         prompt: str,
@@ -71,11 +118,14 @@ class GeminiClient:
         if system_instruction:
             config.system_instruction = system_instruction
 
-        response = await self._client.aio.models.generate_content(
-            model=model_name,
-            contents=prompt,
-            config=config,
-        )
+        async def _call():
+            return await self._client.aio.models.generate_content(
+                model=model_name,
+                contents=prompt,
+                config=config,
+            )
+
+        response = await self._call_with_retry(_call)
 
         text = response.text or ""
         usage = response.usage_metadata
@@ -133,11 +183,14 @@ class GeminiClient:
         if system_instruction:
             config.system_instruction = system_instruction
 
-        response = await self._client.aio.models.generate_content(
-            model=model_name,
-            contents=prompt,
-            config=config,
-        )
+        async def _call():
+            return await self._client.aio.models.generate_content(
+                model=model_name,
+                contents=prompt,
+                config=config,
+            )
+
+        response = await self._call_with_retry(_call)
 
         # Extract function call from response
         arguments: dict = {}

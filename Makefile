@@ -1,4 +1,4 @@
-.PHONY: help install bootstrap lint lint-fix format-check format check test test-all test-integration ingest ingest-full ingest-status serve inspect all pr-ready docker-build docker-dev-up docker-dev-down docker-local-up docker-local-down docker-prod-up docker-prod-down docs docs-build
+.PHONY: help install bootstrap lint lint-fix format-check format check test test-all test-integration ingest ingest-full ingest-status serve inspect all pr-ready eval eval-compare eval-generate docker-build docker-dev-up docker-dev-down docker-local-up docker-local-down docker-prod-up docker-prod-down docs docs-build
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -58,6 +58,17 @@ serve: ## Start the MCP server
 
 inspect: ## Inspect chunks for a file (usage: make inspect FILE=path/to/file.md)
 	uv run python scripts/inspect_chunks.py $(FILE)
+
+# ── Eval ──────────────────────────────────────────────────────────
+
+eval: ## Run eval against our server (requires local infra + ingested data)
+	uv run python -m vue_docs_eval run --providers ours --frameworks vue
+
+eval-compare: ## Run eval comparing our server vs Context7
+	uv run python -m vue_docs_eval run --providers ours,context7 --frameworks vue
+
+eval-generate: ## Generate evaluation questions (usage: make eval-generate FRAMEWORK=vue DOCS=data/vue-docs/src)
+	uv run python -m vue_docs_eval generate --framework $(FRAMEWORK) --docs-path $(DOCS)
 
 # ── Compound ───────────────────────────────────────────────────────
 

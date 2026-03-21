@@ -10,7 +10,7 @@ packages/
   core/       Shared library: models, clients (Jina, Qdrant, Gemini, BM25, PostgreSQL), parsing, retrieval
   ingestion/  CLI tool (Typer): scan → parse → enrich → embed → store
   server/     MCP server (FastMCP): tools, resources, prompts, query pipeline
-eval/         Evaluation suite (separate package, not shipped)
+eval/         Evaluation suite: multi-provider comparison (ours vs Context7), LLM judge, metrics
 tests/        Root-level pytest suite
 scripts/      Deployment, backup, restore, and debug utilities
 ```
@@ -45,6 +45,9 @@ All commands are available via `make`. Run `make help` to see the full list.
 | `make docker-prod-up` | Start production stack |
 | `make docker-prod-down` | Stop production stack |
 | `make test-integration` | Start dev infra + run integration tests |
+| `make eval` | Run eval against our server |
+| `make eval-compare` | Run eval comparing ours vs Context7 |
+| `make eval-generate FRAMEWORK=vue DOCS=path` | Generate evaluation questions |
 
 For single-file test runs: `uv run pytest tests/test_server.py -v`
 
