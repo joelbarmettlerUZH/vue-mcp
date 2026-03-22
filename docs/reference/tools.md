@@ -1,10 +1,22 @@
 # Tools
 
-Vue Docs MCP exposes three tools that your AI assistant can call to search and retrieve Vue.js documentation.
+Vue Docs MCP exposes tools for each enabled framework. By default, only Vue.js tools are active. See [Framework Preferences](/reference/frameworks) to enable additional frameworks.
 
-## `vue_docs_search`
+## Per-Framework Tools
 
-Semantic search across the full Vue.js documentation. This is the primary tool, and the one your AI assistant will use most often.
+Each framework registers three tools using the pattern `{framework}_docs_search`, `{framework}_api_lookup`, and `{framework}_get_related`. For Vue.js, the tools are:
+
+- `vue_docs_search`
+- `vue_api_lookup`
+- `vue_get_related`
+
+If Vue Router is enabled, you also get `vue_router_docs_search`, `vue_router_api_lookup`, and `vue_router_get_related`.
+
+---
+
+## `{framework}_docs_search`
+
+Semantic search across a framework's documentation. This is the primary tool, and the one your AI assistant will use most often.
 
 ### Parameters
 
@@ -16,7 +28,9 @@ Semantic search across the full Vue.js documentation. This is the primary tool, 
 
 ### Scope Values
 
-Use scope to narrow results to a specific part of the docs:
+Use scope to narrow results to a specific part of the docs. Available scopes vary by framework. Read the `{framework}://scopes` resource for the full list.
+
+**Vue.js scopes:**
 
 | Scope | What it searches |
 |---|---|
@@ -27,8 +41,6 @@ Use scope to narrow results to a specific part of the docs:
 | `api` | API reference pages |
 | `tutorial` | Interactive tutorial content |
 | `examples` | Example gallery |
-
-Use the [`vue://scopes`](/reference/resources#vue-scopes) resource to get the full list of available scopes.
 
 ### Example Queries
 
@@ -57,17 +69,17 @@ Returns reconstructed documentation fragments as readable markdown. Results are 
 
 ---
 
-## `vue_api_lookup`
+## `{framework}_api_lookup`
 
-Instant lookup for any Vue API. Bypasses the full search pipeline for fast, exact results.
+Instant lookup for any API. Bypasses the full search pipeline for fast, exact results.
 
 ### Parameters
 
 | Parameter | Type | Required | Description |
 |---|---|---|---|
-| `api_name` | `string` | Yes | Vue API name |
+| `api_name` | `string` | Yes | API name to look up |
 
-### Example API Names
+### Example API Names (Vue.js)
 
 - `ref`, `reactive`, `computed`, `watch`, `watchEffect`
 - `defineProps`, `defineEmits`, `defineExpose`, `defineModel`
@@ -82,7 +94,7 @@ Returns the API entity's type, documentation page, section, and a table of relat
 
 ---
 
-## `vue_get_related`
+## `{framework}_get_related`
 
 Discover related APIs, concepts, and documentation pages for a given topic.
 
@@ -90,7 +102,7 @@ Discover related APIs, concepts, and documentation pages for a given topic.
 
 | Parameter | Type | Required | Description |
 |---|---|---|---|
-| `topic` | `string` | Yes | Vue API name, concept, or topic |
+| `topic` | `string` | Yes | API name, concept, or topic |
 
 ### Example Topics
 
@@ -103,3 +115,19 @@ Discover related APIs, concepts, and documentation pages for a given topic.
 ### Response
 
 Returns a table of related APIs organized by relationship type, with links to their documentation pages.
+
+---
+
+## `ecosystem_search`
+
+Search across all enabled frameworks at once. Only available when two or more frameworks are enabled via [`set_framework_preferences`](/reference/frameworks).
+
+### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `query` | `string` | Yes | | Developer question or topic (max 2000 chars) |
+| `scope` | `string` | No | `"all"` | Documentation section to search |
+| `max_results` | `integer` | No | `5` | Number of sections to return (1-20) |
+
+Results are tagged by source framework and ordered by relevance.

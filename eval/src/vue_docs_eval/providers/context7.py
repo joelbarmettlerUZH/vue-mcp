@@ -6,17 +6,16 @@ import time
 
 import httpx
 
-from vue_docs_core.data.sources import SOURCE_REGISTRY
 from vue_docs_eval.models import SearchResult
 
 logger = logging.getLogger(__name__)
 
 CONTEXT7_URL = "https://mcp.context7.com/mcp"
 
-# Mapping from our framework names to Context7 library search terms
-FRAMEWORK_TO_CONTEXT7: dict[str, str] = {
-    "vue": "Vue.js",
-    "vue-router": "Vue Router",
+# Pre-resolved Context7 library IDs (avoids extra API calls)
+FRAMEWORK_TO_LIBRARY_ID: dict[str, str] = {
+    "vue": "/vuejs/vue",
+    "vue-router": "/vuejs/vue-router",
 }
 
 
@@ -28,11 +27,15 @@ class Context7Provider:
     def __init__(self):
         self._api_key: str = ""
         self._client: httpx.AsyncClient | None = None
-        # Cache resolved library IDs to avoid redundant lookups
-        self._library_ids: dict[str, str] = {}
 
     async def startup(self) -> None:
         self._api_key = os.environ.get("CONTEXT7_API_KEY", "")
+        if not self._api_key:
+            # Try loading from .env file
+            from dotenv import dotenv_values
+
+            env = dotenv_values(".env")
+            self._api_key = env.get("CONTEXT7_API_KEY", "")
         if not self._api_key:
             raise RuntimeError("CONTEXT7_API_KEY environment variable not set")
         self._client = httpx.AsyncClient(timeout=60.0)
@@ -65,56 +68,29 @@ class Context7Provider:
         if "error" in data:
             raise RuntimeError(f"Context7 error: {data['error']}")
 
-        # Extract text content from MCP result
         result = data.get("result", {})
         content = result.get("content", [])
         return content
 
-    async def _resolve_library_id(self, framework: str) -> str:
-        """Resolve a framework name to a Context7 library ID."""
-        if framework in self._library_ids:
-            return self._library_ids[framework]
-
-        search_name = FRAMEWORK_TO_CONTEXT7.get(framework)
-        if not search_name:
-            source = SOURCE_REGISTRY.get(framework)
-            search_name = source.display_name if source else framework
-
-        content = await self._mcp_call(
-            "resolve-library-id",
-            {"libraryName": search_name, "query": search_name},
-        )
-
-        # Parse the text response to find the library ID
-        for item in content:
-            text = item.get("text", "")
-            if text:
-                # Context7 returns library IDs like "/vuejs/docs" in the text
-                for line in text.split("\n"):
-                    line = line.strip()
-                    if line.startswith("/") and "/" in line[1:]:
-                        self._library_ids[framework] = line.split()[0]
-                        return self._library_ids[framework]
-
-        raise RuntimeError(f"Could not resolve Context7 library ID for '{search_name}'")
-
     async def search(self, query: str, framework: str, max_results: int) -> SearchResult:
-        library_id = await self._resolve_library_id(framework)
+        library_id = FRAMEWORK_TO_LIBRARY_ID.get(framework)
+        if not library_id:
+            raise ValueError(
+                f"No Context7 library ID for framework '{framework}'. "
+                f"Available: {list(FRAMEWORK_TO_LIBRARY_ID.keys())}"
+            )
 
         start = time.monotonic()
         content = await self._mcp_call(
-            "get-library-docs",
+            "query-docs",
             {"libraryId": library_id, "query": query, "tokens": 5000},
         )
         latency = time.monotonic() - start
 
-        # Concatenate all text content
         text_parts = [item.get("text", "") for item in content if item.get("text")]
         text = "\n".join(text_parts)
 
         return SearchResult(
             text=text,
             latency_s=round(latency, 3),
-            embed_tokens=None,
-            rerank_tokens=None,
         )

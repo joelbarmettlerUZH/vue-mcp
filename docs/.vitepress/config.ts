@@ -4,7 +4,7 @@ import llmstxt from "vitepress-plugin-llms";
 export default defineConfig({
   title: "Vue Docs MCP",
   description:
-    "Give your AI assistant deep, structured access to the entire Vue.js documentation",
+    "Give your AI assistant deep, structured access to the Vue ecosystem documentation",
 
   vite: {
     plugins: [llmstxt()],
@@ -18,7 +18,7 @@ export default defineConfig({
       {
         property: "og:description",
         content:
-          "MCP server providing semantic search over Vue.js documentation",
+          "MCP server providing semantic search over Vue ecosystem documentation",
       },
     ],
     ["meta", { property: "og:url", content: "https://vue-mcp.org" }],
@@ -67,6 +67,8 @@ export default defineConfig({
           { text: "Tools", link: "/reference/tools" },
           { text: "Resources", link: "/reference/resources" },
           { text: "Prompts", link: "/reference/prompts" },
+          { text: "Frameworks", link: "/reference/frameworks" },
+          { text: "Benchmarks", link: "/reference/benchmarks" },
           { text: "How It Works", link: "/reference/how-it-works" },
         ],
       },

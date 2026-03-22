@@ -61,7 +61,7 @@ class OursProvider:
 
         async def _capturing_embed(self_jina, texts, task=None, **kwargs):
             nonlocal embed_tokens
-            result = await original_embed(texts, task=task, **kwargs)
+            result = await original_embed(self_jina, texts, task=task, **kwargs)
             embed_tokens = result.total_tokens
             return result
 

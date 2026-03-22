@@ -3,36 +3,48 @@ layout: home
 
 hero:
   name: Vue Docs MCP
-  text: Vue.js docs for your AI assistant
-  tagline: Semantic search and retrieval over the entire Vue.js documentation. Accessible to any MCP-compatible AI client, for free.
+  text: Vue ecosystem docs for your AI assistant
+  tagline: "4.82/5 retrieval quality. 98.7% API recall. Free. Purpose-built for Vue."
   actions:
     - theme: brand
       text: Get Started
       link: /guide/getting-started
     - theme: alt
-      text: What is Vue Docs MCP?
-      link: /guide/what-is-vue-mcp
+      text: See Benchmarks
+      link: /reference/benchmarks
     - theme: alt
       text: View on GitHub
       link: https://github.com/joelbarmettlerUZH/vue-mcp
 
 features:
-  - icon: "\U0001F50D"
-    title: Semantic Search
-    details: Hybrid retrieval combining dense embeddings, BM25 keyword search, and cross-reference expansion. Goes far beyond simple keyword matching.
+  - icon: "\U0001F3C6"
+    title: "4.82/5 Quality Score"
+    details: "Scored by an independent LLM judge across 173 questions on relevance, completeness, correctness, and API coverage. 2x higher than general-purpose alternatives."
+    link: /reference/benchmarks
+    linkText: See benchmarks
   - icon: "\U0001F4DA"
-    title: Full Vue.js Coverage
-    details: Every page of the official Vue.js documentation, indexed and searchable. Guide, API reference, tutorial, examples, and more.
+    title: Vue Ecosystem Coverage
+    details: "Vue.js core documentation today, with Vue Router, Pinia, VueUse, Nuxt, and more coming. Every page indexed, every API searchable."
+    link: /reference/frameworks
+    linkText: View roadmap
+  - icon: "\U0001F4B0"
+    title: Free Forever
+    details: "The hosted server at mcp.vue-mcp.org is free. No API keys, no seat licenses, no setup. Competitors charge $10/seat."
+    link: /guide/getting-started
+    linkText: Connect now
   - icon: "\U0001F916"
     title: Works with Any MCP Client
-    details: Claude Code, Claude Desktop, Cursor, Windsurf, and any other client that supports the Model Context Protocol.
-  - icon: "\U0001F3AF"
-    title: Structure-Aware Results
-    details: Results respect the documentation's heading hierarchy and are returned in reading order, preserving the natural flow of the docs.
-  - icon: "\U0001F4A1"
-    title: Smart Entity Detection
-    details: API names are detected with typo tolerance, synonym lookup, and fuzzy matching. Ask about "watchefect" and it finds watchEffect.
-  - icon: "\U0001F6E1\uFE0F"
-    title: Free to Use
-    details: The hosted server at mcp.vue-mcp.org is free. No API keys, no setup. Connect and ask.
+    details: "Claude Code, Claude Desktop, Cursor, Windsurf, VS Code, JetBrains, Zed, ChatGPT, and any other client that supports MCP."
+    link: /clients/
+    linkText: Setup guides
+  - icon: "\U0001F50D"
+    title: "98.7% API Recall"
+    details: "Ask about any Vue API and get the right documentation back. Handles typos, synonyms, and informal phrasing."
+    link: /reference/benchmarks
+    linkText: See benchmarks
+  - icon: "\U0001F4C2"
+    title: Browse, Search, and Explore
+    details: "Full table of contents, raw page access, API index, and guided workflows for debugging, comparison, and migration."
+    link: /reference/resources
+    linkText: View resources
 ---

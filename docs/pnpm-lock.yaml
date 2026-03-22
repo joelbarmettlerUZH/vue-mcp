@@ -7,6 +7,13 @@ settings:
 importers:
 
   .:
+    dependencies:
+      apexcharts:
+        specifier: ^5.10.4
+        version: 5.10.4
+      vue3-apexcharts:
+        specifier: ^1.11.1
+        version: 1.11.1(apexcharts@5.10.4)(vue@3.5.30)
     devDependencies:
       vitepress:
         specifier: 2.0.0-alpha.17
@@ -500,6 +507,9 @@ packages:
   ansi-styles@4.3.0:
     resolution: {integrity: sha512-zbB9rCJAT1rbjiVDb2hqKFHNYLxgtk8NURxZ3IZwD3F6NtxbXZQCnnSi1Lkx+IDohdPlFp222wVALIheZJQSEg==}
     engines: {node: '>=8'}
+
+  apexcharts@5.10.4:
+    resolution: {integrity: sha512-gt0VUqZ2+mr25ScbUcKZgJr96jKYm4vjOcxEWCEh/E5F4dWqhyo3dBhPRvNNnkKiWxkMd2cBwj3ZYH3rK39fkA==}
 
   argparse@1.0.10:
     resolution: {integrity: sha512-o5Roy6tNG4SL/FOkCAN6RzjiakZS25RLYFrcMttJqbdd8BWrnA+fGz57iN5Pb06pvBGvl5gQ0B48dJlslXvoTg==}
@@ -999,6 +1009,12 @@ packages:
       postcss:
         optional: true
 
+  vue3-apexcharts@1.11.1:
+    resolution: {integrity: sha512-MbN3vg8bMG19wc0Lm1HkeQvODgLm56DgpIxtNUO0xpf/JCzYWVGE4jzXp2JISzy2s3Kul1yOxNQUYsLvKQ5L9g==}
+    peerDependencies:
+      apexcharts: '>=5.10.0'
+      vue: '>=3.0.0'
+
   vue@3.5.30:
     resolution: {integrity: sha512-hTHLc6VNZyzzEH/l7PFGjpcTvUgiaPK5mdLkbjrTeWSRcEfxFrv56g/XckIYlE9ckuobsdwqd5mk2g1sBkMewg==}
     peerDependencies:
@@ -1378,6 +1394,8 @@ snapshots:
   ansi-styles@4.3.0:
     dependencies:
       color-convert: 2.0.1
+
+  apexcharts@5.10.4: {}
 
   argparse@1.0.10:
     dependencies:
@@ -2067,6 +2085,11 @@ snapshots:
       - typescript
       - universal-cookie
       - yaml
+
+  vue3-apexcharts@1.11.1(apexcharts@5.10.4)(vue@3.5.30):
+    dependencies:
+      apexcharts: 5.10.4
+      vue: 3.5.30
 
   vue@3.5.30:
     dependencies:

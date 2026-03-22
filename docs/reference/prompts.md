@@ -1,14 +1,24 @@
 # Prompts
 
-Prompts are guided workflows that structure how your AI assistant approaches common Vue.js tasks. They combine multiple tool calls into a coherent sequence.
+Prompts are guided workflows that structure how your AI assistant approaches common tasks. Each enabled framework registers its own prompts.
 
 ::: info
 Prompt support varies by MCP client. Claude Desktop and Claude Code support prompts natively. Other clients may expose them differently or not at all.
 :::
 
-## `debug_vue_issue`
+## Per-Framework Prompts
 
-Systematic debugging workflow for Vue.js issues.
+Each framework registers three prompts using the pattern `debug_{framework}_issue`, `compare_{framework}_apis`, and `migrate_{framework}_pattern`. For Vue.js, the prompts are:
+
+- `debug_vue_issue`
+- `compare_vue_apis`
+- `migrate_vue_pattern`
+
+---
+
+## `debug_{framework}_issue`
+
+Systematic debugging workflow for framework-specific issues.
 
 ### Parameters
 
@@ -21,10 +31,10 @@ Systematic debugging workflow for Vue.js issues.
 
 Your AI assistant will:
 
-1. Identify the Vue concept involved
-2. Search the documentation with `vue_docs_search`
-3. Look up specific APIs using `vue_api_lookup`
-4. Explore related patterns with `vue_get_related`
+1. Identify the concept involved
+2. Search the documentation with `{framework}_docs_search`
+3. Look up specific APIs using `{framework}_api_lookup`
+4. Explore related patterns with `{framework}_get_related`
 5. Explain the root cause with documentation references
 6. Provide a fix and prevention tip
 
@@ -36,9 +46,9 @@ Your AI assistant will:
 
 ---
 
-## `compare_vue_apis`
+## `compare_{framework}_apis`
 
-Side-by-side comparison of Vue APIs or patterns.
+Side-by-side comparison of APIs or patterns within a framework.
 
 ### Parameters
 
@@ -57,7 +67,7 @@ A structured comparison including:
 - Code examples showing key differences
 - Common mistakes
 
-### Example Comparisons
+### Example Comparisons (Vue.js)
 
 - `"ref, reactive"`: When to use which reactivity primitive
 - `"computed, watch"`: Derived state vs side effects
@@ -67,9 +77,9 @@ A structured comparison including:
 
 ---
 
-## `migrate_vue_pattern`
+## `migrate_{framework}_pattern`
 
-Step-by-step migration guide between Vue patterns.
+Step-by-step migration guide between patterns within a framework.
 
 ### Parameters
 
@@ -85,7 +95,7 @@ Step-by-step migration guide between Vue patterns.
 3. **Step-by-step migration.** Before/after code examples.
 4. **Common gotchas.** Pitfalls to watch for during migration.
 
-### Example Migrations
+### Example Migrations (Vue.js)
 
 - `"Options API"` -> `"Composition API"`
 - `"Vue 2 mixins"` -> `"composables"`
