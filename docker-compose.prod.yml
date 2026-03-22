@@ -118,6 +118,7 @@ services:
     command:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=vue-mcp_proxy"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
