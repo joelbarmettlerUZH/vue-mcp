@@ -30,6 +30,7 @@ services:
     networks:
       - proxy
       - internal
+      - egress
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.mcp.rule=Host(`${DOMAIN}`)"
@@ -70,6 +71,7 @@ services:
         condition: service_healthy
     networks:
       - internal
+      - egress
     mem_limit: 4g
     cpus: 2.0
     logging: *default-logging
@@ -139,6 +141,7 @@ networks:
   proxy:
   internal:
     internal: true
+  egress:
 
 volumes:
   pg-data:
