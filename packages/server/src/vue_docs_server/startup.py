@@ -159,6 +159,7 @@ def startup():
 
     logger.info("Starting server, loading data from PostgreSQL")
     state.db = PostgresClient(settings.database_url)
+    state.db.create_tables()
     _load_from_pg(state.db)
     _last_reload_ts = state.db.get_max_updated_at()
 
