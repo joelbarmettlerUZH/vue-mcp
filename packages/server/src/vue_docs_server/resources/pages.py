@@ -4,6 +4,7 @@ from fastmcp.exceptions import ResourceError
 
 from vue_docs_core.data.sources import SourceDefinition
 from vue_docs_server.startup import state
+from vue_docs_server.usage import log_resource_read
 
 
 async def _do_read_page(path: str, source: str) -> str:
@@ -17,6 +18,7 @@ async def _do_read_page(path: str, source: str) -> str:
                 f"Page not found: {path}. Read {source}://topics for available pages. "
                 f"Examples: {available}"
             )
+        log_resource_read(f"{source}://pages/{path}", framework=source, response_chars=len(content))
         return content
 
     raise ResourceError(

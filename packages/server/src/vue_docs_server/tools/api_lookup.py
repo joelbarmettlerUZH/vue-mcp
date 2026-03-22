@@ -11,6 +11,7 @@ from vue_docs_core.data.sources import SOURCE_REGISTRY, SourceDefinition
 from vue_docs_core.models.entity import EntityIndex
 from vue_docs_server.startup import state
 from vue_docs_server.tools.search import _tool_prefix
+from vue_docs_server.usage import log_tool_call
 
 
 def _find_entity(name: str, entity_index: EntityIndex | None = None):
@@ -119,7 +120,9 @@ async def _do_api_lookup(
         related_names = ", ".join(f"`{r}`" for r in entity.related[:3])
         lines.append(f"- `{lookup_tool}` on related APIs: {related_names}")
 
-    return "\n".join(lines)
+    result = "\n".join(lines)
+    log_tool_call("api_lookup", query=api_name, framework=source, latency_ms=0, response_chars=len(result))
+    return result
 
 
 # ---------------------------------------------------------------------------

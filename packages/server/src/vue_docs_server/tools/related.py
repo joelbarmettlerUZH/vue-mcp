@@ -9,6 +9,7 @@ from pydantic import Field
 from vue_docs_core.data.sources import SOURCE_REGISTRY, SourceDefinition
 from vue_docs_server.startup import state
 from vue_docs_server.tools.search import _tool_prefix
+from vue_docs_server.usage import log_tool_call
 
 
 async def _do_get_related(
@@ -100,7 +101,9 @@ async def _do_get_related(
     for name in api_names:
         lines.append(f'- `{lookup_tool}` on `"{name}"` for API details')
 
-    return "\n".join(lines)
+    result = "\n".join(lines)
+    log_tool_call("get_related", query=topic, framework=source, latency_ms=0, response_chars=len(result))
+    return result
 
 
 # ---------------------------------------------------------------------------

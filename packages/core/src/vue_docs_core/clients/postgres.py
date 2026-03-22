@@ -9,6 +9,8 @@ from pathlib import Path
 
 from sqlalchemy import (
     DateTime,
+    Float,
+    Integer,
     LargeBinary,
     String,
     Text,
@@ -87,6 +89,23 @@ class ModelRow(Base):
     )
 
 
+class UsageEventRow(Base):
+    __tablename__ = "usage_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    event_type: Mapped[str] = mapped_column(String, nullable=False)  # tool_call, resource_read
+    name: Mapped[str] = mapped_column(String, nullable=False)  # tool or resource name
+    query: Mapped[str | None] = mapped_column(Text, nullable=True)  # search query if applicable
+    framework: Mapped[str | None] = mapped_column(String, nullable=True)  # source framework
+    latency_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    response_chars: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    session_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
 # ---------------------------------------------------------------------------
 # Client
 # ---------------------------------------------------------------------------
@@ -105,6 +124,39 @@ class PostgresClient:
 
     def close(self):
         self._engine.dispose()
+
+    # ---- Usage analytics -----------------------------------------------------
+
+    def log_usage(
+        self,
+        event_type: str,
+        name: str,
+        *,
+        query: str | None = None,
+        framework: str | None = None,
+        latency_ms: int | None = None,
+        response_chars: int | None = None,
+        session_id: str | None = None,
+        error: str | None = None,
+    ) -> None:
+        """Log a usage event. Fire-and-forget, never raises."""
+        try:
+            with self._session_factory() as session:
+                session.add(
+                    UsageEventRow(
+                        event_type=event_type,
+                        name=name,
+                        query=query,
+                        framework=framework,
+                        latency_ms=latency_ms,
+                        response_chars=response_chars,
+                        session_id=session_id,
+                        error=error,
+                    )
+                )
+                session.commit()
+        except Exception:
+            logger.debug("Failed to log usage event", exc_info=True)
 
     # ---- Read (used by server) -----------------------------------------------
 

@@ -1,6 +1,7 @@
 """Search tool implementation — shared logic + per-source factories."""
 
 import logging
+import time
 from typing import Annotated
 
 import httpx
@@ -16,6 +17,7 @@ from vue_docs_core.data.sources import SourceDefinition
 from vue_docs_core.retrieval.expansion import expand_cross_references
 from vue_docs_core.retrieval.reconstruction import reconstruct_results
 from vue_docs_server.startup import state
+from vue_docs_server.usage import log_tool_call
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +36,7 @@ async def _do_search(
     if not state.is_ready:
         raise ToolError("Server not initialized. Please try again shortly.")
 
+    t0 = time.monotonic()
     jina = JinaClient()
     try:
         # Step 1: Embed the query
@@ -118,7 +121,15 @@ async def _do_search(
     history.append({"query": query, "scope": scope, "source": source, "results": len(hits)})
     await ctx.set_state("query_history", history[-10:])
 
-    return reconstruct_results(hits, max_results=max_results)
+    result = reconstruct_results(hits, max_results=max_results)
+    log_tool_call(
+        "docs_search",
+        query=query,
+        framework=source,
+        latency_ms=int((time.monotonic() - t0) * 1000),
+        response_chars=len(result),
+    )
+    return result
 
 
 # ---------------------------------------------------------------------------
