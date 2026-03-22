@@ -20,6 +20,9 @@ console = Console()
 def _configure_logging(verbose: bool):
     level = logging.DEBUG if verbose else logging.WARNING
     logging.basicConfig(level=level, format="%(levelname)s %(name)s: %(message)s")
+    # Suppress noisy third-party loggers even in verbose mode
+    for name in ("markdown_it", "httpcore", "httpx", "hpack"):
+        logging.getLogger(name).setLevel(logging.WARNING)
 
 
 def _get_db():

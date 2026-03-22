@@ -306,7 +306,7 @@ async def run_pipeline(
         console.print()
         console.print("[bold]Contextual enrichment (Gemini)...[/bold]")
 
-        gemini_client = GeminiClient(timeout=60.0)
+        gemini_client = GeminiClient(timeout=60.0, max_retries=5)
         try:
             with console.status(f"Enriching {len(new_chunks)} chunks with contextual prefixes..."):
                 enrich_result = await enrich_chunks_contextual(
@@ -328,7 +328,7 @@ async def run_pipeline(
         console.print()
         console.print("[bold]HyPE question generation (Gemini)...[/bold]")
 
-        gemini_client_hype = GeminiClient(timeout=60.0)
+        gemini_client_hype = GeminiClient(timeout=60.0, max_retries=5)
         try:
             with console.status(f"Generating HyPE questions for {len(new_chunks)} chunks..."):
                 hype_result = await generate_hype_questions(
@@ -435,7 +435,7 @@ async def run_pipeline(
             if full_path.exists() and fp not in all_page_contents:
                 all_page_contents[fp] = full_path.read_text(encoding="utf-8")
 
-        gemini_client_summary = GeminiClient(timeout=60.0)
+        gemini_client_summary = GeminiClient(timeout=60.0, max_retries=5)
         try:
             # Layer 1: Page summaries for ALL pages
             with console.status("Generating page summaries..."):

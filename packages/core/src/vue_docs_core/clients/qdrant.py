@@ -272,6 +272,8 @@ class QdrantDocClient:
 
     def delete_by_chunk_ids(self, chunk_ids: list[str]):
         """Delete points matching any of the given chunk_id values."""
+        if not chunk_ids:
+            return
         # Qdrant point IDs are derived from chunk_id hashes
         point_ids = [_chunk_id_to_point_id(cid) for cid in chunk_ids]
         self.client.delete(

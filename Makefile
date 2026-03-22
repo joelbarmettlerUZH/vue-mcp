@@ -62,13 +62,13 @@ inspect: ## Inspect chunks for a file (usage: make inspect FILE=path/to/file.md)
 # ── Eval ──────────────────────────────────────────────────────────
 
 eval: ## Run eval against our server (requires local infra + ingested data)
-	uv run python -m vue_docs_eval run --providers ours --frameworks vue
+	uv run vue-docs-eval run --providers ours --frameworks vue
 
 eval-compare: ## Run eval comparing our server vs Context7
-	uv run python -m vue_docs_eval run --providers ours,context7 --frameworks vue
+	uv run vue-docs-eval run --providers ours,context7 --frameworks vue
 
 eval-generate: ## Generate evaluation questions (usage: make eval-generate FRAMEWORK=vue DOCS=data/vue-docs/src)
-	uv run python -m vue_docs_eval generate --framework $(FRAMEWORK) --docs-path $(DOCS)
+	uv run vue-docs-eval generate --framework $(FRAMEWORK) --docs-path $(DOCS)
 
 # ── Compound ───────────────────────────────────────────────────────
 

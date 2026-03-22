@@ -16,26 +16,31 @@ logger = logging.getLogger(__name__)
 
 
 def _parse_retry_delay(error: ClientError) -> float | None:
-    """Extract retryDelay from a Gemini 429 error response."""
-    details = getattr(error, "details", None)
-    if not details:
-        return None
-    # details can be a dict with 'error.details' containing RetryInfo
-    error_details = details if isinstance(details, list) else []
-    if isinstance(details, dict):
-        error_details = details.get("error", {}).get("details", [])
-    for detail in error_details:
-        if isinstance(detail, dict) and "retryDelay" in detail:
-            delay_str = detail["retryDelay"]
-            match = re.search(r"(\d+)", str(delay_str))
-            if match:
-                return float(match.group(1))
-    # Also try parsing from the message string
-    msg = str(error)
-    match = re.search(r"retry in (\d+(?:\.\d+)?)s", msg, re.IGNORECASE)
-    if match:
-        return float(match.group(1))
+    """Extract retryDelay from a Gemini 429 error message.
+
+    Handles both formats:
+    - "Please retry in 45.139987117s."
+    - "Please retry in 13h1m46.708492055s."
+    """
+    for msg in (getattr(error, "message", None), str(error)):
+        if not msg:
+            continue
+        # Try XhYmZs format first (e.g. "13h1m46.7s")
+        match = re.search(
+            r"retry in (?:(\d+)h)?(?:(\d+)m)?(\d+(?:\.\d+)?)s", msg, re.IGNORECASE
+        )
+        if match:
+            hours = int(match.group(1) or 0)
+            minutes = int(match.group(2) or 0)
+            seconds = float(match.group(3))
+            return hours * 3600 + minutes * 60 + seconds
     return None
+
+
+def _is_daily_quota_error(error: ClientError) -> bool:
+    """Check if the error is a daily quota exhaustion (not retryable short-term)."""
+    msg = getattr(error, "message", "") or str(error)
+    return "per_day" in msg.lower() or "perday" in msg.lower()
 
 
 class GeminiResponse(BaseModel):
@@ -81,7 +86,8 @@ class GeminiClient:
         """Execute a Gemini API call with retry on 429 rate limit errors.
 
         Parses the retryDelay from Gemini's error response when available,
-        otherwise uses exponential backoff.
+        otherwise uses exponential backoff. Aborts immediately on daily quota
+        exhaustion since retrying is pointless.
         """
         for attempt in range(self.max_retries + 1):
             try:
@@ -89,7 +95,14 @@ class GeminiClient:
             except ClientError as e:
                 if e.code != 429 or attempt == self.max_retries:
                     raise
+                if _is_daily_quota_error(e):
+                    raise RuntimeError(
+                        "Gemini daily request quota exhausted. "
+                        "Wait for quota reset or upgrade your plan."
+                    ) from e
                 delay = _parse_retry_delay(e) or min(2**attempt * 5, 60)
+                # Cap retry delay at 2 minutes to avoid absurdly long waits
+                delay = min(delay, 120)
                 logger.warning(
                     "Gemini rate limited (429), retrying in %.0fs (attempt %d/%d)",
                     delay,
