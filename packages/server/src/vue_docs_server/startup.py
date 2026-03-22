@@ -109,7 +109,13 @@ def _load_from_pg(db: PostgresClient):
     state._bm25_tmp_dir = tempfile.TemporaryDirectory(prefix="vue-mcp-bm25-")
     model = BM25Model()
     bm25_path = Path(state._bm25_tmp_dir.name) / "bm25_model"
-    if not db.load_bm25_model(bm25_path):
+    # Try each enabled source, then fall back to "combined"
+    bm25_loaded = False
+    for sn in source_names:
+        if db.load_bm25_model(bm25_path, source=sn):
+            bm25_loaded = True
+            break
+    if not bm25_loaded and not db.load_bm25_model(bm25_path, source="combined"):
         raise RuntimeError("BM25 model not found in PG. Run ingestion first.")
     model.load(bm25_path)
     logger.info("BM25 model loaded from PG (%d vocab tokens)", model.vocab_size)
