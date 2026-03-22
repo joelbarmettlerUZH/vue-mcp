@@ -12,7 +12,7 @@ echo "=== Restore started at $(date) ==="
 
 # 1. Restore PostgreSQL
 echo "Restoring PostgreSQL from $PG_DUMP..."
-gunzip -c "$PG_DUMP" | docker compose -f "$COMPOSE_DIR/docker-compose.yml" exec -T postgres \
+gunzip -c "$PG_DUMP" | docker compose -f "$COMPOSE_DIR/docker-compose.prod.yml" exec -T postgres \
   psql -U vue_mcp -d vue_mcp
 echo "  PostgreSQL restored."
 
@@ -30,7 +30,7 @@ fi
 
 # 3. Restart server to reload data
 echo "Restarting MCP server..."
-docker compose -f "$COMPOSE_DIR/docker-compose.yml" restart mcp-server
+docker compose -f "$COMPOSE_DIR/docker-compose.prod.yml" restart mcp-server
 echo "  Server restarted."
 
 echo "=== Restore complete at $(date) ==="

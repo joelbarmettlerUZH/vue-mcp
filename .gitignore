@@ -11,7 +11,6 @@ eval/results/
 *.jsonl
 .env.production
 certs/
-docker-compose.override.yml
 traefik-dynamic.yml
 *-clouds.yaml
 *-openrc.txt

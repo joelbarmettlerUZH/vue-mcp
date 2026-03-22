@@ -1,7 +1,9 @@
-"""vue_docs_search tool implementation."""
+"""Search tool implementation — shared logic + per-source factories."""
 
+import logging
 from typing import Annotated
 
+import httpx
 from fastmcp import Context
 from fastmcp.exceptions import ToolError
 from fastmcp.telemetry import get_tracer
@@ -10,47 +12,25 @@ from pydantic import Field
 from vue_docs_core.clients.jina import JinaClient
 from vue_docs_core.clients.qdrant import SearchHit
 from vue_docs_core.config import RERANK_MIN_SCORE, RETRIEVAL_LIMIT, TASK_RETRIEVAL_QUERY
+from vue_docs_core.data.sources import SourceDefinition
 from vue_docs_core.retrieval.expansion import expand_cross_references
 from vue_docs_core.retrieval.reconstruction import reconstruct_results
 from vue_docs_server.startup import state
+
+logger = logging.getLogger(__name__)
 
 TOTAL_STEPS = 6
 _tracer = get_tracer()
 
 
-async def vue_docs_search(
-    query: Annotated[
-        str,
-        Field(
-            max_length=2000,
-            description="A developer question or topic about Vue.js. "
-            "Examples: 'how does computed caching work', "
-            "'v-model on custom components', "
-            "'defineProps TypeScript usage'.",
-        ),
-    ],
-    scope: Annotated[
-        str,
-        Field(
-            default="all",
-            description="Documentation section to search within. Use 'all' for the "
-            "full docs, or narrow with a folder path like 'guide', "
-            "'guide/essentials', 'guide/components', 'api', 'tutorial'. "
-            "Read the vue://scopes resource for the complete list.",
-        ),
-    ] = "all",
-    max_results: Annotated[
-        int,
-        Field(default=3, ge=1, le=20, description="Number of documentation sections to return."),
-    ] = 3,
+async def _do_search(
+    query: str,
+    scope: str = "all",
+    max_results: int = 3,
+    source: str | None = None,
     ctx: Context = None,
 ) -> str:
-    """Search the Vue.js documentation.
-
-    Performs hybrid semantic + keyword search over the indexed Vue documentation,
-    reranks candidates, and returns reconstructed, readable documentation
-    fragments ordered by the documentation's natural reading flow.
-    """
+    """Shared search implementation. source=None searches all frameworks."""
     if not state.is_ready:
         raise ToolError("Server not initialized. Please try again shortly.")
 
@@ -63,23 +43,26 @@ async def vue_docs_search(
             span.set_attribute("query.length", len(query))
             embed_result = await jina.embed([query], task=TASK_RETRIEVAL_QUERY)
             if not embed_result.embeddings:
-                return "Error: Failed to generate query embedding."
+                raise ToolError("Failed to generate query embedding.")
             dense_vector = embed_result.embeddings[0]
 
             # Generate BM25 sparse vector
             sparse_vector = state.bm25.get_query_sparse_vector(query)
 
-        # Step 2: Run hybrid search (no entity filter — BM25 covers keyword matching)
+        # Step 2: Run hybrid search
         await ctx.report_progress(2, TOTAL_STEPS)
         await ctx.info("Searching documentation")
         with _tracer.start_as_current_span("hybrid_search") as span:
             span.set_attribute("search.scope", scope)
+            if source:
+                span.set_attribute("search.source", source)
             scope_filter = scope if scope != "all" else None
             hits = state.qdrant.hybrid_search(
                 dense_vector=dense_vector,
                 sparse_vector=sparse_vector,
                 limit=RETRIEVAL_LIMIT,
                 scope_filter=scope_filter,
+                source=source,
             )
 
             if not hits and scope_filter:
@@ -89,6 +72,7 @@ async def vue_docs_search(
                     dense_vector=dense_vector,
                     sparse_vector=sparse_vector,
                     limit=RETRIEVAL_LIMIT,
+                    source=source,
                 )
 
             span.set_attribute("search.hit_count", len(hits))
@@ -131,10 +115,112 @@ async def vue_docs_search(
 
     # Track query in session history
     history = await ctx.get_state("query_history") or []
-    history.append({"query": query, "scope": scope, "results": len(hits)})
+    history.append({"query": query, "scope": scope, "source": source, "results": len(hits)})
     await ctx.set_state("query_history", history[-10:])
 
     return reconstruct_results(hits, max_results=max_results)
+
+
+# ---------------------------------------------------------------------------
+# Per-source tool factories
+# ---------------------------------------------------------------------------
+
+
+def _tool_prefix(source_name: str) -> str:
+    """Convert source name to tool prefix: 'vue-router' -> 'vue_router'."""
+    return source_name.replace("-", "_")
+
+
+def make_search_tool(source_def: SourceDefinition):
+    """Create a source-specific search tool function."""
+    source_name = source_def.name
+    display = source_def.display_name
+    prefix = _tool_prefix(source_name)
+
+    async def search(
+        query: Annotated[
+            str,
+            Field(
+                max_length=2000,
+                description=f"A developer question or topic about {display}.",
+            ),
+        ],
+        scope: Annotated[
+            str,
+            Field(
+                default="all",
+                description=f"Documentation section to search within. Use 'all' for the "
+                f"full docs, or narrow with a folder path. "
+                f"Read the {source_name}://scopes resource for the complete list.",
+            ),
+        ] = "all",
+        max_results: Annotated[
+            int,
+            Field(
+                default=3,
+                ge=1,
+                le=20,
+                description="Number of documentation sections to return.",
+            ),
+        ] = 3,
+        ctx: Context = None,
+    ) -> str:
+        return await _do_search(query, scope, max_results, source=source_name, ctx=ctx)
+
+    search.__name__ = f"{prefix}_docs_search"
+    search.__doc__ = (
+        f"Search the {display} documentation.\n\n"
+        f"Performs hybrid semantic + keyword search over the indexed {display} documentation, "
+        f"reranks candidates, and returns reconstructed, readable documentation "
+        f"fragments ordered by the documentation's natural reading flow."
+    )
+    return search
+
+
+def make_ecosystem_search_tool():
+    """Create the cross-ecosystem search tool."""
+
+    async def ecosystem_search(
+        query: Annotated[
+            str,
+            Field(
+                max_length=2000,
+                description="A developer question or topic about the Vue ecosystem. "
+                "Searches across all frameworks (Vue, Vue Router, etc.).",
+            ),
+        ],
+        scope: Annotated[
+            str,
+            Field(
+                default="all",
+                description="Documentation section to search within. Use 'all' for "
+                "all documentation across all frameworks.",
+            ),
+        ] = "all",
+        max_results: Annotated[
+            int,
+            Field(
+                default=5,
+                ge=1,
+                le=20,
+                description="Number of documentation sections to return.",
+            ),
+        ] = 5,
+        ctx: Context = None,
+    ) -> str:
+        """Search across the entire Vue ecosystem documentation.
+
+        Searches Vue.js, Vue Router, and all other indexed frameworks at once.
+        Results are tagged by source framework and ordered by relevance.
+        """
+        return await _do_search(query, scope, max_results, source=None, ctx=ctx)
+
+    return ecosystem_search
+
+
+# ---------------------------------------------------------------------------
+# Reranking and HyPE resolution (shared helpers)
+# ---------------------------------------------------------------------------
 
 
 async def _rerank_hits(
@@ -143,16 +229,10 @@ async def _rerank_hits(
     hits: list[SearchHit],
     ctx: Context,
 ) -> list[SearchHit]:
-    """Rerank candidate hits using Jina reranker v3.
-
-    Sends all candidates through the listwise reranker and returns hits
-    reordered by reranker relevance. Falls back to the original ordering
-    on failure.
-    """
+    """Rerank candidate hits using Jina reranker v3."""
     if not hits:
         return hits
 
-    # Build document texts for the reranker — use content with breadcrumb context
     documents = []
     for hit in hits:
         payload = hit.payload
@@ -160,7 +240,6 @@ async def _rerank_hits(
         content = payload.get("content", "")
         preceding_prose = payload.get("preceding_prose", "")
 
-        # For code blocks, include the preceding prose for context
         if payload.get("chunk_type") == "code_block" and preceding_prose:
             doc_text = f"{breadcrumb}\n{preceding_prose}\n{content}"
         elif breadcrumb:
@@ -172,7 +251,6 @@ async def _rerank_hits(
     try:
         result = await jina.rerank(query=query, documents=documents)
 
-        # Rebuild hits list in reranked order with reranker scores
         reranked: list[SearchHit] = []
         for idx, score in zip(result.indices, result.scores, strict=False):
             hit = hits[idx]
@@ -187,18 +265,13 @@ async def _rerank_hits(
         await ctx.info(f"Reranked {len(hits)} candidates (tokens: {result.total_tokens})")
         return reranked
 
-    except Exception:
-        await ctx.warning("Reranking failed, falling back to fusion scores")
+    except (httpx.HTTPStatusError, httpx.TimeoutException, RuntimeError):
+        logger.error("Reranking failed, falling back to fusion scores", exc_info=True)
         return hits
 
 
 def _resolve_hype_hits(hits: list) -> list:
-    """Replace HyPE question hits with their parent chunks.
-
-    When a HyPE question point matches a query, we resolve it to the
-    parent chunk for inclusion in results. Deduplicates by chunk_id,
-    keeping the highest score.
-    """
+    """Replace HyPE question hits with their parent chunks."""
     resolved: list[SearchHit] = []
     seen_chunk_ids: dict[str, float] = {}
     parent_ids_to_fetch: list[str] = []
@@ -211,7 +284,6 @@ def _resolve_hype_hits(hits: list) -> list:
                 parent_ids_to_fetch.append(parent_id)
                 hype_scores[parent_id] = hit.score
             elif parent_id in seen_chunk_ids:
-                # Keep the highest score
                 seen_chunk_ids[parent_id] = max(seen_chunk_ids[parent_id], hit.score)
         else:
             chunk_id = hit.chunk_id
@@ -219,7 +291,6 @@ def _resolve_hype_hits(hits: list) -> list:
                 seen_chunk_ids[chunk_id] = hit.score
                 resolved.append(hit)
 
-    # Fetch parent chunks for HyPE hits
     if parent_ids_to_fetch and state.qdrant:
         parent_payloads = state.qdrant.get_by_chunk_ids(parent_ids_to_fetch)
         for payload in parent_payloads:
@@ -235,6 +306,5 @@ def _resolve_hype_hits(hits: list) -> list:
                 )
                 seen_chunk_ids[parent_id] = score
 
-    # Re-sort by score descending
     resolved.sort(key=lambda h: h.score, reverse=True)
     return resolved

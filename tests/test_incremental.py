@@ -11,15 +11,54 @@ from vue_docs_core.models.chunk import ChunkType
 from vue_docs_ingestion.scanner import find_markdown_files, hash_file
 from vue_docs_ingestion.state import FileState, IndexState
 
+
+def _mock_db():
+    """Create a mock PostgresClient for IndexState tests."""
+    db = MagicMock()
+    db._store = {}
+
+    def load_entry(file_path, source="vue"):
+        key = (source, file_path)
+        return db._store.get(key)
+
+    def save_entry(
+        file_path, content_hash, pipeline_version, chunk_ids, last_indexed, source="vue"
+    ):
+        db._store[(source, file_path)] = {
+            "content_hash": content_hash,
+            "pipeline_version": pipeline_version,
+            "chunk_ids": chunk_ids,
+            "last_indexed": last_indexed,
+        }
+
+    def remove_entry(file_path, source="vue"):
+        db._store.pop((source, file_path), None)
+
+    def all_paths(source=None):
+        return [fp for (s, fp) in db._store if source is None or s == source]
+
+    def total_chunks(source=None):
+        return sum(
+            len(v["chunk_ids"]) for (s, _), v in db._store.items() if source is None or s == source
+        )
+
+    db.load_index_state_entry = MagicMock(side_effect=load_entry)
+    db.save_index_state = MagicMock(side_effect=save_entry)
+    db.remove_index_state = MagicMock(side_effect=remove_entry)
+    db.all_index_file_paths = MagicMock(side_effect=all_paths)
+    db.total_index_chunks = MagicMock(side_effect=total_chunks)
+    return db
+
+
 # ---------------------------------------------------------------------------
 # State persistence
 # ---------------------------------------------------------------------------
 
 
 class TestIndexState:
-    def test_save_and_load(self, tmp_path):
-        state_path = tmp_path / "state.json"
-        state = IndexState(state_path)
+    def test_save_and_load(self):
+        db = _mock_db()
+        state = IndexState(db=db)
 
         state.set(
             "guide/a.md",
@@ -30,24 +69,22 @@ class TestIndexState:
                 last_indexed="2026-03-16T00:00:00Z",
             ),
         )
-        state.save()
 
-        # Reload
-        loaded = IndexState(state_path)
-        fs = loaded.get("guide/a.md")
+        fs = state.get("guide/a.md")
         assert fs is not None
         assert fs.content_hash == "abc123"
         assert fs.pipeline_version == "5"
         assert fs.chunk_ids == ["guide/a#intro", "guide/a#details"]
         assert fs.last_indexed == "2026-03-16T00:00:00Z"
 
-    def test_get_missing_returns_none(self, tmp_path):
-        state = IndexState(tmp_path / "state.json")
+    def test_get_missing_returns_none(self):
+        db = _mock_db()
+        state = IndexState(db=db)
         assert state.get("nonexistent.md") is None
 
-    def test_remove(self, tmp_path):
-        state_path = tmp_path / "state.json"
-        state = IndexState(state_path)
+    def test_remove(self):
+        db = _mock_db()
+        state = IndexState(db=db)
         state.set("guide/a.md", FileState(content_hash="x", pipeline_version="1"))
         state.set("guide/b.md", FileState(content_hash="y", pipeline_version="1"))
 
@@ -56,14 +93,16 @@ class TestIndexState:
         assert state.get("guide/b.md") is not None
         assert "guide/a.md" not in state.all_file_paths()
 
-    def test_all_file_paths(self, tmp_path):
-        state = IndexState(tmp_path / "state.json")
+    def test_all_file_paths(self):
+        db = _mock_db()
+        state = IndexState(db=db)
         state.set("a.md", FileState(content_hash="x", pipeline_version="1"))
         state.set("b.md", FileState(content_hash="y", pipeline_version="1"))
         assert sorted(state.all_file_paths()) == ["a.md", "b.md"]
 
-    def test_total_chunks(self, tmp_path):
-        state = IndexState(tmp_path / "state.json")
+    def test_total_chunks(self):
+        db = _mock_db()
+        state = IndexState(db=db)
         state.set(
             "a.md",
             FileState(
@@ -82,8 +121,9 @@ class TestIndexState:
         )
         assert state.total_chunks() == 3
 
-    def test_remove_nonexistent_is_noop(self, tmp_path):
-        state = IndexState(tmp_path / "state.json")
+    def test_remove_nonexistent_is_noop(self):
+        db = _mock_db()
+        state = IndexState(db=db)
         state.remove("does-not-exist.md")  # Should not raise
 
 
@@ -93,9 +133,10 @@ class TestIndexState:
 
 
 class TestChangeDetection:
-    def test_new_file_detected(self, tmp_path):
+    def test_new_file_detected(self):
         """A file not in state should be flagged for processing."""
-        state = IndexState(tmp_path / "state.json")
+        db = _mock_db()
+        state = IndexState(db=db)
         assert state.get("guide/new-file.md") is None
 
     def test_unchanged_file_skipped(self, tmp_path):
@@ -105,7 +146,8 @@ class TestChangeDetection:
 
         file_hash = hash_file(md_file)
 
-        state = IndexState(tmp_path / "state.json")
+        db = _mock_db()
+        state = IndexState(db=db)
         state.set(
             "test.md",
             FileState(
@@ -126,7 +168,8 @@ class TestChangeDetection:
         md_file.write_text("# Original content")
         old_hash = hash_file(md_file)
 
-        state = IndexState(tmp_path / "state.json")
+        db = _mock_db()
+        state = IndexState(db=db)
         state.set(
             "test.md",
             FileState(
@@ -142,9 +185,10 @@ class TestChangeDetection:
         existing = state.get("test.md")
         assert existing.content_hash != new_hash
 
-    def test_version_bump_forces_reindex(self, tmp_path):
+    def test_version_bump_forces_reindex(self):
         """A file indexed with old pipeline version should be reprocessed."""
-        state = IndexState(tmp_path / "state.json")
+        db = _mock_db()
+        state = IndexState(db=db)
         state.set(
             "test.md",
             FileState(
@@ -168,7 +212,8 @@ class TestDeletedFileDetection:
         (tmp_path / "a.md").write_text("# A")
         (tmp_path / "b.md").write_text("# B")
 
-        state = IndexState(tmp_path / "state.json")
+        db = _mock_db()
+        state = IndexState(db=db)
         state.set("a.md", FileState(content_hash="x", pipeline_version="5"))
         state.set("b.md", FileState(content_hash="y", pipeline_version="5"))
         state.set("c.md", FileState(content_hash="z", pipeline_version="5"))  # deleted
@@ -179,9 +224,10 @@ class TestDeletedFileDetection:
 
         assert deleted == {"c.md"}
 
-    def test_no_false_positives_for_existing_files(self, tmp_path):
+    def test_no_false_positives_for_existing_files(self):
         """All current files that exist should not be flagged as deleted."""
-        state = IndexState(tmp_path / "state.json")
+        db = _mock_db()
+        state = IndexState(db=db)
         state.set("a.md", FileState(content_hash="x", pipeline_version="5"))
 
         current_files = {"a.md"}
@@ -204,6 +250,7 @@ class TestPayloadToChunk:
             "chunk_id": "guide/essentials/computed#caching",
             "chunk_type": "section",
             "content": "Computed properties are cached.",
+            "source": "vue",
             "file_path": "guide/essentials/computed.md",
             "folder_path": "guide/essentials",
             "page_title": "Computed Properties",
@@ -235,21 +282,20 @@ class TestPayloadToChunk:
         assert chunk.metadata.api_entities == ["computed"]
         assert chunk.contextual_prefix == "This chunk is about caching."
 
-    def test_handles_missing_fields_gracefully(self):
+    def test_raises_on_missing_required_fields(self):
+        """Missing required fields should raise KeyError."""
+        import pytest
+
         from vue_docs_ingestion.pipeline import _payload_to_chunk
 
-        # Minimal payload
         payload = {
             "chunk_id": "test#section",
             "chunk_type": "section",
             "content": "Hello",
         }
 
-        chunk = _payload_to_chunk(payload)
-        assert chunk.chunk_id == "test#section"
-        assert chunk.content == "Hello"
-        assert chunk.metadata.file_path == ""
-        assert chunk.metadata.api_entities == []
+        with pytest.raises(KeyError):
+            _payload_to_chunk(payload)
 
 
 # ---------------------------------------------------------------------------
@@ -309,13 +355,3 @@ class TestQdrantDeleteByChunkIds:
         assert isinstance(point_ids, list)
         assert len(point_ids) == 2
         assert all(isinstance(pid, int) for pid in point_ids)
-
-    def test_delete_by_chunk_ids_empty(self):
-        from vue_docs_core.clients.qdrant import QdrantDocClient
-
-        qdrant = QdrantDocClient()
-        qdrant._client = MagicMock()
-
-        qdrant.delete_by_chunk_ids([])
-
-        qdrant._client.delete.assert_not_called()

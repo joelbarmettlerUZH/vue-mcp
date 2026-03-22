@@ -3,19 +3,27 @@
 from itertools import groupby
 
 from vue_docs_core.clients.qdrant import SearchHit
-from vue_docs_core.config import VUE_DOCS_BASE_URL
+from vue_docs_core.data.sources import SOURCE_REGISTRY
 
 
-def _file_path_to_url(file_path: str) -> str:
+def _get_base_url(source: str) -> str:
+    """Get the base URL for a source framework."""
+    if source in SOURCE_REGISTRY:
+        return SOURCE_REGISTRY[source].base_url
+    return "https://vuejs.org"  # fallback
+
+
+def _file_path_to_url(file_path: str, source: str = "vue") -> str:
     """Convert a file path like 'guide/essentials/computed.md' to a docs URL."""
+    base_url = _get_base_url(source)
     path = file_path.removeprefix("/").removesuffix(".md")
-    return f"{VUE_DOCS_BASE_URL}/{path}"
+    return f"{base_url}/{path}"
 
 
-def _ref_to_link(ref: str) -> str:
+def _ref_to_link(ref: str, source: str = "vue") -> str:
     """Convert a cross-reference path to a named markdown link."""
     if ref.endswith(".md"):
-        url = _file_path_to_url(ref)
+        url = _file_path_to_url(ref, source)
         name = ref.rsplit("/", 1)[-1].removesuffix(".md").replace("-", " ").title()
         return f"[{name}]({url})"
     return ref
@@ -83,14 +91,20 @@ def _build_chunk_frontmatter(hits: list[SearchHit]) -> str:
     payload = hits[0].payload
     breadcrumb = payload.get("breadcrumb", "")
     file_path = payload.get("file_path", "")
+    source = payload.get("source", "vue")
 
     lines = ["---"]
 
     if breadcrumb:
         lines.append(f"breadcrumb: {breadcrumb}")
 
+    if source != "vue":
+        source_def = SOURCE_REGISTRY.get(source)
+        if source_def:
+            lines.append(f"framework: {source_def.display_name}")
+
     if file_path:
-        lines.append(f"source: {_file_path_to_url(file_path)}")
+        lines.append(f"source: {_file_path_to_url(file_path, source)}")
 
     # Collect APIs across all hits in the group
     all_apis: list[str] = []
@@ -112,7 +126,7 @@ def _build_chunk_frontmatter(hits: list[SearchHit]) -> str:
         lines.append("apis: [" + ", ".join(all_apis) + "]")
 
     if all_refs:
-        links = [_ref_to_link(r) for r in all_refs[:5]]
+        links = [_ref_to_link(r, source) for r in all_refs[:5]]
         lines.append("see_also: [" + ", ".join(links) + "]")
 
     lines.append("---")
@@ -213,7 +227,8 @@ def reconstruct_results(
         detail_hits = [h for h in page_hits if h.payload.get("chunk_type") != "page_summary"]
 
         page_title = page_hits[0].payload.get("page_title", file_path)
-        url = _file_path_to_url(file_path)
+        hit_source = page_hits[0].payload.get("source", "vue")
+        url = _file_path_to_url(file_path, hit_source)
 
         # Page header
         page_parts: list[str] = [

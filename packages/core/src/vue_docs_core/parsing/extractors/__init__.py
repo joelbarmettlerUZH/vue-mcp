@@ -1,0 +1,28 @@
+"""Pluggable entity extractors for different documentation sources."""
+
+from vue_docs_core.parsing.extractors.base import EntityExtractor
+from vue_docs_core.parsing.extractors.generic import GenericEntityExtractor
+from vue_docs_core.parsing.extractors.vue import VueEntityExtractor
+from vue_docs_core.parsing.extractors.vue_router import VueRouterEntityExtractor
+
+# Registry mapping source name → extractor class
+EXTRACTOR_REGISTRY: dict[str, type[EntityExtractor]] = {
+    "vue": VueEntityExtractor,
+    "vue-router": VueRouterEntityExtractor,
+}
+
+
+def get_extractor(source_name: str) -> EntityExtractor:
+    """Get the entity extractor for a source, falling back to generic."""
+    cls = EXTRACTOR_REGISTRY.get(source_name, GenericEntityExtractor)
+    return cls()
+
+
+__all__ = [
+    "EXTRACTOR_REGISTRY",
+    "EntityExtractor",
+    "GenericEntityExtractor",
+    "VueEntityExtractor",
+    "VueRouterEntityExtractor",
+    "get_extractor",
+]

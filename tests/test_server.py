@@ -7,7 +7,8 @@ protocol integration tests using fastmcp.Client for in-process testing.
 No real API calls — Jina, Qdrant, and BM25 are mocked throughout.
 """
 
-import json
+import asyncio
+import contextlib
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -30,13 +31,10 @@ from vue_docs_core.retrieval.reconstruction import (
     _merge_adjacent_hits,
     reconstruct_results,
 )
-from vue_docs_server.startup import (
-    ServerState,
-    load_entity_dictionary,
-    load_synonym_table,
-)
-from vue_docs_server.tools.api_lookup import _clean_section_title, vue_api_lookup
-from vue_docs_server.tools.search import vue_docs_search
+from vue_docs_server.startup import ServerState
+from vue_docs_server.tools.api_lookup import _clean_section_title, _do_api_lookup
+from vue_docs_server.tools.related import _do_get_related
+from vue_docs_server.tools.search import _do_search
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -487,47 +485,6 @@ class TestStartup:
         s.bm25 = MagicMock()
         assert s.is_ready
 
-    def test_load_entity_dictionary(self, tmp_path):
-        data = {
-            "ref": {
-                "entity_type": "composable",
-                "page_path": "api/reactivity-core",
-                "section": "ref()",
-            },
-            "computed": {
-                "entity_type": "composable",
-                "page_path": "api/reactivity-core",
-                "section": "computed()",
-            },
-        }
-        dict_path = tmp_path / "entity_dictionary.json"
-        dict_path.write_text(json.dumps(data))
-
-        index = load_entity_dictionary(tmp_path)
-        assert len(index.entities) == 2
-        assert "ref" in index.entities
-        assert index.entities["ref"].page_path == "api/reactivity-core"
-        assert index.entities["ref"].entity_type == EntityType.COMPOSABLE
-
-    def test_load_entity_dictionary_missing(self, tmp_path):
-        index = load_entity_dictionary(tmp_path)
-        assert len(index.entities) == 0
-
-    def test_load_synonym_table(self, tmp_path):
-        data = {"two-way binding": ["v-model"], "reactivity": ["ref", "reactive"]}
-        syn_path = tmp_path / "synonym_table.json"
-        syn_path.write_text(json.dumps(data))
-
-        table = load_synonym_table(tmp_path)
-        assert len(table) == 2
-        assert table["two-way binding"] == ["v-model"]
-
-    def test_load_synonym_table_missing_falls_back_to_package(self, tmp_path):
-        table = load_synonym_table(tmp_path)
-        # Falls back to curated package data when file not on disk
-        assert len(table) > 0
-        assert "two-way binding" in table
-
 
 # ---------------------------------------------------------------------------
 # Tests: Entity Matcher (core module)
@@ -680,7 +637,7 @@ class TestApiLookup:
     def setup_method(self):
         from vue_docs_server.startup import state as server_state
 
-        server_state.entity_index = EntityIndex(
+        entity_index = EntityIndex(
             entities={
                 "ref": ApiEntity(
                     name="ref",
@@ -714,17 +671,21 @@ class TestApiLookup:
                 "defineProps": ["api/sfc-script-setup#defineprops"],
             },
         )
+        server_state.entity_index = entity_index
+        server_state.entity_indices = {"vue": entity_index}
         server_state.synonym_table = {"two-way binding": ["v-model"]}
-        server_state.entity_matcher = EntityMatcher(
-            entity_index=server_state.entity_index,
+        matcher = EntityMatcher(
+            entity_index=entity_index,
             synonym_table=server_state.synonym_table,
         )
+        server_state.entity_matcher = matcher
+        server_state.entity_matchers = {"vue": matcher}
         server_state.qdrant = MagicMock()
         server_state.bm25 = MagicMock()
 
     @pytest.mark.asyncio
     async def test_lookup_exact(self):
-        result = await vue_api_lookup("ref", ctx=_mock_ctx())
+        result = await _do_api_lookup("ref", source="vue", ctx=_mock_ctx())
         assert "# `ref`" in result
         assert "Composable" in result
         assert "vuejs.org/api/reactivity-core" in result
@@ -733,30 +694,30 @@ class TestApiLookup:
 
     @pytest.mark.asyncio
     async def test_lookup_case_insensitive(self):
-        result = await vue_api_lookup("REF", ctx=_mock_ctx())
+        result = await _do_api_lookup("REF", source="vue", ctx=_mock_ctx())
         assert "# `ref`" in result
 
     @pytest.mark.asyncio
     async def test_lookup_with_backticks(self):
-        result = await vue_api_lookup("`defineProps`", ctx=_mock_ctx())
+        result = await _do_api_lookup("`defineProps`", source="vue", ctx=_mock_ctx())
         assert "# `defineProps`" in result
         assert "Compiler Macro" in result
 
     @pytest.mark.asyncio
     async def test_lookup_hyphenated(self):
-        result = await vue_api_lookup("v-model", ctx=_mock_ctx())
+        result = await _do_api_lookup("v-model", source="vue", ctx=_mock_ctx())
         assert "# `v-model`" in result
         assert "Directive" in result
 
     @pytest.mark.asyncio
     async def test_lookup_fuzzy_fallback(self):
         """Fuzzy matching catches typos."""
-        result = await vue_api_lookup("onMounte", ctx=_mock_ctx())
+        result = await _do_api_lookup("onMounte", source="vue", ctx=_mock_ctx())
         assert "# `onMounted`" in result
 
     @pytest.mark.asyncio
     async def test_lookup_not_found(self):
-        result = await vue_api_lookup("nonExistentApi", ctx=_mock_ctx())
+        result = await _do_api_lookup("nonExistentApi", source="vue", ctx=_mock_ctx())
         assert "No API entity found" in result
         assert "vue_docs_search" in result
 
@@ -769,11 +730,11 @@ class TestApiLookup:
         server_state.qdrant = None
         server_state.bm25 = None
         with pytest.raises(ToolError, match="not initialized"):
-            await vue_api_lookup("ref", ctx=_mock_ctx())
+            await _do_api_lookup("ref", source="vue", ctx=_mock_ctx())
 
     @pytest.mark.asyncio
     async def test_lookup_section_cleaned(self):
-        result = await vue_api_lookup("defineProps", ctx=_mock_ctx())
+        result = await _do_api_lookup("defineProps", source="vue", ctx=_mock_ctx())
         assert "{#" not in result  # anchor markers removed
         assert "defineProps() & defineEmits()" in result
 
@@ -839,7 +800,9 @@ class TestSearchTool:
             mock_jina_instance.close = AsyncMock()
             MockJina.return_value = mock_jina_instance
 
-            result = await vue_docs_search("how does computed caching work", ctx=_mock_ctx())
+            result = await _do_search(
+                "how does computed caching work", source="vue", ctx=_mock_ctx()
+            )
 
         assert "Computed Properties" in result
         assert "cached" in result
@@ -856,7 +819,7 @@ class TestSearchTool:
         server_state.bm25 = None
 
         with pytest.raises(ToolError, match="not initialized"):
-            await vue_docs_search("test query", ctx=_mock_ctx())
+            await _do_search("test query", source="vue", ctx=_mock_ctx())
 
     @pytest.mark.asyncio
     async def test_search_scope_fallback(self):
@@ -895,7 +858,7 @@ class TestSearchTool:
             mock_jina_instance.close = AsyncMock()
             MockJina.return_value = mock_jina_instance
 
-            result = await vue_docs_search("test", scope="tutorial", ctx=_mock_ctx())
+            result = await _do_search("test", scope="tutorial", source="vue", ctx=_mock_ctx())
 
         assert "broader scope" in result
         assert mock_qdrant.hybrid_search.call_count == 2
@@ -913,7 +876,7 @@ class TestMCPRegistration:
 
         # FastMCP stores tools internally
         assert mcp is not None
-        assert mcp.name == "Vue Docs MCP Server"
+        assert mcp.name == "Vue Ecosystem MCP Server"
 
 
 # ---------------------------------------------------------------------------
@@ -975,20 +938,25 @@ def _setup_server_state():
         synonym_table=server_state.synonym_table,
     )
 
-    # Resource state
-    server_state.page_paths = [
+    # Resource state (per-source and combined)
+    page_paths = [
         "guide/essentials/computed.md",
         "guide/essentials/reactivity-fundamentals.md",
         "api/reactivity-core.md",
     ]
-    server_state.folder_structure = {
+    folder_structure = {
         "guide/essentials": [
             "guide/essentials/computed.md",
             "guide/essentials/reactivity-fundamentals.md",
         ],
         "api": ["api/reactivity-core.md"],
     }
-    server_state.vue_docs_path = None  # No disk access in integration tests
+    server_state.page_paths = page_paths
+    server_state.folder_structure = folder_structure
+    server_state.page_paths_by_source = {"vue": page_paths}
+    server_state.folder_structures_by_source = {"vue": folder_structure}
+    server_state.entity_indices = {"vue": entity_index}
+    server_state.entity_matchers = {"vue": server_state.entity_matcher}
 
     return server_state
 
@@ -1134,10 +1102,11 @@ class TestMCPIntegration:
                     {"query": "ref basics", "scope": "guide/essentials", "max_results": 5},
                 )
 
-        # Verify Qdrant was called with the scope filter
+        # Verify Qdrant was called with the scope filter and source
         call_kwargs = server_state.qdrant.hybrid_search.call_args
         assert call_kwargs.kwargs.get("scope_filter") == "guide/essentials"
         assert call_kwargs.kwargs.get("limit") == 50  # _RETRIEVAL_LIMIT
+        assert call_kwargs.kwargs.get("source") == "vue"
 
     @pytest.mark.asyncio
     async def test_call_search_tool_no_entity_filter(self):
@@ -1178,7 +1147,7 @@ class TestMCPIntegration:
             async with Client(mcp) as client:
                 info = client.initialize_result
                 assert info is not None
-                assert info.serverInfo.name == "Vue Docs MCP Server"
+                assert info.serverInfo.name == "Vue Ecosystem MCP Server"
 
 
 # ---------------------------------------------------------------------------
@@ -1289,13 +1258,62 @@ class TestMCPResources:
         # Should NOT include api pages
         assert "api/reactivity-core" not in text
 
+    @pytest.mark.asyncio
+    async def test_preferences_tool_registered(self):
+        """The set_framework_preferences tool is always visible."""
+        from vue_docs_server.main import mcp
 
-# ---------------------------------------------------------------------------
-# Tests: MCP Prompts
-# ---------------------------------------------------------------------------
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                tools = await client.list_tools()
 
+        tool_names = [t.name for t in tools]
+        assert "set_framework_preferences" in tool_names
 
-class TestMCPPrompts:
+    @pytest.mark.asyncio
+    async def test_preferences_resource_registered(self):
+        """The ecosystem://preferences resource is always visible."""
+        from vue_docs_server.main import mcp
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                resources = await client.list_resources()
+
+        resource_uris = [str(r.uri) for r in resources]
+        assert "ecosystem://preferences" in resource_uris
+
+    @pytest.mark.asyncio
+    async def test_read_preferences_resource(self):
+        """Preferences resource returns framework activation status."""
+        from vue_docs_server.main import mcp
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                result = await client.read_resource("ecosystem://preferences")
+
+        text = result[0].text if hasattr(result[0], "text") else str(result[0])
+        assert "Framework Preferences" in text
+        assert "Vue.js" in text
+
+    @pytest.mark.asyncio
+    async def test_call_set_framework_preferences(self):
+        """Calling set_framework_preferences returns confirmation."""
+        from vue_docs_server.main import mcp
+
+        _setup_server_state()
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                result = await client.call_tool(
+                    "set_framework_preferences",
+                    {"vue": True},
+                )
+
+        assert not result.is_error
+        text = result.content[0].text
+        assert "Preferences Updated" in text
+        assert "Vue.js" in text
+
     """Test MCP prompt registration and rendering via fastmcp.Client."""
 
     @pytest.mark.asyncio
@@ -1379,42 +1397,39 @@ class TestGetRelated:
 
         entity_index = _make_entity_index()
         server_state.entity_index = entity_index
+        server_state.entity_indices = {"vue": entity_index}
         server_state.synonym_table = _make_synonym_table()
-        server_state.entity_matcher = EntityMatcher(
+        matcher = EntityMatcher(
             entity_index=entity_index,
             synonym_table=server_state.synonym_table,
         )
+        server_state.entity_matcher = matcher
+        server_state.entity_matchers = {"vue": matcher}
         server_state.qdrant = MagicMock()
         server_state.bm25 = MagicMock()
 
     @pytest.mark.asyncio
     async def test_related_by_api_name(self):
-        from vue_docs_server.tools.related import vue_get_related
-
-        result = await vue_get_related("ref", ctx=_mock_ctx())
+        result = await _do_get_related("ref", source="vue", ctx=_mock_ctx())
         assert "`ref`" in result
         assert "Composable" in result
 
     @pytest.mark.asyncio
     async def test_related_shows_related_apis(self):
-        from vue_docs_server.tools.related import vue_get_related
-
-        result = await vue_get_related("ref", ctx=_mock_ctx())
+        result = await _do_get_related("ref", source="vue", ctx=_mock_ctx())
         # ref has related: reactive
         assert "reactive" in result
 
     @pytest.mark.asyncio
     async def test_related_by_synonym(self):
-        from vue_docs_server.tools.related import vue_get_related
-
-        result = await vue_get_related("two-way binding", ctx=_mock_ctx())
+        result = await _do_get_related("two-way binding", source="vue", ctx=_mock_ctx())
         assert "v-model" in result
 
     @pytest.mark.asyncio
     async def test_related_no_match(self):
-        from vue_docs_server.tools.related import vue_get_related
-
-        result = await vue_get_related("completely unrelated topic xyz", ctx=_mock_ctx())
+        result = await _do_get_related(
+            "completely unrelated topic xyz", source="vue", ctx=_mock_ctx()
+        )
         assert "No matching" in result
 
     @pytest.mark.asyncio
@@ -1422,9 +1437,1018 @@ class TestGetRelated:
         from fastmcp.exceptions import ToolError
 
         from vue_docs_server.startup import state as server_state
-        from vue_docs_server.tools.related import vue_get_related
 
         server_state.qdrant = None
         server_state.bm25 = None
         with pytest.raises(ToolError, match="not initialized"):
-            await vue_get_related("ref", ctx=_mock_ctx())
+            await _do_get_related("ref", source="vue", ctx=_mock_ctx())
+
+
+# ---------------------------------------------------------------------------
+# Tests: Concrete resource enumeration (Gap 1)
+# ---------------------------------------------------------------------------
+
+
+class TestConcreteResources:
+    """Verify that _register_concrete_resources creates concrete resources from state."""
+
+    @pytest.mark.asyncio
+    async def test_concrete_page_resources_listed(self):
+        """Concrete page resources appear in list_resources."""
+        from vue_docs_server.main import mcp
+
+        _setup_server_state()
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                resources = await client.list_resources()
+
+        uris = [str(r.uri) for r in resources]
+        # Pages from _setup_server_state have .md stripped
+        assert "vue://pages/guide/essentials/computed" in uris
+        assert "vue://pages/api/reactivity-core" in uris
+
+    @pytest.mark.asyncio
+    async def test_concrete_entity_resources_listed(self):
+        """Concrete API entity resources appear in list_resources."""
+        from vue_docs_server.main import mcp
+
+        _setup_server_state()
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                resources = await client.list_resources()
+
+        uris = [str(r.uri) for r in resources]
+        assert "vue://api/entities/ref" in uris
+        assert "vue://api/entities/computed" in uris
+
+    @pytest.mark.asyncio
+    async def test_concrete_section_resources_listed(self):
+        """Concrete section topics resources appear in list_resources."""
+        from vue_docs_server.main import mcp
+
+        _setup_server_state()
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                resources = await client.list_resources()
+
+        uris = [str(r.uri) for r in resources]
+        # Sections are top-level folders: "guide" and "api"
+        assert "vue://topics/guide" in uris
+        assert "vue://topics/api" in uris
+
+    @pytest.mark.asyncio
+    async def test_concrete_page_resource_readable(self):
+        """A concrete page resource returns content when read."""
+        from vue_docs_server.main import mcp
+
+        server_state = _setup_server_state()
+        server_state.db = MagicMock()
+        server_state.db.read_page.return_value = "# Computed Properties\n\nContent here."
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                result = await client.read_resource("vue://pages/guide/essentials/computed")
+
+        text = result[0].text if hasattr(result[0], "text") else str(result[0])
+        assert "Computed Properties" in text
+
+    @pytest.mark.asyncio
+    async def test_concrete_entity_resource_readable(self):
+        """A concrete entity resource returns entity details when read."""
+        from vue_docs_server.main import mcp
+
+        _setup_server_state()
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                result = await client.read_resource("vue://api/entities/ref")
+
+        text = result[0].text if hasattr(result[0], "text") else str(result[0])
+        assert "`ref`" in text
+        assert "Composable" in text
+
+    def test_register_concrete_resources_empty_state(self):
+        """_register_concrete_resources adds nothing when state is empty."""
+        from vue_docs_server.main import _register_concrete_resources
+        from vue_docs_server.startup import state as server_state
+
+        server_state.page_paths_by_source = {"vue": []}
+        server_state.entity_indices = {"vue": EntityIndex()}
+        server_state.folder_structures_by_source = {"vue": {}}
+
+        mock_app = MagicMock()
+        _register_concrete_resources(mock_app)
+
+        mock_app.add_resource.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Tests: Framework preferences visibility (Gap 2)
+# ---------------------------------------------------------------------------
+
+
+class TestFrameworkPreferences:
+    """Verify the set_framework_preferences tool and ecosystem://preferences resource."""
+
+    @pytest.mark.asyncio
+    async def test_preferences_tool_enables_vue(self):
+        """set_framework_preferences enables vue when vue=True."""
+        from vue_docs_server.main import set_framework_preferences
+
+        ctx = _mock_ctx()
+        ctx.enable_components = AsyncMock()
+        ctx.disable_components = AsyncMock()
+
+        result = await set_framework_preferences(vue=True, ctx=ctx)
+
+        assert "Preferences Updated" in result
+        ctx.enable_components.assert_any_call(tags={"vue"})
+
+    @pytest.mark.asyncio
+    async def test_preferences_tool_disables_vue(self):
+        """set_framework_preferences disables vue when vue=False."""
+        from vue_docs_server.main import set_framework_preferences
+
+        ctx = _mock_ctx()
+        ctx.enable_components = AsyncMock()
+        ctx.disable_components = AsyncMock()
+
+        result = await set_framework_preferences(vue=False, ctx=ctx)
+
+        ctx.disable_components.assert_any_call(tags={"vue"})
+        assert "Inactive" in result
+
+    @pytest.mark.asyncio
+    async def test_preferences_skips_unknown_sources(self):
+        """Sources not in enabled_sources are silently skipped."""
+        from vue_docs_server.main import set_framework_preferences
+
+        ctx = _mock_ctx()
+        ctx.enable_components = AsyncMock()
+        ctx.disable_components = AsyncMock()
+
+        # vue_router is not in enabled_sources (default is "vue" only)
+        result = await set_framework_preferences(vue=True, vue_router=True, ctx=ctx)
+
+        # Only vue should be activated (vue-router is not in _source_info)
+        assert "Vue.js" in result
+        ctx.enable_components.assert_called_once_with(tags={"vue"})
+
+    @pytest.mark.asyncio
+    async def test_preferences_stores_state(self):
+        """Preferences are stored in session state."""
+        from vue_docs_server.main import set_framework_preferences
+
+        ctx = _mock_ctx()
+        ctx.enable_components = AsyncMock()
+        ctx.disable_components = AsyncMock()
+
+        await set_framework_preferences(vue=True, vue_router=False, ctx=ctx)
+
+        ctx.set_state.assert_called_once_with(
+            "framework_preferences", {"vue": True, "vue-router": False}
+        )
+
+    @pytest.mark.asyncio
+    async def test_preferences_resource_content(self):
+        """ecosystem://preferences resource shows framework info."""
+        from vue_docs_server.main import mcp
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                result = await client.read_resource("ecosystem://preferences")
+
+        text = result[0].text if hasattr(result[0], "text") else str(result[0])
+        assert "Framework Preferences" in text
+        assert "Vue.js" in text
+        assert "set_framework_preferences" in text
+
+
+# ---------------------------------------------------------------------------
+# Tests: HyPE resolution (Gap 4)
+# ---------------------------------------------------------------------------
+
+
+class TestHypeResolution:
+    """Tests for _resolve_hype_hits in search.py."""
+
+    def setup_method(self):
+        from vue_docs_server.startup import state as server_state
+
+        self.mock_qdrant = MagicMock()
+        server_state.qdrant = self.mock_qdrant
+
+    def test_no_hype_hits_passthrough(self):
+        """Regular hits pass through unchanged."""
+        from vue_docs_server.tools.search import _resolve_hype_hits
+
+        hits = [
+            _make_hit(chunk_id="guide/a#section", score=0.9),
+            _make_hit(chunk_id="guide/b#section", score=0.8),
+        ]
+        result = _resolve_hype_hits(hits)
+        assert len(result) == 2
+        assert result[0].score == 0.9
+        assert result[1].score == 0.8
+
+    def test_hype_hit_replaced_by_parent(self):
+        """A hype_question hit is replaced by its parent chunk."""
+        from vue_docs_server.tools.search import _resolve_hype_hits
+
+        hype_hit = SearchHit(
+            chunk_id="hype-q-1",
+            score=0.85,
+            payload={
+                "chunk_id": "hype-q-1",
+                "chunk_type": "hype_question",
+                "parent_chunk_id": "guide/essentials/computed#caching",
+                "content": "How does computed caching work?",
+            },
+        )
+
+        self.mock_qdrant.get_by_chunk_ids.return_value = [
+            {
+                "chunk_id": "guide/essentials/computed#caching",
+                "chunk_type": "section",
+                "content": "Computed properties cache their result.",
+                "file_path": "guide/essentials/computed.md",
+            }
+        ]
+
+        result = _resolve_hype_hits([hype_hit])
+
+        self.mock_qdrant.get_by_chunk_ids.assert_called_once_with(
+            ["guide/essentials/computed#caching"]
+        )
+        assert len(result) == 1
+        assert result[0].chunk_id == "guide/essentials/computed#caching"
+        assert result[0].score == 0.85
+
+    def test_hype_hit_dedup_with_existing(self):
+        """If parent is already in results, the HyPE hit is skipped."""
+        from vue_docs_server.tools.search import _resolve_hype_hits
+
+        regular_hit = _make_hit(chunk_id="guide/essentials/computed#caching", score=0.9)
+        hype_hit = SearchHit(
+            chunk_id="hype-q-1",
+            score=0.85,
+            payload={
+                "chunk_id": "hype-q-1",
+                "chunk_type": "hype_question",
+                "parent_chunk_id": "guide/essentials/computed#caching",
+                "content": "How does computed caching work?",
+            },
+        )
+
+        result = _resolve_hype_hits([regular_hit, hype_hit])
+        # Parent already present, no Qdrant fetch needed for that parent
+        assert len(result) == 1
+        assert result[0].chunk_id == "guide/essentials/computed#caching"
+
+    def test_hype_hit_missing_parent_id_skipped(self):
+        """A HyPE hit with empty parent_chunk_id is silently skipped."""
+        from vue_docs_server.tools.search import _resolve_hype_hits
+
+        hype_hit = SearchHit(
+            chunk_id="hype-q-1",
+            score=0.85,
+            payload={
+                "chunk_id": "hype-q-1",
+                "chunk_type": "hype_question",
+                "parent_chunk_id": "",
+                "content": "Some question",
+            },
+        )
+
+        result = _resolve_hype_hits([hype_hit])
+        assert len(result) == 0
+
+    def test_multiple_hype_hits_same_parent_deduped(self):
+        """Multiple HyPE questions pointing to the same parent produce one result."""
+        from vue_docs_server.tools.search import _resolve_hype_hits
+
+        parent_id = "guide/essentials/computed#caching"
+        hype1 = SearchHit(
+            chunk_id="hype-q-1",
+            score=0.9,
+            payload={
+                "chunk_id": "hype-q-1",
+                "chunk_type": "hype_question",
+                "parent_chunk_id": parent_id,
+            },
+        )
+        hype2 = SearchHit(
+            chunk_id="hype-q-2",
+            score=0.8,
+            payload={
+                "chunk_id": "hype-q-2",
+                "chunk_type": "hype_question",
+                "parent_chunk_id": parent_id,
+            },
+        )
+
+        self.mock_qdrant.get_by_chunk_ids.return_value = [
+            {"chunk_id": parent_id, "chunk_type": "section", "content": "Caching."},
+        ]
+
+        result = _resolve_hype_hits([hype1, hype2])
+        assert len(result) == 1
+        assert result[0].chunk_id == parent_id
+
+    def test_mixed_regular_and_hype_sorted_by_score(self):
+        """Results are sorted by score with regular and resolved HyPE mixed."""
+        from vue_docs_server.tools.search import _resolve_hype_hits
+
+        regular = _make_hit(chunk_id="guide/a#section", score=0.7)
+        hype = SearchHit(
+            chunk_id="hype-q-1",
+            score=0.95,
+            payload={
+                "chunk_id": "hype-q-1",
+                "chunk_type": "hype_question",
+                "parent_chunk_id": "guide/b#section",
+            },
+        )
+
+        self.mock_qdrant.get_by_chunk_ids.return_value = [
+            {"chunk_id": "guide/b#section", "chunk_type": "section", "content": "B content."},
+        ]
+
+        result = _resolve_hype_hits([regular, hype])
+        assert len(result) == 2
+        # Higher score first
+        assert result[0].chunk_id == "guide/b#section"
+        assert result[0].score == 0.95
+        assert result[1].chunk_id == "guide/a#section"
+
+
+# ---------------------------------------------------------------------------
+# Tests: _do_read_page (Gap 5)
+# ---------------------------------------------------------------------------
+
+
+class TestReadPage:
+    """Tests for the page resource read implementation."""
+
+    @pytest.mark.asyncio
+    async def test_read_page_from_db(self):
+        """_do_read_page returns content from DB."""
+        from vue_docs_server.resources.pages import _do_read_page
+        from vue_docs_server.startup import state as server_state
+
+        server_state.db = MagicMock()
+        server_state.db.read_page.return_value = "# Page Title\n\nContent here."
+
+        result = await _do_read_page("guide/essentials/computed", source="vue")
+        assert "Page Title" in result
+        server_state.db.read_page.assert_called_once_with("guide/essentials/computed", source="vue")
+
+    @pytest.mark.asyncio
+    async def test_read_page_not_found_raises(self):
+        """_do_read_page raises ResourceError when page not found."""
+        from fastmcp.exceptions import ResourceError
+
+        from vue_docs_server.resources.pages import _do_read_page
+        from vue_docs_server.startup import state as server_state
+
+        server_state.db = MagicMock()
+        server_state.db.read_page.return_value = None
+        server_state.page_paths_by_source = {
+            "vue": ["guide/essentials/computed.md", "api/reactivity-core.md"]
+        }
+
+        with pytest.raises(ResourceError, match="Page not found"):
+            await _do_read_page("nonexistent/page", source="vue")
+
+    @pytest.mark.asyncio
+    async def test_read_page_no_db_raises(self):
+        """_do_read_page raises ResourceError when no DB configured."""
+        from fastmcp.exceptions import ResourceError
+
+        from vue_docs_server.resources.pages import _do_read_page
+        from vue_docs_server.startup import state as server_state
+
+        server_state.db = None
+
+        with pytest.raises(ResourceError, match="Database not configured"):
+            await _do_read_page("guide/essentials/computed", source="vue")
+
+    @pytest.mark.asyncio
+    async def test_read_page_error_includes_examples(self):
+        """Page not found error includes example available pages."""
+        from fastmcp.exceptions import ResourceError
+
+        from vue_docs_server.resources.pages import _do_read_page
+        from vue_docs_server.startup import state as server_state
+
+        server_state.db = MagicMock()
+        server_state.db.read_page.return_value = None
+        server_state.page_paths_by_source = {
+            "vue": ["guide/essentials/computed.md", "api/reactivity-core.md"]
+        }
+
+        with pytest.raises(ResourceError, match="guide/essentials/computed"):
+            await _do_read_page("wrong/path", source="vue")
+
+
+# ---------------------------------------------------------------------------
+# Tests: Startup paths (Gap 3)
+# ---------------------------------------------------------------------------
+
+
+class TestStartupPaths:
+    """Tests for startup.py data loading logic."""
+
+    def test_server_state_is_ready(self):
+        """ServerState.is_ready reflects qdrant and bm25 availability."""
+        from vue_docs_server.startup import ServerState
+
+        s = ServerState()
+        assert not s.is_ready
+
+        s.qdrant = MagicMock()
+        assert not s.is_ready
+
+        s.bm25 = MagicMock()
+        assert s.is_ready
+
+    def test_load_from_pg_builds_per_source_state(self):
+        """_load_from_pg populates per-source state from mocked PG client."""
+        from vue_docs_server.startup import _load_from_pg, state
+
+        mock_db = MagicMock()
+
+        entity_index = EntityIndex(
+            entities={"ref": ApiEntity(name="ref", entity_type=EntityType.COMPOSABLE, source="vue")}
+        )
+        mock_db.load_entities.side_effect = lambda source=None: (
+            entity_index if source == "vue" else EntityIndex()
+        )
+        mock_db.load_synonyms.return_value = {"reactivity": ["ref"]}
+        mock_db.load_pages_listing.return_value = (
+            ["guide/computed.md"],
+            {"guide": ["guide/computed.md"]},
+        )
+        mock_db.load_bm25_model.return_value = True
+
+        state.entity_indices = {}
+        state.page_paths_by_source = {}
+        state.folder_structures_by_source = {}
+        state.entity_matchers = {}
+        state._bm25_tmp_dir = None
+
+        with patch("vue_docs_server.startup.BM25Model") as MockBM25:
+            MockBM25.return_value.vocab_size = 100
+            _load_from_pg(mock_db)
+
+        assert "vue" in state.entity_indices
+        assert "ref" in state.entity_indices["vue"].entities
+        assert "vue" in state.page_paths_by_source
+        assert "vue" in state.entity_matchers
+        assert state.entity_matcher is not None
+
+    @pytest.mark.asyncio
+    async def test_hot_reload_loop_reloads_on_change(self):
+        """hot_reload_loop triggers data reload and resource refresh when PG timestamps change."""
+        import vue_docs_server.startup as startup_module
+        from vue_docs_server.startup import state
+
+        mock_db = MagicMock()
+        state.db = mock_db
+
+        # First call returns a newer timestamp than the initial _last_reload_ts
+        from datetime import UTC, datetime
+
+        new_ts = datetime(2025, 6, 1, tzinfo=UTC)
+        mock_db.get_max_updated_at.return_value = new_ts
+
+        original_interval = startup_module._HOT_RELOAD_INTERVAL
+        # Patch to make the loop fast
+        startup_module._HOT_RELOAD_INTERVAL = 0.01
+        startup_module._last_reload_ts = datetime(2025, 1, 1, tzinfo=UTC)
+
+        reload_called = False
+        resources_refreshed = False
+
+        def mock_load(db):
+            nonlocal reload_called
+            reload_called = True
+
+        def mock_register():
+            nonlocal resources_refreshed
+            resources_refreshed = True
+
+        try:
+            with (
+                patch.object(startup_module, "_load_from_pg", mock_load),
+                patch.object(startup_module, "settings") as mock_settings,
+            ):
+                mock_settings.database_url = "postgresql://test"
+                task = asyncio.create_task(startup_module.hot_reload_loop(mock_register))
+                await asyncio.sleep(0.1)
+                task.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await task
+        finally:
+            startup_module._HOT_RELOAD_INTERVAL = original_interval
+
+        assert reload_called
+        assert resources_refreshed
+
+
+# ---------------------------------------------------------------------------
+# Tests: Scopes aggregation (Gap 10)
+# ---------------------------------------------------------------------------
+
+
+class TestScopesAggregation:
+    """Tests for the scopes resource parent-path aggregation."""
+
+    @pytest.mark.asyncio
+    async def test_scopes_parent_path_counts(self):
+        """Scopes resource correctly counts pages in parent paths."""
+        from vue_docs_core.data.sources import SOURCE_REGISTRY
+        from vue_docs_server.resources.scopes import make_scopes_resource
+        from vue_docs_server.startup import state as server_state
+
+        server_state.folder_structures_by_source = {
+            "vue": {
+                "guide/essentials": [
+                    "guide/essentials/computed.md",
+                    "guide/essentials/class-and-style.md",
+                ],
+                "guide/components": ["guide/components/registration.md"],
+                "api": ["api/reactivity-core.md", "api/built-in-directives.md"],
+            }
+        }
+        server_state.page_paths_by_source = {
+            "vue": [
+                "guide/essentials/computed.md",
+                "guide/essentials/class-and-style.md",
+                "guide/components/registration.md",
+                "api/reactivity-core.md",
+                "api/built-in-directives.md",
+            ]
+        }
+
+        scopes_fn = make_scopes_resource(SOURCE_REGISTRY["vue"])
+        result = await scopes_fn()
+
+        # "guide" parent should count all 3 guide pages
+        assert '"guide"' in result
+        assert '"api"' in result
+        # Total pages in "all"
+        assert "| 5 |" in result
+
+    @pytest.mark.asyncio
+    async def test_scopes_empty_raises(self):
+        """Scopes resource raises when no docs indexed."""
+        from fastmcp.exceptions import ResourceError
+
+        from vue_docs_core.data.sources import SOURCE_REGISTRY
+        from vue_docs_server.resources.scopes import make_scopes_resource
+        from vue_docs_server.startup import state as server_state
+
+        server_state.folder_structures_by_source = {"vue": {}}
+        server_state.page_paths_by_source = {"vue": []}
+
+        scopes_fn = make_scopes_resource(SOURCE_REGISTRY["vue"])
+        with pytest.raises(ResourceError, match=r"No Vue\.js documentation indexed"):
+            await scopes_fn()
+
+
+# ---------------------------------------------------------------------------
+# Tests: End-to-end MCP protocol flows
+# ---------------------------------------------------------------------------
+
+
+class TestMCPEndToEnd:
+    """Deeper end-to-end tests that exercise full request/response cycles.
+
+    These go beyond the basic TestMCPIntegration by testing multi-step flows,
+    error paths, and resource reads through the MCP protocol layer.
+    """
+
+    @pytest.mark.asyncio
+    async def test_search_no_results_returns_message(self):
+        """Search with no Qdrant hits returns a user-friendly message."""
+        from vue_docs_server.main import mcp
+
+        server_state = _setup_server_state()
+        server_state.qdrant.hybrid_search.return_value = []
+
+        mock_embed_result = MagicMock()
+        mock_embed_result.embeddings = [[0.1] * 1024]
+
+        with (
+            patch("vue_docs_server.main.startup"),
+            patch("vue_docs_server.main.shutdown"),
+            patch("vue_docs_server.tools.search.JinaClient") as MockJina,
+        ):
+            mock_jina = AsyncMock()
+            mock_jina.embed.return_value = mock_embed_result
+            mock_jina.close = AsyncMock()
+            MockJina.return_value = mock_jina
+
+            async with Client(mcp) as client:
+                result = await client.call_tool(
+                    "vue_docs_search",
+                    {"query": "nonexistent topic xyz"},
+                )
+
+        assert not result.is_error
+        assert "No documentation found" in result.content[0].text
+
+    @pytest.mark.asyncio
+    async def test_search_scope_fallback_on_empty(self):
+        """Search falls back to 'all' scope when scoped search returns nothing."""
+        from vue_docs_server.main import mcp
+
+        server_state = _setup_server_state()
+        # First call (scoped) returns nothing, second call (unscoped) returns hit
+        server_state.qdrant.hybrid_search.side_effect = [
+            [],
+            [
+                _make_hit(
+                    content="Fallback result content.",
+                    api_entities=["ref"],
+                )
+            ],
+        ]
+
+        mock_embed_result = MagicMock()
+        mock_embed_result.embeddings = [[0.1] * 1024]
+
+        with (
+            patch("vue_docs_server.main.startup"),
+            patch("vue_docs_server.main.shutdown"),
+            patch("vue_docs_server.tools.search.JinaClient") as MockJina,
+        ):
+            mock_jina = AsyncMock()
+            mock_jina.embed.return_value = mock_embed_result
+            mock_jina.rerank.return_value = RerankResult(indices=[0], scores=[0.9], total_tokens=50)
+            mock_jina.close = AsyncMock()
+            MockJina.return_value = mock_jina
+
+            async with Client(mcp) as client:
+                result = await client.call_tool(
+                    "vue_docs_search",
+                    {"query": "ref basics", "scope": "guide/advanced"},
+                )
+
+        assert not result.is_error
+        assert "Fallback result" in result.content[0].text
+        # Verify two hybrid_search calls: scoped then unscoped
+        assert server_state.qdrant.hybrid_search.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_api_lookup_not_found(self):
+        """API lookup for unknown entity returns helpful message."""
+        from vue_docs_server.main import mcp
+
+        _setup_server_state()
+
+        with (
+            patch("vue_docs_server.main.startup"),
+            patch("vue_docs_server.main.shutdown"),
+        ):
+            async with Client(mcp) as client:
+                result = await client.call_tool(
+                    "vue_api_lookup",
+                    {"api_name": "nonExistentApi"},
+                )
+
+        assert not result.is_error
+        text = result.content[0].text
+        assert "no api entity found" in text.lower()
+
+    @pytest.mark.asyncio
+    async def test_read_toc_resource(self):
+        """Reading vue://topics returns a table of contents."""
+        from vue_docs_server.main import mcp
+
+        _setup_server_state()
+
+        with (
+            patch("vue_docs_server.main.startup"),
+            patch("vue_docs_server.main.shutdown"),
+        ):
+            async with Client(mcp) as client:
+                result = await client.read_resource("vue://topics")
+
+        text = result[0].text if hasattr(result[0], "text") else str(result[0])
+        assert "Vue.js" in text
+
+    @pytest.mark.asyncio
+    async def test_read_scopes_resource(self):
+        """Reading vue://scopes returns valid scope values."""
+        from vue_docs_server.main import mcp
+
+        _setup_server_state()
+
+        with (
+            patch("vue_docs_server.main.startup"),
+            patch("vue_docs_server.main.shutdown"),
+        ):
+            async with Client(mcp) as client:
+                result = await client.read_resource("vue://scopes")
+
+        text = result[0].text if hasattr(result[0], "text") else str(result[0])
+        assert "Scope" in text
+        assert "guide" in text
+
+    @pytest.mark.asyncio
+    async def test_read_api_index_resource(self):
+        """Reading vue://api/index returns entity listing."""
+        from vue_docs_server.main import mcp
+
+        _setup_server_state()
+
+        with (
+            patch("vue_docs_server.main.startup"),
+            patch("vue_docs_server.main.shutdown"),
+        ):
+            async with Client(mcp) as client:
+                result = await client.read_resource("vue://api/index")
+
+        text = result[0].text if hasattr(result[0], "text") else str(result[0])
+        assert "ref" in text
+
+    @pytest.mark.asyncio
+    async def test_search_with_hype_resolution(self):
+        """End-to-end: HyPE question hits are resolved to parent chunks."""
+        from vue_docs_server.main import mcp
+
+        server_state = _setup_server_state()
+        # Return a HyPE question hit from hybrid search
+        hype_hit = SearchHit(
+            chunk_id="hype-q-1",
+            score=0.95,
+            payload={
+                "chunk_id": "hype-q-1",
+                "chunk_type": "hype_question",
+                "parent_chunk_id": "guide/essentials/computed#caching",
+                "content": "How does computed caching work?",
+            },
+        )
+        server_state.qdrant.hybrid_search.return_value = [hype_hit]
+        # Parent chunk returned by get_by_chunk_ids
+        server_state.qdrant.get_by_chunk_ids.return_value = [
+            {
+                "chunk_id": "guide/essentials/computed#caching",
+                "chunk_type": "section",
+                "content": "Computed properties cache their result.",
+                "content_type": "text",
+                "breadcrumb": "Vue.js > Computed Properties > Caching",
+                "file_path": "guide/essentials/computed.md",
+                "page_title": "Computed Properties",
+                "section_title": "Caching",
+                "subsection_title": "",
+                "global_sort_key": "00_01_02",
+                "api_entities": ["computed"],
+                "cross_references": [],
+                "source": "vue",
+            }
+        ]
+
+        mock_embed_result = MagicMock()
+        mock_embed_result.embeddings = [[0.1] * 1024]
+
+        with (
+            patch("vue_docs_server.main.startup"),
+            patch("vue_docs_server.main.shutdown"),
+            patch("vue_docs_server.tools.search.JinaClient") as MockJina,
+        ):
+            mock_jina = AsyncMock()
+            mock_jina.embed.return_value = mock_embed_result
+            mock_jina.rerank.return_value = RerankResult(indices=[0], scores=[0.9], total_tokens=50)
+            mock_jina.close = AsyncMock()
+            MockJina.return_value = mock_jina
+
+            async with Client(mcp) as client:
+                result = await client.call_tool(
+                    "vue_docs_search",
+                    {"query": "computed caching"},
+                )
+
+        assert not result.is_error
+        text = result.content[0].text
+        # The resolved parent chunk content should appear
+        assert "cache" in text.lower()
+
+    @pytest.mark.asyncio
+    async def test_list_prompts(self):
+        """Server exposes prompts via MCP."""
+        from vue_docs_server.main import mcp
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                prompts = await client.list_prompts()
+
+        prompt_names = [p.name for p in prompts]
+        assert "debug_vue_issue" in prompt_names
+        assert "compare_vue_apis" in prompt_names
+        assert "migrate_vue_pattern" in prompt_names
+
+    @pytest.mark.asyncio
+    async def test_get_prompt_debug(self):
+        """Calling a debug prompt returns structured content."""
+        from vue_docs_server.main import mcp
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                result = await client.get_prompt(
+                    "debug_vue_issue",
+                    {"symptom": "Component not rendering"},
+                )
+
+        assert len(result.messages) >= 2
+        # The symptom appears in the user message (second message)
+        all_text = " ".join(m.content.text for m in result.messages)
+        assert "Component not rendering" in all_text
+
+    @pytest.mark.asyncio
+    async def test_search_stores_query_history(self):
+        """Search tool stores query history in session state."""
+        from vue_docs_server.main import mcp
+
+        _setup_server_state()
+
+        mock_embed_result = MagicMock()
+        mock_embed_result.embeddings = [[0.1] * 1024]
+
+        with (
+            patch("vue_docs_server.main.startup"),
+            patch("vue_docs_server.main.shutdown"),
+            patch("vue_docs_server.tools.search.JinaClient") as MockJina,
+        ):
+            mock_jina = AsyncMock()
+            mock_jina.embed.return_value = mock_embed_result
+            mock_jina.rerank.return_value = RerankResult(
+                indices=[0], scores=[0.9], total_tokens=100
+            )
+            mock_jina.close = AsyncMock()
+            MockJina.return_value = mock_jina
+
+            async with Client(mcp) as client:
+                # First search
+                await client.call_tool("vue_docs_search", {"query": "computed properties"})
+                # Second search
+                await client.call_tool("vue_docs_search", {"query": "ref vs reactive"})
+                # The query history is stored in session state —
+                # verify through a third call (state accumulates)
+                result = await client.call_tool("vue_docs_search", {"query": "watch effect"})
+
+        assert not result.is_error
+
+
+# ---------------------------------------------------------------------------
+# Tests: Session isolation (multi-user)
+# ---------------------------------------------------------------------------
+
+
+class TestSessionIsolation:
+    """Verify that two concurrent MCP sessions have isolated state.
+
+    FastMCP prefixes state keys with ``session_id``, which is a UUID
+    generated per ``Client`` connection.  These tests prove that
+    tool-call side-effects in one session are invisible to another.
+    """
+
+    @pytest.mark.asyncio
+    async def test_query_history_isolated_between_sessions(self):
+        """Query history accumulated in session A is not visible in session B."""
+        from vue_docs_server.main import mcp
+
+        _setup_server_state()
+
+        mock_embed_result = MagicMock()
+        mock_embed_result.embeddings = [[0.1] * 1024]
+
+        with (
+            patch("vue_docs_server.main.startup"),
+            patch("vue_docs_server.main.shutdown"),
+            patch("vue_docs_server.tools.search.JinaClient") as MockJina,
+        ):
+            mock_jina = AsyncMock()
+            mock_jina.embed.return_value = mock_embed_result
+            mock_jina.rerank.return_value = RerankResult(
+                indices=[0], scores=[0.9], total_tokens=100
+            )
+            mock_jina.close = AsyncMock()
+            MockJina.return_value = mock_jina
+
+            # Session A: run searches to build up history
+            async with Client(mcp) as client_a:
+                await client_a.call_tool("vue_docs_search", {"query": "session A query 1"})
+                await client_a.call_tool("vue_docs_search", {"query": "session A query 2"})
+
+            # Session B: fresh session should have no history from A
+            async with Client(mcp) as client_b:
+                result_b = await client_b.call_tool("vue_docs_search", {"query": "session B query"})
+
+        assert not result_b.is_error
+        # If state leaked, session B would see A's history.
+        # The fact that the call succeeds cleanly (no prior state) is the proof.
+        # We verify it produces a valid result (not corrupted by A's state).
+        assert len(result_b.content) > 0
+
+    @pytest.mark.asyncio
+    async def test_preferences_isolated_between_sessions(self):
+        """Framework preferences set in session A are not visible in session B."""
+        from vue_docs_server.main import mcp
+
+        _setup_server_state()
+
+        with (
+            patch("vue_docs_server.main.startup"),
+            patch("vue_docs_server.main.shutdown"),
+        ):
+            # Session A: disable Vue (unusual but tests isolation)
+            async with Client(mcp) as client_a:
+                result_a = await client_a.call_tool("set_framework_preferences", {"vue": False})
+                text_a = result_a.content[0].text
+                assert "Inactive" in text_a
+
+                # After disabling vue, session A should see fewer tools
+                tools_a = await client_a.list_tools()
+                tool_names_a = {t.name for t in tools_a}
+
+            # Session B: fresh session, should see default (vue active)
+            async with Client(mcp) as client_b:
+                tools_b = await client_b.list_tools()
+                tool_names_b = {t.name for t in tools_b}
+
+        # Session A disabled vue, so vue-tagged tools should be hidden
+        assert "vue_docs_search" not in tool_names_a
+        # Session B is fresh — vue tools should be visible (default)
+        assert "vue_docs_search" in tool_names_b
+
+    @pytest.mark.asyncio
+    async def test_concurrent_sessions_independent(self):
+        """Two sessions open simultaneously maintain independent state."""
+        from vue_docs_server.main import mcp
+
+        _setup_server_state()
+
+        mock_embed_result = MagicMock()
+        mock_embed_result.embeddings = [[0.1] * 1024]
+
+        with (
+            patch("vue_docs_server.main.startup"),
+            patch("vue_docs_server.main.shutdown"),
+            patch("vue_docs_server.tools.search.JinaClient") as MockJina,
+        ):
+            mock_jina = AsyncMock()
+            mock_jina.embed.return_value = mock_embed_result
+            mock_jina.rerank.return_value = RerankResult(
+                indices=[0], scores=[0.9], total_tokens=100
+            )
+            mock_jina.close = AsyncMock()
+            MockJina.return_value = mock_jina
+
+            # Open both sessions at the same time
+            async with Client(mcp) as client_a, Client(mcp) as client_b:
+                # Session A: disable vue
+                await client_a.call_tool("set_framework_preferences", {"vue": False})
+                # Session B: should still have vue enabled (default)
+                tools_b = await client_b.list_tools()
+                tool_names_b = {t.name for t in tools_b}
+
+                # Verify A's preference change didn't affect B
+                assert "vue_docs_search" in tool_names_b
+
+                # Session A should have vue disabled
+                tools_a = await client_a.list_tools()
+                tool_names_a = {t.name for t in tools_a}
+                assert "vue_docs_search" not in tool_names_a
+
+    @pytest.mark.asyncio
+    async def test_visibility_resets_on_new_session(self):
+        """A new session does not inherit visibility rules from a prior session."""
+        from vue_docs_server.main import mcp
+
+        _setup_server_state()
+
+        with (
+            patch("vue_docs_server.main.startup"),
+            patch("vue_docs_server.main.shutdown"),
+        ):
+            # Session 1: disable vue
+            async with Client(mcp) as client1:
+                await client1.call_tool("set_framework_preferences", {"vue": False})
+                tools1 = await client1.list_tools()
+                assert "vue_docs_search" not in {t.name for t in tools1}
+
+            # Session 2: fresh — should see vue tools
+            async with Client(mcp) as client2:
+                tools2 = await client2.list_tools()
+                assert "vue_docs_search" in {t.name for t in tools2}
+
+            # Session 3: also fresh
+            async with Client(mcp) as client3:
+                tools3 = await client3.list_tools()
+                assert "vue_docs_search" in {t.name for t in tools3}

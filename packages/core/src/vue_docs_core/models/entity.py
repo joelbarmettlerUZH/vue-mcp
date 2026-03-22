@@ -16,11 +16,16 @@ class EntityType(str, Enum):
     OPTION = "option"
     INSTANCE_METHOD = "instance_method"
     INSTANCE_PROPERTY = "instance_property"
+    STORE = "store"
+    MIDDLEWARE = "middleware"
+    UTILITY = "utility"
+    NAVIGATION_GUARD = "navigation_guard"
     OTHER = "other"
 
 
 class ApiEntity(BaseModel):
     name: Annotated[str, Field(description="The API entity name")]
+    source: Annotated[str, Field(description="Source framework identifier")] = "vue"
     entity_type: Annotated[EntityType, Field(description="Classification of the entity type")] = (
         EntityType.OTHER
     )

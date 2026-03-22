@@ -53,9 +53,6 @@ async def embed_dense(
     jina_client: JinaClient,
 ) -> EmbedResult:
     """Embed chunks with Jina dense vectors in batches."""
-    if not chunks:
-        return EmbedResult(vectors=[], total_tokens=0)
-
     # Prepend contextual prefix to content before embedding (Anthropic's
     # contextual retrieval technique). The prefix situates the chunk within
     # its page, improving semantic search quality. The prefix is stored
@@ -95,9 +92,6 @@ async def embed_hype_questions(
         for question in chunk.hype_questions:
             questions.append(question)
             parent_refs.append((chunk.chunk_id, chunk))
-
-    if not questions:
-        return HypeEmbedResult(embeddings=[], total_tokens=0)
 
     result = await jina_client.embed_batched(
         questions, task=TASK_RETRIEVAL_QUERY, batch_size=EMBED_BATCH_SIZE

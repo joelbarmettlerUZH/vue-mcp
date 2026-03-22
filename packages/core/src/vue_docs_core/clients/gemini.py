@@ -1,15 +1,44 @@
 """Async wrapper for Gemini using the official google-genai SDK."""
 
+import asyncio
 import logging
+import re
 from typing import Annotated, Any
 
 from google import genai
 from google.genai import types
+from google.genai.errors import ClientError
 from pydantic import BaseModel, Field
 
 from vue_docs_core.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+def _parse_retry_delay(error: ClientError) -> float | None:
+    """Extract retryDelay from a Gemini 429 error message.
+
+    Handles both formats:
+    - "Please retry in 45.139987117s."
+    - "Please retry in 13h1m46.708492055s."
+    """
+    for msg in (getattr(error, "message", None), str(error)):
+        if not msg:
+            continue
+        # Try XhYmZs format first (e.g. "13h1m46.7s")
+        match = re.search(r"retry in (?:(\d+)h)?(?:(\d+)m)?(\d+(?:\.\d+)?)s", msg, re.IGNORECASE)
+        if match:
+            hours = int(match.group(1) or 0)
+            minutes = int(match.group(2) or 0)
+            seconds = float(match.group(3))
+            return hours * 3600 + minutes * 60 + seconds
+    return None
+
+
+def _is_daily_quota_error(error: ClientError) -> bool:
+    """Check if the error is a daily quota exhaustion (not retryable short-term)."""
+    msg = getattr(error, "message", "") or str(error)
+    return "per_day" in msg.lower() or "perday" in msg.lower()
 
 
 class GeminiResponse(BaseModel):
@@ -51,6 +80,35 @@ class GeminiClient:
     async def close(self):
         """No-op for SDK client (no persistent connection to close)."""
 
+    async def _call_with_retry(self, coro_factory):
+        """Execute a Gemini API call with retry on 429 rate limit errors.
+
+        Parses the retryDelay from Gemini's error response when available,
+        otherwise uses exponential backoff. Aborts immediately on daily quota
+        exhaustion since retrying is pointless.
+        """
+        for attempt in range(self.max_retries + 1):
+            try:
+                return await coro_factory()
+            except ClientError as e:
+                if e.code != 429 or attempt == self.max_retries:
+                    raise
+                if _is_daily_quota_error(e):
+                    raise RuntimeError(
+                        "Gemini daily request quota exhausted. "
+                        "Wait for quota reset or upgrade your plan."
+                    ) from e
+                delay = _parse_retry_delay(e) or min(2**attempt * 5, 60)
+                # Cap retry delay at 2 minutes to avoid absurdly long waits
+                delay = min(delay, 120)
+                logger.warning(
+                    "Gemini rate limited (429), retrying in %.0fs (attempt %d/%d)",
+                    delay,
+                    attempt + 1,
+                    self.max_retries,
+                )
+                await asyncio.sleep(delay)
+
     async def generate(
         self,
         prompt: str,
@@ -71,11 +129,14 @@ class GeminiClient:
         if system_instruction:
             config.system_instruction = system_instruction
 
-        response = await self._client.aio.models.generate_content(
-            model=model_name,
-            contents=prompt,
-            config=config,
-        )
+        async def _call():
+            return await self._client.aio.models.generate_content(
+                model=model_name,
+                contents=prompt,
+                config=config,
+            )
+
+        response = await self._call_with_retry(_call)
 
         text = response.text or ""
         usage = response.usage_metadata
@@ -133,11 +194,14 @@ class GeminiClient:
         if system_instruction:
             config.system_instruction = system_instruction
 
-        response = await self._client.aio.models.generate_content(
-            model=model_name,
-            contents=prompt,
-            config=config,
-        )
+        async def _call():
+            return await self._client.aio.models.generate_content(
+                model=model_name,
+                contents=prompt,
+                config=config,
+            )
+
+        response = await self._call_with_retry(_call)
 
         # Extract function call from response
         arguments: dict = {}
@@ -217,6 +281,7 @@ class GeminiClient:
         chunk_content: str,
         page_title: str,
         num_questions: int = 5,
+        framework_context: str = "Vue.js",
     ) -> list[str]:
         """Generate hypothetical developer questions that a chunk would answer.
 
@@ -224,7 +289,7 @@ class GeminiClient:
         avoiding brittle newline-based parsing.
         """
         system_instruction = (
-            "You are a Vue.js documentation expert. Your task is to generate "
+            f"You are a {framework_context} documentation expert. Your task is to generate "
             f"{num_questions} hypothetical developer questions that the given "
             "documentation chunk would answer. The questions should:\n"
             "- Sound like real developer questions (natural, conversational)\n"
@@ -270,30 +335,31 @@ class GeminiClient:
         *,
         level: str = "page",
         title: str = "",
+        framework_context: str = "Vue.js",
     ) -> str:
         """Generate a summary for a page, folder, or top-level section."""
         level_instructions = {
             "page": (
-                "Generate a 3-5 sentence summary of this Vue.js documentation page. "
+                f"Generate a 3-5 sentence summary of this {framework_context} documentation page. "
                 "The summary should capture what the page teaches, which APIs it covers, "
                 "and what a developer would learn from reading it. Be specific about "
-                "Vue concepts and API names mentioned."
+                "concepts and API names mentioned."
             ),
             "folder": (
-                "Generate a 3-5 sentence summary of this Vue.js documentation section. "
+                f"Generate a 3-5 sentence summary of this {framework_context} documentation section. "
                 "You are given summaries of all pages within this section. "
                 "Capture the overall theme, the key concepts taught, and the progression "
                 "of topics. Mention the most important APIs and patterns covered."
             ),
             "top": (
-                "Generate a 2-3 sentence summary of this top-level Vue.js documentation area. "
-                "You are given summaries of all sub-sections. Capture the overall purpose "
-                "and scope of this documentation area at a high level."
+                f"Generate a 2-3 sentence summary of this top-level {framework_context} "
+                "documentation area. You are given summaries of all sub-sections. Capture "
+                "the overall purpose and scope of this documentation area at a high level."
             ),
         }
 
         system_instruction = (
-            "You are a Vue.js documentation expert. "
+            f"You are a {framework_context} documentation expert. "
             + level_instructions.get(level, level_instructions["page"])
             + "\n\nOutput ONLY the summary, nothing else."
         )
@@ -316,19 +382,20 @@ class GeminiClient:
         page_content: str,
         chunk_content: str,
         page_title: str,
+        framework_context: str = "Vue.js",
     ) -> str:
         """Generate a contextual prefix for a chunk.
 
         Uses the full page as context to produce 2-3 sentences that situate
-        the chunk within the page's topic, mentioning relevant Vue concepts
+        the chunk within the page's topic, mentioning relevant concepts
         and API names.
         """
         system_instruction = (
             "You are a technical documentation expert. Your task is to generate "
             "a brief contextual summary (2-3 sentences) that situates a specific "
             "documentation chunk within its parent page. The summary should:\n"
-            "- Mention the Vue.js concept or feature being discussed\n"
-            "- Reference any API names (e.g., ref, computed, v-model) relevant to the chunk\n"
+            f"- Mention the {framework_context} concept or feature being discussed\n"
+            "- Reference any API names relevant to the chunk\n"
             "- Explain how this chunk relates to the page's overall topic\n"
             "- Be concise and factual — no opinions or filler\n\n"
             "Output ONLY the contextual summary, nothing else."

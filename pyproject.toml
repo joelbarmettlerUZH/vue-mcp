@@ -7,15 +7,17 @@ dependencies = [
     "vue-docs-core",
     "vue-docs-ingestion",
     "vue-docs-server",
+    "vue-docs-eval",
 ]
 
 [tool.uv.sources]
 vue-docs-core = { workspace = true }
 vue-docs-ingestion = { workspace = true }
 vue-docs-server = { workspace = true }
+vue-docs-eval = { workspace = true }
 
 [tool.uv.workspace]
-members = ["packages/*"]
+members = ["packages/*", "eval"]
 
 [dependency-groups]
 dev = [
@@ -58,7 +60,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["vue_docs_core", "vue_docs_ingestion", "vue_docs_server"]
+known-first-party = ["vue_docs_core", "vue_docs_ingestion", "vue_docs_server", "vue_docs_eval"]
 
 [tool.ruff.format]
 quote-style = "double"

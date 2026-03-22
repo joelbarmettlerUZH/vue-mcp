@@ -233,7 +233,7 @@ class TestEnrichChunksContextual:
         client = GeminiClient(api_key="test-key")
         call_count = 0
 
-        async def fake_enrich(page_content, chunk_content, page_title):
+        async def fake_enrich(page_content, chunk_content, page_title, **kwargs):
             nonlocal call_count
             call_count += 1
             return f"Context for: {chunk_content[:20]}"
@@ -257,7 +257,7 @@ class TestEnrichChunksContextual:
 
         client = GeminiClient(api_key="test-key")
 
-        async def fake_enrich(page_content, chunk_content, page_title):
+        async def fake_enrich(page_content, chunk_content, page_title, **kwargs):
             return "enriched"
 
         with patch.object(client, "enrich_chunk", side_effect=fake_enrich):
@@ -287,15 +287,13 @@ class TestEnrichChunksContextual:
         assert _result.skipped == 1
 
     @pytest.mark.asyncio
-    async def test_handles_missing_page_content(self):
+    async def test_raises_on_missing_page_content(self):
         chunks = [_make_chunk(chunk_id="page#s1")]
         page_contents = {}  # No page content available
 
         client = GeminiClient(api_key="test-key")
-        _result = await enrich_chunks_contextual(chunks, page_contents, client)
-
-        assert _result.enriched == 0
-        assert _result.skipped >= 1
+        with pytest.raises(RuntimeError, match="error rate too high"):
+            await enrich_chunks_contextual(chunks, page_contents, client)
 
     @pytest.mark.asyncio
     async def test_handles_enrichment_errors_gracefully(self):
@@ -307,7 +305,7 @@ class TestEnrichChunksContextual:
 
         client = GeminiClient(api_key="test-key")
 
-        async def flaky_enrich(page_content, chunk_content, page_title):
+        async def flaky_enrich(page_content, chunk_content, page_title, **kwargs):
             if "Bad" in chunk_content:
                 raise RuntimeError("API error")
             return "enriched successfully"
@@ -332,7 +330,7 @@ class TestEnrichChunksContextual:
 
         client = GeminiClient(api_key="test-key")
 
-        async def fake_enrich(page_content, chunk_content, page_title):
+        async def fake_enrich(page_content, chunk_content, page_title, **kwargs):
             return "enriched"
 
         with patch.object(client, "enrich_chunk", side_effect=fake_enrich):
@@ -355,7 +353,7 @@ class TestEnrichChunksContextual:
         client = GeminiClient(api_key="test-key")
         pages_seen = set()
 
-        async def fake_enrich(page_content, chunk_content, page_title):
+        async def fake_enrich(page_content, chunk_content, page_title, **kwargs):
             pages_seen.add(page_content)
             return "enriched"
 
@@ -557,7 +555,7 @@ class TestHypeQuestionOrchestration:
 
         client = GeminiClient(api_key="test-key")
 
-        async def fake_hype(page_content, chunk_content, page_title, num_questions=5):
+        async def fake_hype(page_content, chunk_content, page_title, num_questions=5, **kwargs):
             return [f"Q about {chunk_content[:10]}?"]
 
         with patch.object(client, "generate_hype_questions", side_effect=fake_hype):
@@ -578,7 +576,7 @@ class TestHypeQuestionOrchestration:
 
         client = GeminiClient(api_key="test-key")
 
-        async def fake_hype(page_content, chunk_content, page_title, num_questions=5):
+        async def fake_hype(page_content, chunk_content, page_title, num_questions=5, **kwargs):
             return ["Q?"]
 
         with patch.object(client, "generate_hype_questions", side_effect=fake_hype):
@@ -612,7 +610,7 @@ class TestHypeQuestionOrchestration:
 
         client = GeminiClient(api_key="test-key")
 
-        async def flaky_hype(page_content, chunk_content, page_title, num_questions=5):
+        async def flaky_hype(page_content, chunk_content, page_title, num_questions=5, **kwargs):
             if "Bad" in chunk_content:
                 raise RuntimeError("API error")
             return ["Q?"]
@@ -902,7 +900,7 @@ class TestGeneratePageSummaries:
 
         client = GeminiClient(api_key="test-key")
 
-        async def fake_summary(content, *, level="page", title=""):
+        async def fake_summary(content, *, level="page", title="", **kwargs):
             return f"Summary of {title}"
 
         with patch.object(client, "generate_summary", side_effect=fake_summary):
@@ -930,7 +928,7 @@ class TestGeneratePageSummaries:
         page_contents = {"guide/essentials/computed.md": "# Computed"}
         client = GeminiClient(api_key="test-key")
 
-        async def fake_summary(content, *, level="page", title=""):
+        async def fake_summary(content, *, level="page", title="", **kwargs):
             return "Summary text"
 
         with patch.object(client, "generate_summary", side_effect=fake_summary):
@@ -970,7 +968,7 @@ class TestGeneratePageSummaries:
 
         call_count = 0
 
-        async def flaky_summary(content, *, level="page", title=""):
+        async def flaky_summary(content, *, level="page", title="", **kwargs):
             nonlocal call_count
             call_count += 1
             if call_count == 1:
@@ -1027,7 +1025,7 @@ class TestGenerateFolderSummaries:
 
         client = GeminiClient(api_key="test-key")
 
-        async def fake_summary(content, *, level="folder", title=""):
+        async def fake_summary(content, *, level="folder", title="", **kwargs):
             return f"Folder summary for {title}"
 
         with patch.object(client, "generate_summary", side_effect=fake_summary):
@@ -1070,7 +1068,7 @@ class TestGenerateFolderSummaries:
 
         client = GeminiClient(api_key="test-key")
 
-        async def fake_summary(content, *, level="folder", title=""):
+        async def fake_summary(content, *, level="folder", title="", **kwargs):
             return "Folder summary"
 
         with patch.object(client, "generate_summary", side_effect=fake_summary):
@@ -1126,7 +1124,7 @@ class TestGenerateTopSummaries:
 
         client = GeminiClient(api_key="test-key")
 
-        async def fake_summary(content, *, level="top", title=""):
+        async def fake_summary(content, *, level="top", title="", **kwargs):
             return f"Top summary for {title}"
 
         with patch.object(client, "generate_summary", side_effect=fake_summary):
@@ -1158,7 +1156,7 @@ class TestGenerateTopSummaries:
 
         client = GeminiClient(api_key="test-key")
 
-        async def fake_summary(content, *, level="top", title=""):
+        async def fake_summary(content, *, level="top", title="", **kwargs):
             return "Top summary"
 
         with patch.object(client, "generate_summary", side_effect=fake_summary):
@@ -1187,7 +1185,7 @@ class TestGenerateTopSummaries:
 
         client = GeminiClient(api_key="test-key")
 
-        async def fail_summary(content, *, level="top", title=""):
+        async def fail_summary(content, *, level="top", title="", **kwargs):
             raise RuntimeError("API down")
 
         with patch.object(client, "generate_summary", side_effect=fail_summary):

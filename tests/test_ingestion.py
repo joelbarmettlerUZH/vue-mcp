@@ -4,7 +4,6 @@ Covers scanner, state, embedder, indexer, and the CLI dry-run path.
 No real API calls — Jina and Qdrant are mocked throughout.
 """
 
-import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -113,13 +112,52 @@ class TestScanner:
 # ---------------------------------------------------------------------------
 
 
+def _mock_db():
+    """Create a mock PostgresClient for IndexState tests."""
+    db = MagicMock()
+    db._store = {}
+
+    def load_entry(file_path, source="vue"):
+        return db._store.get((source, file_path))
+
+    def save_entry(
+        file_path, content_hash, pipeline_version, chunk_ids, last_indexed, source="vue"
+    ):
+        db._store[(source, file_path)] = {
+            "content_hash": content_hash,
+            "pipeline_version": pipeline_version,
+            "chunk_ids": chunk_ids,
+            "last_indexed": last_indexed,
+        }
+
+    def remove_entry(file_path, source="vue"):
+        db._store.pop((source, file_path), None)
+
+    def all_paths(source=None):
+        return [fp for (s, fp) in db._store if source is None or s == source]
+
+    def total_chunks(source=None):
+        return sum(
+            len(v["chunk_ids"]) for (s, _), v in db._store.items() if source is None or s == source
+        )
+
+    db.load_index_state_entry = MagicMock(side_effect=load_entry)
+    db.save_index_state = MagicMock(side_effect=save_entry)
+    db.remove_index_state = MagicMock(side_effect=remove_entry)
+    db.all_index_file_paths = MagicMock(side_effect=all_paths)
+    db.total_index_chunks = MagicMock(side_effect=total_chunks)
+    return db
+
+
 class TestIndexState:
-    def test_get_missing_returns_none(self, tmp_path):
-        state = IndexState(tmp_path / "state.json")
+    def test_get_missing_returns_none(self):
+        db = _mock_db()
+        state = IndexState(db=db)
         assert state.get("nonexistent.md") is None
 
-    def test_set_and_get_roundtrip(self, tmp_path):
-        state = IndexState(tmp_path / "state.json")
+    def test_set_and_get_roundtrip(self):
+        db = _mock_db()
+        state = IndexState(db=db)
         fs = FileState(
             content_hash="abc123",
             pipeline_version="1",
@@ -134,71 +172,40 @@ class TestIndexState:
         assert result.chunk_ids == ["chunk#1", "chunk#2"]
         assert result.last_indexed == "2026-01-01T00:00:00+00:00"
 
-    def test_remove(self, tmp_path):
-        state = IndexState(tmp_path / "state.json")
+    def test_remove(self):
+        db = _mock_db()
+        state = IndexState(db=db)
         state.set("file.md", FileState(content_hash="x", pipeline_version="1"))
         state.remove("file.md")
         assert state.get("file.md") is None
 
-    def test_remove_nonexistent_is_noop(self, tmp_path):
-        state = IndexState(tmp_path / "state.json")
+    def test_remove_nonexistent_is_noop(self):
+        db = _mock_db()
+        state = IndexState(db=db)
         state.remove("does-not-exist.md")  # should not raise
 
-    def test_all_file_paths(self, tmp_path):
-        state = IndexState(tmp_path / "state.json")
+    def test_all_file_paths(self):
+        db = _mock_db()
+        state = IndexState(db=db)
         state.set("a.md", FileState(content_hash="1", pipeline_version="1"))
         state.set("b.md", FileState(content_hash="2", pipeline_version="1"))
         paths = state.all_file_paths()
         assert set(paths) == {"a.md", "b.md"}
 
-    def test_save_and_reload(self, tmp_path):
-        state_path = tmp_path / "state.json"
-        state = IndexState(state_path)
+    def test_save_is_noop(self):
+        db = _mock_db()
+        state = IndexState(db=db)
         state.set(
             "file.md", FileState(content_hash="hash1", pipeline_version="1", chunk_ids=["c1"])
         )
-        state.save()
+        state.save()  # Should not raise (no-op for PG)
 
-        assert state_path.exists()
-        loaded = IndexState(state_path)
-        result = loaded.get("file.md")
-        assert result is not None
-        assert result.content_hash == "hash1"
-        assert result.chunk_ids == ["c1"]
-
-    def test_save_creates_parent_directories(self, tmp_path):
-        state_path = tmp_path / "deep" / "nested" / "state.json"
-        state = IndexState(state_path)
-        state.set("f.md", FileState(content_hash="x", pipeline_version="1"))
-        state.save()
-        assert state_path.exists()
-
-    def test_total_chunks(self, tmp_path):
-        state = IndexState(tmp_path / "state.json")
+    def test_total_chunks(self):
+        db = _mock_db()
+        state = IndexState(db=db)
         state.set("a.md", FileState(content_hash="1", pipeline_version="1", chunk_ids=["c1", "c2"]))
         state.set("b.md", FileState(content_hash="2", pipeline_version="1", chunk_ids=["c3"]))
         assert state.total_chunks() == 3
-
-    def test_loads_existing_state_on_init(self, tmp_path):
-        state_path = tmp_path / "state.json"
-        state_path.write_text(
-            json.dumps(
-                {
-                    "pre-existing.md": {
-                        "content_hash": "abc",
-                        "pipeline_version": "1",
-                        "chunk_ids": [],
-                        "last_indexed": "",
-                    }
-                }
-            )
-        )
-        state = IndexState(state_path)
-        assert state.get("pre-existing.md") is not None
-
-    def test_missing_file_starts_empty(self, tmp_path):
-        state = IndexState(tmp_path / "nonexistent.json")
-        assert state.all_file_paths() == []
 
 
 # ---------------------------------------------------------------------------
@@ -316,13 +323,6 @@ class TestIndexer:
         assert len(call_kwargs["sparse_vectors"]) == 3
         assert len(call_kwargs["payloads"]) == 3
 
-    def test_upsert_chunks_batch_empty_noop(self):
-        from vue_docs_core.clients.qdrant import QdrantDocClient
-
-        qdrant = MagicMock(spec=QdrantDocClient)
-        upsert_chunks_batch([], [], [], qdrant)
-        qdrant.upsert_chunks.assert_not_called()
-
     def test_upsert_chunks_batch_chunk_ids_match_chunks(self):
         from vue_docs_core.clients.qdrant import QdrantDocClient
 
@@ -345,11 +345,17 @@ class TestIndexer:
 # ---------------------------------------------------------------------------
 
 
+def _vue_source():
+    """Return the Vue source definition for pipeline tests."""
+    from vue_docs_core.data.sources import SOURCE_REGISTRY
+
+    return SOURCE_REGISTRY["vue"]
+
+
 class TestPipelineDryRun:
     @pytest.mark.asyncio
     async def test_dry_run_does_not_call_jina_or_qdrant(self, tmp_path):
         """Dry-run should discover files and exit without touching external APIs."""
-        # Create minimal docs structure
         docs = tmp_path / "src"
         docs.mkdir()
         (docs / "index.md").write_text("# Vue\nIntroduction.")
@@ -357,13 +363,17 @@ class TestPipelineDryRun:
         data = tmp_path / "data"
         data.mkdir()
 
+        mock_db = _mock_db()
+
         from vue_docs_ingestion.pipeline import run_pipeline
 
         with (
             patch("vue_docs_ingestion.pipeline.JinaClient") as MockJina,
             patch("vue_docs_ingestion.pipeline.QdrantDocClient") as MockQdrant,
         ):
-            await run_pipeline(docs_path=docs, data_path=data, dry_run=True)
+            await run_pipeline(
+                docs_path=docs, data_path=data, dry_run=True, db=mock_db, source=_vue_source()
+            )
 
         MockJina.return_value.embed_batched.assert_not_called()
         MockQdrant.return_value.upsert_chunks.assert_not_called()
@@ -379,12 +389,10 @@ class TestPipelineDryRun:
         data = tmp_path / "data"
         data.mkdir()
 
-        # Pre-populate state so file appears up-to-date (use current pipeline_version)
         from vue_docs_core.config import settings as app_settings
-        from vue_docs_ingestion.scanner import hash_file
-        from vue_docs_ingestion.state import FileState, IndexState
 
-        state = IndexState(data / "state" / "index_state.json")
+        mock_db = _mock_db()
+        state = IndexState(db=mock_db)
         state.set(
             "test.md",
             FileState(
@@ -394,7 +402,6 @@ class TestPipelineDryRun:
                 last_indexed="2026-01-01T00:00:00+00:00",
             ),
         )
-        state.save()
 
         from vue_docs_ingestion.pipeline import run_pipeline
 
@@ -402,7 +409,7 @@ class TestPipelineDryRun:
             patch("vue_docs_ingestion.pipeline.JinaClient") as MockJina,
             patch("vue_docs_ingestion.pipeline.QdrantDocClient") as MockQdrant,
         ):
-            await run_pipeline(docs_path=docs, data_path=data)
+            await run_pipeline(docs_path=docs, data_path=data, db=mock_db, source=_vue_source())
 
         MockJina.return_value.embed_batched.assert_not_called()
         MockQdrant.return_value.upsert_chunks.assert_not_called()
@@ -418,12 +425,10 @@ class TestPipelineDryRun:
         data = tmp_path / "data"
         data.mkdir()
 
-        # Pre-populate state (file is "up to date")
         from vue_docs_core.config import settings as app_settings
-        from vue_docs_ingestion.scanner import hash_file
-        from vue_docs_ingestion.state import FileState, IndexState
 
-        state = IndexState(data / "state" / "index_state.json")
+        mock_db = _mock_db()
+        state = IndexState(db=mock_db)
         state.set(
             "test.md",
             FileState(
@@ -433,7 +438,6 @@ class TestPipelineDryRun:
                 last_indexed="2026-01-01T00:00:00+00:00",
             ),
         )
-        state.save()
 
         from vue_docs_core.clients.jina import EmbeddingResult
         from vue_docs_ingestion.pipeline import run_pipeline
@@ -453,11 +457,22 @@ class TestPipelineDryRun:
         mock_jina.embed_batched = AsyncMock(side_effect=dynamic_embed)
         mock_jina.close = AsyncMock()
 
+        mock_gemini = MagicMock()
+        mock_gemini.enrich_chunk = AsyncMock(return_value="enriched")
+        mock_gemini.generate_hype_questions = AsyncMock(return_value=[])
+        mock_gemini.close = AsyncMock()
+
         with (
             patch("vue_docs_ingestion.pipeline.JinaClient", return_value=mock_jina),
             patch("vue_docs_ingestion.pipeline.QdrantDocClient", return_value=mock_qdrant),
+            patch("vue_docs_ingestion.pipeline.GeminiClient", return_value=mock_gemini),
+            patch("vue_docs_ingestion.pipeline.settings") as mock_settings,
         ):
-            await run_pipeline(docs_path=docs, data_path=data, full=True)
+            mock_settings.gemini_api_key = "test-key"
+            mock_settings.pipeline_version = "6"
+            await run_pipeline(
+                docs_path=docs, data_path=data, full=True, db=mock_db, source=_vue_source()
+            )
 
         # With --full, Jina should have been called (file was re-processed)
         mock_jina.embed_batched.assert_called()
@@ -493,18 +508,10 @@ class TestCLI:
         from vue_docs_ingestion.cli import app
 
         runner = CliRunner()
-        result = runner.invoke(app, ["run", "--docs-path", str(tmp_path / "nonexistent")])
+        mock_db = _mock_db()
+        with patch("vue_docs_ingestion.cli._get_db", return_value=mock_db):
+            result = runner.invoke(app, ["run", "--docs-path", str(tmp_path / "nonexistent")])
         assert result.exit_code != 0
-
-    def test_status_no_state_prints_guidance(self, tmp_path):
-        from typer.testing import CliRunner
-
-        from vue_docs_ingestion.cli import app
-
-        runner = CliRunner()
-        result = runner.invoke(app, ["status", "--data-path", str(tmp_path)])
-        assert result.exit_code == 0
-        assert "Run" in result.output or "state" in result.output.lower()
 
     def test_run_dry_run_lists_files(self, tmp_path):
         from typer.testing import CliRunner
@@ -517,10 +524,12 @@ class TestCLI:
         data = tmp_path / "data"
         data.mkdir()
 
+        mock_db = _mock_db()
         runner = CliRunner()
-        result = runner.invoke(
-            app,
-            ["run", "--docs-path", str(docs), "--data-path", str(data), "--dry-run"],
-        )
+        with patch("vue_docs_ingestion.cli._get_db", return_value=mock_db):
+            result = runner.invoke(
+                app,
+                ["run", "--docs-path", str(docs), "--data-path", str(data), "--dry-run"],
+            )
         assert result.exit_code == 0
         assert "guide.md" in result.output

@@ -1,3 +1,7 @@
+# Production stack with Let's Encrypt TLS.
+# Usage: docker compose -f docker-compose.prod.yml up -d
+# Required env vars: DOMAIN, ACME_EMAIL, POSTGRES_PASSWORD, JINA_API_KEY, GEMINI_API_KEY
+
 x-logging: &default-logging
   driver: json-file
   options:
@@ -15,20 +19,23 @@ services:
       SERVER_HOST: "0.0.0.0"
       SERVER_PORT: "8000"
       QDRANT_URL: http://qdrant:6333
-      DATABASE_URL: postgresql+psycopg://vue_mcp:${POSTGRES_PASSWORD:-vue_mcp}@postgres:5432/vue_mcp
-      JINA_API_KEY: ${JINA_API_KEY:-}
-      MASK_ERROR_DETAILS: ${MASK_ERROR_DETAILS:-false}
+      DATABASE_URL: postgresql+psycopg://vue_mcp:${POSTGRES_PASSWORD}@postgres:5432/vue_mcp
+      JINA_API_KEY: ${JINA_API_KEY}
+      MASK_ERROR_DETAILS: ${MASK_ERROR_DETAILS:-true}
     depends_on:
       postgres:
         condition: service_healthy
       qdrant:
         condition: service_healthy
+    networks:
+      - proxy
+      - internal
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.mcp.rule=Host(`${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.mcp.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.mcp.entrypoints=websecure"
       - "traefik.http.routers.mcp.tls=true"
-      - "traefik.http.routers.mcp.tls.certresolver=${TLS_CERTRESOLVER:-}"
+      - "traefik.http.routers.mcp.tls.certresolver=letsencrypt"
       - "traefik.http.routers.mcp.middlewares=ratelimit,connlimit,bodylimit"
       - "traefik.http.services.mcp.loadbalancer.server.port=8000"
       - "traefik.http.middlewares.ratelimit.ratelimit.average=60"
@@ -49,11 +56,11 @@ services:
     command: vue-docs-ingest watch --verbose --interval-hours ${INGESTION_INTERVAL_HOURS:-24}
     environment:
       QDRANT_URL: http://qdrant:6333
-      DATABASE_URL: postgresql+psycopg://vue_mcp:${POSTGRES_PASSWORD:-vue_mcp}@postgres:5432/vue_mcp
+      DATABASE_URL: postgresql+psycopg://vue_mcp:${POSTGRES_PASSWORD}@postgres:5432/vue_mcp
       VUE_DOCS_PATH: /app/data/vue-docs/src
       DATA_PATH: /app/data
-      JINA_API_KEY: ${JINA_API_KEY:-}
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      JINA_API_KEY: ${JINA_API_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
     volumes:
       - vue-docs-data:/app/data
     depends_on:
@@ -61,6 +68,8 @@ services:
         condition: service_healthy
       qdrant:
         condition: service_healthy
+    networks:
+      - internal
     mem_limit: 4g
     cpus: 2.0
     logging: *default-logging
@@ -70,10 +79,12 @@ services:
     image: postgres:17-alpine
     environment:
       POSTGRES_USER: vue_mcp
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vue_mcp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: vue_mcp
     volumes:
       - pg-data:/var/lib/postgresql/data
+    networks:
+      - internal
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U vue_mcp"]
       interval: 5s
@@ -88,6 +99,8 @@ services:
     image: qdrant/qdrant:v1.17.0
     volumes:
       - qdrant-data:/qdrant/storage
+    networks:
+      - internal
     healthcheck:
       test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/6333'"]
       interval: 5s
@@ -106,7 +119,7 @@ services:
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
-      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-admin@example.com}"
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
       - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
       - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
     ports:
@@ -115,10 +128,17 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - letsencrypt:/letsencrypt
+    networks:
+      - proxy
     mem_limit: 512m
     cpus: 0.5
     logging: *default-logging
     restart: unless-stopped
+
+networks:
+  proxy:
+  internal:
+    internal: true
 
 volumes:
   pg-data:

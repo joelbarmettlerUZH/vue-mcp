@@ -118,9 +118,6 @@ class JinaClient:
         task: str = TASK_RETRIEVAL_PASSAGE,
     ) -> EmbeddingResult:
         """Embed a list of text strings."""
-        if not texts:
-            return EmbeddingResult(embeddings=[], total_tokens=0)
-
         payload: dict = {
             "model": self.model,
             "dimensions": self.dimensions,
@@ -153,9 +150,6 @@ class JinaClient:
         batch_size: int = 64,
     ) -> EmbeddingResult:
         """Embed texts in batches to respect API limits."""
-        if not texts:
-            return EmbeddingResult(embeddings=[], total_tokens=0)
-
         all_embeddings: list[list[float]] = []
         total_tokens = 0
 
@@ -174,9 +168,6 @@ class JinaClient:
         top_n: int | None = None,
     ) -> RerankResult:
         """Rerank documents against a query."""
-        if not documents:
-            return RerankResult(indices=[], scores=[], total_tokens=0)
-
         payload: dict = {
             "model": self.reranker_model,
             "query": query,

@@ -20,11 +20,15 @@ class Settings(BaseSettings):
     # Qdrant
     qdrant_url: str = "http://localhost:6333"
     qdrant_api_key: str = ""
-    qdrant_collection: str = "vue_docs"
+    qdrant_collection: str = "vue_ecosystem"
 
     # Paths
-    vue_docs_path: str = "./data/vue-docs/src"
+    vue_docs_path: str = "./data/vue-docs/src"  # Kept for backward compat
+    sources_data_path: str = "./data"
     data_path: str = "./data"
+
+    # Sources
+    enabled_sources: str = "vue"
 
     # Server
     server_transport: str = "stdio"
@@ -36,7 +40,7 @@ class Settings(BaseSettings):
     database_url: str = ""
 
     # Pipeline
-    pipeline_version: str = "5"  # Bumped: Day 13 RAPTOR hierarchical summaries
+    pipeline_version: str = "6"  # Bumped: Multi-framework source support
 
 
 settings = Settings()
@@ -47,7 +51,6 @@ settings = Settings()
 
 JINA_EMBEDDING_URL = "https://api.jina.ai/v1/embeddings"
 JINA_RERANKER_URL = "https://api.jina.ai/v1/rerank"
-VUE_DOCS_BASE_URL = "https://vuejs.org"
 
 # ---------------------------------------------------------------------------
 # Jina task types for jina-embeddings-v4+
@@ -65,6 +68,7 @@ DENSE_VECTOR_NAME = "dense"
 SPARSE_VECTOR_NAME = "bm25"
 
 INDEXED_FIELDS = {
+    "source": PayloadSchemaType.KEYWORD,
     "chunk_id": PayloadSchemaType.KEYWORD,
     "file_path": PayloadSchemaType.KEYWORD,
     "folder_path": PayloadSchemaType.KEYWORD,
@@ -94,5 +98,5 @@ EXPANSION_MAX_TARGETS = 10
 
 EMBED_BATCH_SIZE = 256
 UPSERT_BATCH_SIZE = 256
-PAGE_CONCURRENCY = 3
+PAGE_CONCURRENCY = 2
 MAX_SECTION_CHARS = 3000
