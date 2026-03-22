@@ -26,9 +26,7 @@ def _parse_retry_delay(error: ClientError) -> float | None:
         if not msg:
             continue
         # Try XhYmZs format first (e.g. "13h1m46.7s")
-        match = re.search(
-            r"retry in (?:(\d+)h)?(?:(\d+)m)?(\d+(?:\.\d+)?)s", msg, re.IGNORECASE
-        )
+        match = re.search(r"retry in (?:(\d+)h)?(?:(\d+)m)?(\d+(?:\.\d+)?)s", msg, re.IGNORECASE)
         if match:
             hours = int(match.group(1) or 0)
             minutes = int(match.group(2) or 0)
