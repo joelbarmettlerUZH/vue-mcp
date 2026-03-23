@@ -138,7 +138,7 @@ async def judge_stable(
     relevant_apis: list[str],
     retrieved_context: str,
     gemini: GeminiClient,
-    runs: int = 3,
+    runs: int = 1,
 ) -> JudgeScores:
     """Run the judge multiple times and take the median score per dimension."""
     all_scores: list[dict] = []

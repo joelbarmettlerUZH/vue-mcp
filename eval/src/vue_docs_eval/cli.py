@@ -52,7 +52,7 @@ def run(
     max_questions: Annotated[int | None, typer.Option(help="Limit number of questions")] = None,
     max_results: Annotated[int, typer.Option(help="Max search results per query")] = 10,
     judge_model: Annotated[str | None, typer.Option(help="Gemini model for judging")] = None,
-    judge_runs: Annotated[int, typer.Option(help="Judge runs per question for median")] = 3,
+    judge_runs: Annotated[int, typer.Option(help="Judge runs per question for median")] = 1,
     output: Annotated[Path, typer.Option(help="Output directory")] = EVAL_DIR / "results",
     verbose: Annotated[bool, typer.Option("--verbose", "-v")] = False,
 ):

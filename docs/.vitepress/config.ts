@@ -32,6 +32,7 @@ export default defineConfig({
 
     nav: [
       { text: "Guide", link: "/guide/what-is-vue-mcp" },
+      { text: "Frameworks", link: "/frameworks/" },
       { text: "Clients", link: "/clients/" },
       { text: "Reference", link: "/reference/tools" },
     ],
@@ -42,6 +43,15 @@ export default defineConfig({
         items: [
           { text: "What is Vue Docs MCP?", link: "/guide/what-is-vue-mcp" },
           { text: "Getting Started", link: "/guide/getting-started" },
+        ],
+      },
+      {
+        text: "Frameworks",
+        link: "/frameworks/",
+        collapsed: false,
+        items: [
+          { text: "Vue.js", link: "/frameworks/vue" },
+          { text: "Vue Router", link: "/frameworks/vue-router" },
         ],
       },
       {
@@ -67,8 +77,7 @@ export default defineConfig({
           { text: "Tools", link: "/reference/tools" },
           { text: "Resources", link: "/reference/resources" },
           { text: "Prompts", link: "/reference/prompts" },
-          { text: "Frameworks", link: "/reference/frameworks" },
-          { text: "Benchmarks", link: "/reference/benchmarks" },
+          { text: "Framework Preferences", link: "/reference/frameworks" },
           { text: "How It Works", link: "/reference/how-it-works" },
         ],
       },

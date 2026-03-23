@@ -30,12 +30,12 @@ All results include source references so you can verify them.
 | Framework | Status | Description |
 |---|---|---|
 | [Vue.js](https://vuejs.org) | :white_check_mark: Available | Core framework: reactivity, components, Composition API |
-| [Vue Router](https://router.vuejs.org) | :construction: In progress | Official router: navigation guards, dynamic routes |
+| [Vue Router](https://router.vuejs.org) | :white_check_mark: Available | Official router: navigation guards, dynamic routes |
 | [Pinia](https://pinia.vuejs.org) | :calendar: Planned | Official state management |
 | [VueUse](https://vueuse.org) | :calendar: Planned | Composition API utilities |
 | [Nuxt](https://nuxt.com) | :calendar: Planned | Full-stack framework |
 
-See the full roadmap on the [Frameworks](/reference/frameworks) page. Each framework gets its own set of tools, resources, and prompts. You can [enable or disable frameworks per session](/reference/frameworks).
+See the full list on the [Supported Frameworks](/frameworks/) page. Each framework gets its own tools, resources, prompts, and benchmarks.
 
 ## How It Works
 

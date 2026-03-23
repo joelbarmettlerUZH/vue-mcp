@@ -57,20 +57,6 @@ Read the `ecosystem://preferences` resource to see which frameworks are currentl
 
 Read `ecosystem://sources` to see all supported frameworks and their status.
 
-## Roadmap
+## Available Frameworks
 
-We plan to expand coverage across the Vue ecosystem. Here is the current status:
-
-| Framework | Status | Description |
-|---|---|---|
-| [Vue.js](https://vuejs.org) | :white_check_mark: Available | Core framework |
-| [Vue Router](https://router.vuejs.org) | :construction: In progress | Official router |
-| [Pinia](https://pinia.vuejs.org) | :calendar: Planned | Official state management |
-| [VueUse](https://vueuse.org) | :calendar: Planned | Composition API utilities |
-| [Nuxt](https://nuxt.com) | :calendar: Planned | Full-stack framework |
-| [Vuetify](https://vuetifyjs.com) | :calendar: Planned | Material Design component library |
-| [Vite](https://vite.dev) | :calendar: Planned | Build tool |
-| [Vitest](https://vitest.dev) | :calendar: Planned | Unit testing framework |
-| [VitePress](https://vitepress.dev) | :calendar: Planned | Static site generator |
-
-Want to see a framework added? [Open an issue](https://github.com/joelbarmettlerUZH/vue-mcp/issues) on GitHub.
+See the [Supported Frameworks](/frameworks/) page for the full list of available and planned frameworks, including per-framework tools, benchmarks, and documentation.

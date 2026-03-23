@@ -1,0 +1,659 @@
+[
+  {
+    "relevant_apis": [
+      "RouterLink",
+      "createRouter"
+    ],
+    "relevant_paths": [
+      "guide/essentials/active-links.md"
+    ],
+    "question": "What are the default classes added to active links and how can I change them?",
+    "expected_answer": "The RouterLink component adds the classes `router-link-active` and `router-link-exact-active` to active links. You can configure these class names using the `activeClass` and `exactActiveClass` props on the RouterLink component, or globally using `linkActiveClass` and `linkExactActiveClass` in the `createRouter()` options.",
+    "intent": "api_lookup",
+    "difficulty": "easy",
+    "framework": "vue-router"
+  },
+  {
+    "relevant_apis": [
+      "RouterLink"
+    ],
+    "relevant_paths": [
+      "guide/essentials/active-links.md"
+    ],
+    "expected_answer": "A RouterLink is considered active if it matches the same route record as the current location and has the same params. Exact active links do not include ancestor routes, meaning they only match the specific route record itself.",
+    "intent": "conceptual",
+    "question": "What is the difference between active and exact active links in Vue Router?",
+    "difficulty": "medium",
+    "framework": "vue-router"
+  },
+  {
+    "difficulty": "hard",
+    "relevant_apis": [
+      "useRoute",
+      "onBeforeRouteUpdate",
+      "beforeRouteUpdate"
+    ],
+    "relevant_paths": [
+      "guide/essentials/dynamic-matching.md"
+    ],
+    "question": "How do I handle or react to dynamic route param changes in the same component instance?",
+    "intent": "howto",
+    "expected_answer": "You can use `watch` on the `route.params` object within a component's `setup` or `created` hook. Alternatively, you can use the `onBeforeRouteUpdate` navigation guard in the Composition API or `beforeRouteUpdate` in the Options API to react to parameter changes.",
+    "framework": "vue-router"
+  },
+  {
+    "question": "Why do I get a 404 error when I refresh the page on a sub-route in HTML5 mode?",
+    "expected_answer": "If you are using HTML5 mode (createWebHistory), you need to configure a catch-all fallback route on your server (like index.html) to handle direct browser access to sub-paths, as these paths do not exist as static files. Hash mode (createWebHashHistory) does not require this because the hash part of the URL is not sent to the server.",
+    "intent": "debugging",
+    "relevant_paths": [
+      "guide/essentials/history-mode.md"
+    ],
+    "relevant_apis": [
+      "createWebHistory",
+      "createWebHashHistory"
+    ],
+    "difficulty": "medium",
+    "framework": "vue-router"
+  },
+  {
+    "relevant_apis": [
+      "createWebHistory",
+      "createWebHashHistory"
+    ],
+    "intent": "comparison",
+    "expected_answer": "HTML5 mode uses the browser's History API, resulting in \"normal\" URLs like `/user/id`. Hash mode uses a hash character (`#`) before the URL, which is not sent to the server, making it easier to host but worse for SEO.",
+    "question": "What is the main difference between HTML5 history mode and Hash mode?",
+    "relevant_paths": [
+      "guide/essentials/history-mode.md"
+    ],
+    "difficulty": "easy",
+    "framework": "vue-router"
+  },
+  {
+    "difficulty": "medium",
+    "relevant_apis": [
+      "createRouter",
+      "createWebHistory",
+      "createWebHashHistory"
+    ],
+    "relevant_paths": [
+      "guide/migration/index.md"
+    ],
+    "question": "How do I migrate the router instance creation and history mode setup from Vue Router 3 to 4?",
+    "intent": "migration",
+    "expected_answer": "In Vue Router 4, you use `createRouter` instead of `new Router()`, and you use history functions like `createWebHistory()` or `createWebHashHistory()` instead of the `mode` string option.",
+    "framework": "vue-router"
+  },
+  {
+    "difficulty": "easy",
+    "question": "How do I navigate using named routes?",
+    "expected_answer": "You can use the `name` property in the route configuration and pass an object with the `name` and `params` to the `to` prop of `<router-link>` or to `router.push()`.",
+    "intent": "api_lookup",
+    "relevant_paths": [
+      "guide/essentials/named-routes.md"
+    ],
+    "relevant_apis": [
+      "router.push",
+      "RouterLink"
+    ],
+    "framework": "vue-router"
+  },
+  {
+    "difficulty": "medium",
+    "relevant_apis": [
+      "router-view",
+      "createRouter"
+    ],
+    "relevant_paths": [
+      "guide/essentials/named-views.md"
+    ],
+    "question": "What are named views and how do I configure them?",
+    "intent": "conceptual",
+    "expected_answer": "Named views allow you to display multiple components for the same route by using multiple `router-view` outlets with different names. You configure this in the router settings by using the `components` option (plural) instead of `component` (singular).",
+    "framework": "vue-router"
+  },
+  {
+    "difficulty": "hard",
+    "relevant_apis": [
+      "router.push",
+      "router.replace"
+    ],
+    "relevant_paths": [
+      "guide/essentials/navigation.md"
+    ],
+    "question": "What's the difference between router.push and router.replace?",
+    "intent": "comparison",
+    "expected_answer": "`router.push` adds a new entry to the history stack, while `router.replace` navigates without adding a new entry, effectively replacing the current one. Both accept the same location descriptor object.",
+    "framework": "vue-router"
+  },
+  {
+    "difficulty": "medium",
+    "relevant_apis": [
+      "createRouter"
+    ],
+    "question": "How can I nest routes and render them inside a parent component?",
+    "expected_answer": "You use the `children` option in your route configuration. If you want a default child to be rendered when the parent route is matched, you can provide an empty path `path: ''` in the children array.",
+    "intent": "howto",
+    "relevant_paths": [
+      "guide/essentials/nested-routes.md"
+    ],
+    "framework": "vue-router"
+  },
+  {
+    "relevant_apis": [
+      "createRouter"
+    ],
+    "question": "How do I pass route parameters as props to my components?",
+    "expected_answer": "You can set `props: true` in your route definition to pass route params as props to the component, or use a function mode `props: route => ({ ... })` to map query parameters or static values to props.",
+    "intent": "howto",
+    "relevant_paths": [
+      "guide/essentials/passing-props.md"
+    ],
+    "difficulty": "medium",
+    "framework": "vue-router"
+  },
+  {
+    "difficulty": "easy",
+    "relevant_apis": [
+      "createRouter"
+    ],
+    "relevant_paths": [
+      "guide/essentials/redirect-and-alias.md"
+    ],
+    "expected_answer": "A redirect changes the URL to the new target, while an alias keeps the URL as is but matches the route as if the user visited the target path.",
+    "intent": "comparison",
+    "question": "What is the difference between a redirect and an alias?",
+    "framework": "vue-router"
+  },
+  {
+    "difficulty": "hard",
+    "relevant_paths": [
+      "guide/essentials/route-matching-syntax.md"
+    ],
+    "intent": "howto",
+    "expected_answer": "You can use custom regex in params by adding the expression in parentheses after the parameter name, like `/:orderId(\\\\d+)`. Remember to escape backslashes in JavaScript strings, e.g., `\\\\d`.",
+    "question": "How can I restrict a dynamic route parameter to match only numbers?",
+    "relevant_apis": [
+      "createRouter"
+    ],
+    "framework": "vue-router"
+  },
+  {
+    "relevant_paths": [
+      "guide/advanced/composition-api.md"
+    ],
+    "question": "How do I access the router and current route in the Composition API?",
+    "expected_answer": "You use `useRouter` to access the router instance and `useRoute` to access the current route object within your `setup` function.",
+    "intent": "api_lookup",
+    "relevant_apis": [
+      "useRouter",
+      "useRoute"
+    ],
+    "difficulty": "medium",
+    "framework": "vue-router"
+  },
+  {
+    "difficulty": "medium",
+    "question": "How do I use navigation guards in the Composition API?",
+    "intent": "howto",
+    "expected_answer": "You can use `onBeforeRouteUpdate` to react to parameter changes and `onBeforeRouteLeave` to guard against leaving a route, both of which are imported from `vue-router`.",
+    "relevant_paths": [
+      "guide/advanced/composition-api.md"
+    ],
+    "relevant_apis": [
+      "onBeforeRouteUpdate",
+      "onBeforeRouteLeave"
+    ],
+    "framework": "vue-router"
+  },
+  {
+    "intent": "comparison",
+    "expected_answer": "Fetching before navigation happens in a navigation guard (like `beforeRouteEnter`), where you perform the fetch and call `next` only when complete. Fetching after navigation happens inside the component's lifecycle hooks (like `created` or `onMounted`), displaying a loading state while fetching.",
+    "question": "What are the two main approaches for data fetching in Vue Router and what are their trade-offs?",
+    "relevant_paths": [
+      "guide/advanced/data-fetching.md"
+    ],
+    "relevant_apis": [
+      "beforeRouteEnter"
+    ],
+    "difficulty": "hard",
+    "framework": "vue-router"
+  },
+  {
+    "difficulty": "medium",
+    "relevant_apis": [
+      "router.addRoute",
+      "router.removeRoute"
+    ],
+    "relevant_paths": [
+      "guide/advanced/dynamic-routing.md"
+    ],
+    "expected_answer": "You use `router.addRoute()` to add a new route record and `router.removeRoute()` to remove an existing one by its name.",
+    "intent": "api_lookup",
+    "question": "How can I add or remove routes dynamically at runtime?",
+    "framework": "vue-router"
+  },
+  {
+    "relevant_paths": [
+      "guide/advanced/extending-router-link.md"
+    ],
+    "question": "How do I create a custom RouterLink component for advanced use cases?",
+    "intent": "howto",
+    "expected_answer": "You can use the `v-slot` API on the RouterLink component to access `isActive`, `href`, and `navigate`, which gives you full control over the rendering of the link. This is useful for creating custom link components that handle external URLs or specific styling.",
+    "relevant_apis": [
+      "RouterLink"
+    ],
+    "difficulty": "hard",
+    "framework": "vue-router"
+  },
+  {
+    "relevant_apis": [
+      "createRouter"
+    ],
+    "question": "How do I implement lazy loading for route components?",
+    "intent": "howto",
+    "expected_answer": "You can use dynamic `import()` in your route configuration: `component: () => import('./path/to/component.vue')`.",
+    "relevant_paths": [
+      "guide/advanced/lazy-loading.md"
+    ],
+    "difficulty": "easy",
+    "framework": "vue-router"
+  },
+  {
+    "relevant_paths": [
+      "guide/advanced/meta.md"
+    ],
+    "intent": "api_lookup",
+    "expected_answer": "Meta fields are arbitrary objects added to route records. You access them via `to.meta` in navigation guards or `route.meta` in components. It is a non-recursive merge of all meta fields from parent to child.",
+    "question": "How do I use meta fields to control access or store information on routes?",
+    "relevant_apis": [
+      "createRouter"
+    ],
+    "difficulty": "medium",
+    "framework": "vue-router"
+  },
+  {
+    "relevant_paths": [
+      "guide/advanced/navigation-failures.md"
+    ],
+    "question": "How can I detect if a navigation was blocked by a guard?",
+    "intent": "debugging",
+    "expected_answer": "`router.push` returns a Promise. If the navigation is prevented, the promise resolves to a Navigation Failure. You can check this using `isNavigationFailure(failure, NavigationFailureType.aborted)`.",
+    "relevant_apis": [
+      "router.push",
+      "isNavigationFailure"
+    ],
+    "difficulty": "medium",
+    "framework": "vue-router"
+  },
+  {
+    "relevant_apis": [
+      "router.beforeEach",
+      "beforeEnter",
+      "beforeRouteEnter"
+    ],
+    "relevant_paths": [
+      "guide/advanced/navigation-guards.md"
+    ],
+    "question": "What are the different types of navigation guards available in Vue Router?",
+    "intent": "api_lookup",
+    "expected_answer": "Global guards are `beforeEach`, `beforeResolve`, and `afterEach`. Per-route guards are defined as `beforeEnter` on the route configuration. In-component guards are `beforeRouteEnter`, `beforeRouteUpdate`, and `beforeRouteLeave`.",
+    "difficulty": "medium",
+    "framework": "vue-router"
+  },
+  {
+    "difficulty": "hard",
+    "relevant_apis": [
+      "router-view"
+    ],
+    "expected_answer": "You use the `v-slot` API on `<router-view>` to expose the route component, which you then pass to `<component :is=\"Component\" />`. This allows you to wrap the component with `KeepAlive` or `Transition`.",
+    "intent": "howto",
+    "question": "How do I use Transitions or KeepAlive with router-view?",
+    "relevant_paths": [
+      "guide/advanced/router-view-slot.md"
+    ],
+    "framework": "vue-router"
+  },
+  {
+    "difficulty": "medium",
+    "relevant_apis": [
+      "createRouter"
+    ],
+    "relevant_paths": [
+      "guide/advanced/scroll-behavior.md"
+    ],
+    "question": "How can I customize scroll behavior when navigating?",
+    "expected_answer": "The `scrollBehavior` function receives `to`, `from`, and `savedPosition`. You return an object with `top`, `left`, `el`, or `behavior` properties to define the scroll position.",
+    "intent": "api_lookup",
+    "framework": "vue-router"
+  },
+  {
+    "difficulty": "medium",
+    "relevant_paths": [
+      "guide/advanced/transitions.md"
+    ],
+    "question": "How do I implement per-route transitions?",
+    "intent": "howto",
+    "expected_answer": "Use the `v-slot` API on `<router-view>` to access `Component` and `route`, then bind the transition name to `route.meta.transition`.",
+    "relevant_apis": [
+      "router-view"
+    ],
+    "framework": "vue-router"
+  },
+  {
+    "relevant_paths": [
+      "guide/advanced/typed-routes.md"
+    ],
+    "question": "How do I manually configure typed routes for better autocompletion?",
+    "intent": "howto",
+    "expected_answer": "You need to define an interface extending `RouteRecordInfo` and augment the `RouteNamedMap` in the `vue-router` module. It is recommended to use file-based routing to generate these types automatically.",
+    "relevant_apis": [
+      "RouteRecordInfo"
+    ],
+    "difficulty": "hard",
+    "framework": "vue-router"
+  },
+  {
+    "relevant_paths": [
+      "guide/advanced/transitions.md"
+    ],
+    "question": "What does router.isReady() do and when should I use it?",
+    "intent": "api_lookup",
+    "expected_answer": "`router.isReady()` returns a Promise that resolves when the initial navigation is complete, which is useful for waiting before mounting the app in SSR or when transitions are involved.",
+    "relevant_apis": [
+      "router.isReady"
+    ],
+    "difficulty": "easy",
+    "framework": "vue-router"
+  },
+  {
+    "difficulty": "medium",
+    "relevant_paths": [
+      "file-based-routing/index.md"
+    ],
+    "question": "How do I set up file-based routing?",
+    "expected_answer": "You need to install the plugin, add the vite plugin to your config, and create a `src/pages` folder. The plugin will automatically generate routes based on the file structure.",
+    "intent": "howto",
+    "relevant_apis": [
+      "VueRouter"
+    ],
+    "framework": "vue-router"
+  },
+  {
+    "difficulty": "hard",
+    "relevant_paths": [
+      "file-based-routing/extending-routes.md"
+    ],
+    "intent": "howto",
+    "expected_answer": "You can use the `definePage()` macro in your component or add a `<route>` block to your SFC to override route configuration like meta fields, aliases, or paths.",
+    "question": "How do I override route configurations in a page component?",
+    "relevant_apis": [
+      "definePage"
+    ],
+    "framework": "vue-router"
+  },
+  {
+    "question": "How does file-based routing map file structures to routes?",
+    "intent": "conceptual",
+    "expected_answer": "`index.vue` files are mapped to the folder path, nested folders create nested routes, and files with brackets like `[id].vue` create dynamic parameters.",
+    "relevant_paths": [
+      "file-based-routing/file-based-routing.md"
+    ],
+    "relevant_apis": [
+      "VueRouter"
+    ],
+    "difficulty": "medium",
+    "framework": "vue-router"
+  },
+  {
+    "relevant_paths": [
+      "file-based-routing/hmr.md"
+    ],
+    "question": "How can I enable HMR for file-based routes?",
+    "intent": "howto",
+    "expected_answer": "Enable `handleHotUpdate(router)` in your router configuration inside an `if (import.meta.hot)` block to update routes without a full reload.",
+    "relevant_apis": [
+      "handleHotUpdate"
+    ],
+    "difficulty": "medium",
+    "framework": "vue-router"
+  },
+  {
+    "relevant_paths": [
+      "guide/index.md"
+    ],
+    "question": "What is Vue Router?",
+    "intent": "conceptual",
+    "expected_answer": "It is the official client-side routing solution for Vue, built on the component system, mapping URL paths to components.",
+    "relevant_apis": [
+      "createRouter"
+    ],
+    "difficulty": "easy",
+    "framework": "vue-router"
+  },
+  {
+    "difficulty": "medium",
+    "relevant_paths": [
+      "file-based-routing/file-based-routing.md"
+    ],
+    "question": "Can I have multiple routes folders in file-based routing?",
+    "intent": "api_lookup",
+    "expected_answer": "Yes, simply pass an array to `routesFolder` in the plugin configuration.",
+    "relevant_apis": [
+      "VueRouter"
+    ],
+    "framework": "vue-router"
+  },
+  {
+    "relevant_apis": [
+      "defineBasicLoader",
+      "defineColadaLoader"
+    ],
+    "relevant_paths": [
+      "data-loaders/index.md"
+    ],
+    "question": "What are Data Loaders and how do they differ from standard fetching?",
+    "intent": "conceptual",
+    "expected_answer": "Use `defineBasicLoader` or `defineColadaLoader` outside of the component setup, export it, and the router will automatically collect and await it before rendering the page.",
+    "difficulty": "hard",
+    "framework": "vue-router"
+  },
+  {
+    "difficulty": "medium",
+    "relevant_apis": [
+      "defineBasicLoader"
+    ],
+    "relevant_paths": [
+      "data-loaders/defining-loaders.md"
+    ],
+    "question": "How do I make a data loader non-blocking?",
+    "expected_answer": "Lazy loaders are marked by setting `lazy: true`. They do not block the navigation, allowing the page to render while data is still fetching.",
+    "intent": "api_lookup",
+    "framework": "vue-router"
+  },
+  {
+    "difficulty": "medium",
+    "relevant_apis": [
+      "reroute"
+    ],
+    "question": "How can I redirect the user from inside a data loader?",
+    "intent": "howto",
+    "expected_answer": "Use `reroute()` inside the loader function, which cancels or redirects the current navigation.",
+    "relevant_paths": [
+      "data-loaders/defining-loaders.md"
+    ],
+    "framework": "vue-router"
+  },
+  {
+    "intent": "howto",
+    "expected_answer": "Add them to the `errors` array in the loader definition or globally in the `DataLoaderPlugin` configuration.",
+    "question": "How do I handle expected errors in data loaders without aborting navigation?",
+    "relevant_paths": [
+      "data-loaders/error-handling.md"
+    ],
+    "relevant_apis": [
+      "DataLoaderPlugin"
+    ],
+    "difficulty": "medium",
+    "framework": "vue-router"
+  },
+  {
+    "difficulty": "medium",
+    "relevant_apis": [
+      "defineBasicLoader"
+    ],
+    "relevant_paths": [
+      "data-loaders/organization.md"
+    ],
+    "expected_answer": "Define them in a separate file (e.g., `loaders/user.ts`) and export the loader from the page component where it is used.",
+    "intent": "howto",
+    "question": "How should I organize my data loaders for reusability?",
+    "framework": "vue-router"
+  },
+  {
+    "difficulty": "hard",
+    "relevant_apis": [
+      "defineBasicLoader"
+    ],
+    "relevant_paths": [
+      "data-loaders/nested-loaders.md"
+    ],
+    "intent": "howto",
+    "expected_answer": "Call the returned loader composable inside the parent loader and `await` it. Loaders are deduplicated and only fetched once.",
+    "question": "How do I chain nested data loaders?",
+    "framework": "vue-router"
+  },
+  {
+    "difficulty": "easy",
+    "relevant_apis": [
+      "defineBasicLoader"
+    ],
+    "intent": "howto",
+    "expected_answer": "Call the `reload()` method returned by the loader composable.",
+    "question": "How do I manually refresh data in a loader without navigating?",
+    "relevant_paths": [
+      "data-loaders/reloading-data.md"
+    ],
+    "framework": "vue-router"
+  },
+  {
+    "difficulty": "medium",
+    "relevant_apis": [
+      "AbortSignal"
+    ],
+    "intent": "howto",
+    "expected_answer": "Pass the `signal` object from the loader arguments to your fetch or web API request.",
+    "question": "How do I cancel an ongoing request in a data loader if the navigation is aborted?",
+    "relevant_paths": [
+      "data-loaders/load-cancellation.md"
+    ],
+    "framework": "vue-router"
+  },
+  {
+    "relevant_apis": [
+      "DataLoaderPlugin"
+    ],
+    "intent": "howto",
+    "expected_answer": "Create a plugin file in `plugins/` that registers the `DataLoaderPlugin`, passing the router and `isSSR` status.",
+    "question": "How do I set up Data Loaders in a Nuxt project?",
+    "relevant_paths": [
+      "data-loaders/nuxt.md"
+    ],
+    "difficulty": "medium",
+    "framework": "vue-router"
+  },
+  {
+    "relevant_apis": [
+      "router.push",
+      "router.replace"
+    ],
+    "relevant_paths": [
+      "guide/essentials/navigation.md"
+    ],
+    "intent": "comparison",
+    "expected_answer": "`router.push()` is for adding a history entry, `router.replace()` is for updating the current one without adding to history.",
+    "question": "What's the difference between router.push and replace? (informal)",
+    "difficulty": "easy",
+    "framework": "vue-router"
+  },
+  {
+    "relevant_apis": [
+      "createRouter"
+    ],
+    "expected_answer": "Use `/:pathMatch(.*)*` to match everything and store it in `route.params.pathMatch`.",
+    "intent": "howto",
+    "question": "How do I setup a catch-all 404 route? (informal)",
+    "relevant_paths": [
+      "guide/essentials/dynamic-matching.md"
+    ],
+    "difficulty": "medium",
+    "framework": "vue-router"
+  },
+  {
+    "difficulty": "medium",
+    "relevant_apis": [
+      "RouterLink"
+    ],
+    "intent": "api_lookup",
+    "expected_answer": "The classes are `router-link-active` and `router-link-exact-active`. Use `activeClass` and `exactActiveClass` props.",
+    "question": "What are the css classes for active links again? (informal)",
+    "relevant_paths": [
+      "guide/essentials/active-links.md"
+    ],
+    "framework": "vue-router"
+  },
+  {
+    "relevant_apis": [
+      "createWebHashHistory",
+      "createWebHistory"
+    ],
+    "relevant_paths": [
+      "guide/essentials/history-mode.md"
+    ],
+    "question": "How do I change my router mode to hash or history? (informal)",
+    "intent": "howto",
+    "expected_answer": "Use `createWebHashHistory()` for hash mode or `createWebHistory()` for HTML5 mode.",
+    "difficulty": "easy",
+    "framework": "vue-router"
+  },
+  {
+    "difficulty": "medium",
+    "relevant_apis": [
+      "createRouter"
+    ],
+    "expected_answer": "You can return a Promise that resolves to the scroll position descriptor, allowing you to wait for transitions to finish.",
+    "intent": "howto",
+    "question": "How do I delay scrolling for transitions? (informal)",
+    "relevant_paths": [
+      "guide/advanced/scroll-behavior.md"
+    ],
+    "framework": "vue-router"
+  },
+  {
+    "relevant_apis": [
+      "router-view"
+    ],
+    "relevant_paths": [
+      "guide/advanced/transitions.md"
+    ],
+    "expected_answer": "Use `meta` fields to store the transition name and bind it dynamically to the `<transition>` component using the slot API.",
+    "intent": "howto",
+    "question": "Can I have different transition for different routes? (informal)",
+    "difficulty": "hard",
+    "framework": "vue-router"
+  },
+  {
+    "relevant_apis": [
+      "useRoute",
+      "useRouter"
+    ],
+    "relevant_paths": [
+      "guide/advanced/composition-api.md"
+    ],
+    "question": "How do I get route and router in setup()? (informal)",
+    "intent": "api_lookup",
+    "expected_answer": "You can use `useRoute()` to get the current route and `useRouter()` to get the router instance in the Composition API.",
+    "difficulty": "medium",
+    "framework": "vue-router"
+  }
+]

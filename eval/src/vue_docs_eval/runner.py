@@ -39,7 +39,7 @@ async def run_evaluation(
     providers: list[Provider],
     questions: list[EvalQuestion],
     judge_model: str | None = None,
-    judge_runs: int = 3,
+    judge_runs: int = 1,
     max_results: int = 10,
 ) -> EvalReport:
     """Run evaluation for all providers against all questions."""
