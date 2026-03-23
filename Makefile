@@ -1,4 +1,4 @@
-.PHONY: help install bootstrap lint lint-fix format-check format check test test-all test-integration ingest ingest-full ingest-status serve inspect all pr-ready eval eval-compare eval-generate docker-build docker-dev-up docker-dev-down docker-local-up docker-local-down docker-prod-up docker-prod-down docs docs-build
+.PHONY: help install bootstrap lint lint-fix format-check format check test test-all test-integration ingest ingest-full ingest-status serve inspect all pr-ready eval eval-compare eval-generate docker-build docker-dev-up docker-dev-down docker-local-up docker-local-down docker-prod-up docker-prod-down deploy docs docs-build
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -107,3 +107,6 @@ docker-prod-up: ## Start production stack
 
 docker-prod-down: ## Stop production stack
 	docker compose -f docker-compose.prod.yml down
+
+deploy: ## Deploy latest images to production (pulls from GHCR, restarts services)
+	DEPLOY_HOST=mcp.vue-mcp.org DEPLOY_USER=ubuntu bash scripts/deploy.sh
