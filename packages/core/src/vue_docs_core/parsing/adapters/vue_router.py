@@ -11,6 +11,7 @@ Handles Vue Router-specific concerns:
 
 import logging
 import re
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -62,7 +63,12 @@ class VueRouterAdapter:
     """Source adapter for Vue Router documentation."""
 
     def post_clone(self, repo_root: Path) -> None:
-        """Generate TypeDoc API docs if not already present."""
+        """Generate TypeDoc API docs if not already present.
+
+        Requires ``npm`` and ``node`` to be available.  If they are not
+        (e.g. inside a Docker image without Node.js), this is a no-op and
+        the entity dictionary falls back to the seed list.
+        """
         docs_dir = repo_root / "packages" / "docs"
         api_dir = docs_dir / "api"
 
@@ -75,8 +81,12 @@ class VueRouterAdapter:
             logger.warning("run-typedoc.mjs not found, cannot generate API docs")
             return
 
+        # Check if npm/node are available before attempting
+        if not shutil.which("npm") or not shutil.which("node"):
+            logger.info("npm/node not available, skipping TypeDoc generation")
+            return
+
         logger.info("Installing docs dependencies for TypeDoc generation...")
-        # Install root deps (needed for TypeDoc to resolve router source)
         root_pkg = repo_root / "package.json"
         if root_pkg.exists():
             result = subprocess.run(
