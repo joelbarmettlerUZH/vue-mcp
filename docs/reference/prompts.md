@@ -8,28 +8,23 @@ Prompt support varies by MCP client. Claude Desktop and Claude Code support prom
 
 ## Per-Framework Prompts
 
-Each framework registers three prompts using the pattern `debug_{framework}_issue`, `compare_{framework}_apis`, and `migrate_{framework}_pattern`. For Vue.js, the prompts are:
+Every framework registers three prompts:
 
-- `debug_vue_issue`
-- `compare_vue_apis`
-- `migrate_vue_pattern`
+| Prompt Pattern | Purpose |
+|---|---|
+| `debug_{framework}_issue` | Systematic debugging workflow for framework-specific issues |
+| `compare_{framework}_apis` | Side-by-side comparison of APIs or patterns |
+| `migrate_{framework}_pattern` | Step-by-step migration guide between patterns |
 
----
+See the framework pages for concrete prompt names, parameters, and examples:
+- [Vue.js prompts](/frameworks/vue#prompts)
+- [Vue Router prompts](/frameworks/vue-router#prompts)
 
-## `debug_{framework}_issue`
+## How Prompts Work
 
-Systematic debugging workflow for framework-specific issues.
+### Debug Workflow
 
-### Parameters
-
-| Parameter | Required | Description |
-|---|---|---|
-| `symptom` | Yes | Description of unexpected behavior or error message |
-| `code_snippet` | No | Relevant code where the issue occurs |
-
-### Workflow
-
-Your AI assistant will:
+Given a symptom and optional code snippet, the assistant will:
 
 1. Identify the concept involved
 2. Search the documentation with `{framework}_docs_search`
@@ -38,67 +33,10 @@ Your AI assistant will:
 5. Explain the root cause with documentation references
 6. Provide a fix and prevention tip
 
-### Example
+### Compare Workflow
 
-> **Symptom:** "My computed property isn't updating when I push to an array"
->
-> The assistant would search for computed reactivity caveats, look up `computed` and `reactive`, and explain Vue's reactivity tracking for array mutations.
+Given a comma-separated list of APIs or patterns, the assistant produces a structured comparison covering purpose, reactivity behavior, performance, decision criteria, code examples, and common mistakes.
 
----
+### Migrate Workflow
 
-## `compare_{framework}_apis`
-
-Side-by-side comparison of APIs or patterns within a framework.
-
-### Parameters
-
-| Parameter | Required | Description |
-|---|---|---|
-| `items` | Yes | Comma-separated list of APIs or patterns to compare |
-
-### Output
-
-A structured comparison including:
-
-- Purpose and use case for each item
-- Reactivity behavior differences
-- Performance characteristics
-- "Use when..." decision criteria
-- Code examples showing key differences
-- Common mistakes
-
-### Example Comparisons (Vue.js)
-
-- `"ref, reactive"`: When to use which reactivity primitive
-- `"computed, watch"`: Derived state vs side effects
-- `"v-if, v-show"`: Conditional rendering strategies
-- `"props, provide/inject"`: Data passing patterns
-- `"Options API, Composition API"`: API style comparison
-
----
-
-## `migrate_{framework}_pattern`
-
-Step-by-step migration guide between patterns within a framework.
-
-### Parameters
-
-| Parameter | Required | Description |
-|---|---|---|
-| `from_pattern` | Yes | Current pattern or API style |
-| `to_pattern` | Yes | Target pattern or API style |
-
-### Output
-
-1. **Why migrate.** Benefits of the target pattern.
-2. **Concept mapping.** Table mapping old concepts to new equivalents.
-3. **Step-by-step migration.** Before/after code examples.
-4. **Common gotchas.** Pitfalls to watch for during migration.
-
-### Example Migrations (Vue.js)
-
-- `"Options API"` -> `"Composition API"`
-- `"Vue 2 mixins"` -> `"composables"`
-- `"event bus"` -> `"provide/inject"`
-- `"Vuex"` -> `"Pinia"`
-- `"Vue 2 filters"` -> `"computed properties"`
+Given a source and target pattern, the assistant produces a migration guide with: why migrate, concept mapping table, step-by-step before/after code examples, and common gotchas.

@@ -72,12 +72,11 @@ export default defineConfig({
         ],
       },
       {
-        text: "Reference",
+        text: "Technical Reference",
         items: [
           { text: "Tools", link: "/reference/tools" },
           { text: "Resources", link: "/reference/resources" },
           { text: "Prompts", link: "/reference/prompts" },
-          { text: "Framework Preferences", link: "/reference/frameworks" },
           { text: "How It Works", link: "/reference/how-it-works" },
         ],
       },

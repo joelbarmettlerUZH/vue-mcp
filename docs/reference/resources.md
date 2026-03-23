@@ -8,91 +8,28 @@ Resources are read-only and always return the latest indexed version of the docu
 
 ## Per-Framework Resources
 
-Each enabled framework registers its own set of resources using the `{framework}://` URI scheme. For Vue.js, the prefix is `vue://`. If Vue Router is enabled, its resources use `vue-router://`.
+Each enabled framework registers resources using the `{framework}://` URI scheme.
 
-See [Framework Preferences](/reference/frameworks) to enable additional frameworks.
+| URI Pattern | Description |
+|---|---|
+| `{framework}://topics` | Full table of contents |
+| `{framework}://topics/{section}` | TOC for a specific section |
+| `{framework}://pages/{path}` | Raw markdown of any documentation page |
+| `{framework}://api/index` | Complete API entity index grouped by type |
+| `{framework}://api/entities/{name}` | Details for a specific API entity |
+| `{framework}://scopes` | Valid search scope values for `{framework}_docs_search` |
 
----
+Paths use `/` as separator and do not include the `.md` extension. Every indexed page and API entity is enumerated as a concrete resource, so your AI assistant can discover and browse them directly.
 
-## `{framework}://topics`
-
-Full table of contents for the framework's documentation.
-
-Returns a hierarchical markdown listing of all documentation pages and sections. Use this to understand what's available before searching.
-
-### With a Section Path
-
-`{framework}://topics/{section}` returns the table of contents for a specific section.
-
-**Examples (Vue.js):**
-- `vue://topics/guide`: Guide table of contents
-- `vue://topics/guide/essentials`: Essentials section only
-- `vue://topics/api`: API reference table of contents
-
-If the section is not found, the response lists all available top-level sections.
-
----
-
-## `{framework}://pages/{path}`
-
-Raw markdown content of any documentation page.
-
-**Examples (Vue.js):**
-- `vue://pages/guide/essentials/computed`
-- `vue://pages/api/reactivity-core`
-- `vue://pages/guide/components/props`
-
-Paths use `/` as separator and do not include the `.md` extension. Every indexed page is enumerated as a concrete resource, so your AI assistant can browse them directly.
-
----
-
-## `{framework}://api/index`
-
-Complete index of all API entities for the framework, grouped by type.
-
-Returns a markdown listing with counts for each category. For Vue.js, this includes:
-
-- Lifecycle Hooks
-- Composables
-- Directives
-- Components
-- Compiler Macros
-- Global APIs
-- Options
-- Instance Methods
-- Instance Properties
-
----
-
-## `{framework}://api/entities/{name}` {#api-entities}
-
-Detailed information for a specific API entity.
-
-**Examples (Vue.js):**
-- `vue://api/entities/ref`
-- `vue://api/entities/computed`
-- `vue://api/entities/defineProps`
-
-Returns the entity's type, documentation page, section, and related APIs. Every known API entity is enumerated as a concrete resource.
-
----
-
-## `{framework}://scopes` {#scopes}
-
-List of all valid search scopes for the `{framework}_docs_search` tool.
-
-Returns a table with each scope's path, page count, and description. Use this to discover which scopes are available for narrowing search results.
-
----
+See the framework pages for concrete URIs and examples:
+- [Vue.js resources](/frameworks/vue#resources)
+- [Vue Router resources](/frameworks/vue-router#resources)
 
 ## Ecosystem Resources
 
 These resources are always available regardless of which frameworks are enabled.
 
-### `ecosystem://preferences`
-
-Shows which frameworks are currently enabled and what tools, resources, and prompts are available in the session.
-
-### `ecosystem://sources`
-
-Lists all supported frameworks with their name, documentation URL, and whether they are currently enabled.
+| URI | Description |
+|---|---|
+| `ecosystem://preferences` | Current framework activation settings and available tools |
+| `ecosystem://sources` | All supported frameworks with their documentation URLs and status |

@@ -19,15 +19,24 @@ When a framework is enabled, your AI assistant gains:
 
 When two or more frameworks are active, a cross-framework `ecosystem_search` tool becomes available.
 
-## Default Configuration
+## Activating Frameworks
 
-Only **Vue.js** is enabled by default. To activate additional frameworks, call `set_framework_preferences`:
+Only **Vue.js** is enabled by default. Call `set_framework_preferences` to activate additional frameworks for the current session:
 
 ```
 set_framework_preferences(vue=true, vue_router=true)
 ```
 
-Read `ecosystem://preferences` to check which frameworks are currently active.
+### Parameters
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `vue` | `boolean` | `true` | Enable Vue.js core documentation |
+| `vue_router` | `boolean` | `false` | Enable Vue Router documentation |
+
+After calling this, your AI assistant will have access to tools, resources, and prompts for all enabled frameworks. When more than one framework is active, an `ecosystem_search` tool becomes available that searches across all frameworks simultaneously.
+
+Read `ecosystem://preferences` to check which frameworks are currently active. Read `ecosystem://sources` to see all supported frameworks and their status.
 
 ## Roadmap
 
