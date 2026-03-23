@@ -5,7 +5,7 @@ dist/
 build/
 .venv/
 .env
-data/
+/data/
 eval/results/
 .idea/
 *.jsonl

@@ -86,13 +86,20 @@ def _sub_folder(path: str) -> str:
     return "/".join(parts[:2]) if len(parts) >= 2 else parts[0]
 
 
-def _classify_ref_type(source_file: str, target_path: str) -> CrossRefType:
+_DEFAULT_HIGH_VALUE_PAIRS: list[set[str]] = [{"guide", "api"}]
+
+
+def _classify_ref_type(
+    source_file: str,
+    target_path: str,
+    high_value_pairs: list[set[str]] | None = None,
+) -> CrossRefType:
     """Classify a cross-reference by source and target folder paths."""
     src_top = _top_folder(source_file)
     tgt_top = _top_folder(target_path)
 
-    # guide ↔ api is HIGH value
-    if {src_top, tgt_top} == {"guide", "api"}:
+    pairs = high_value_pairs if high_value_pairs is not None else _DEFAULT_HIGH_VALUE_PAIRS
+    if {src_top, tgt_top} in pairs:
         return CrossRefType.HIGH
 
     # Same subfolder is MEDIUM
@@ -105,7 +112,10 @@ def _classify_ref_type(source_file: str, target_path: str) -> CrossRefType:
     return CrossRefType.LOW
 
 
-def extract_cross_references(chunk: Chunk) -> list[CrossReference]:
+def extract_cross_references(
+    chunk: Chunk,
+    high_value_pairs: list[set[str]] | None = None,
+) -> list[CrossReference]:
     """Extract all internal cross-references from a chunk's content.
 
     Returns a list of :class:`CrossReference` objects with resolved paths
@@ -127,7 +137,7 @@ def extract_cross_references(chunk: Chunk) -> list[CrossReference]:
             continue
         seen_targets.add(target)
 
-        ref_type = _classify_ref_type(chunk.metadata.file_path, target)
+        ref_type = _classify_ref_type(chunk.metadata.file_path, target, high_value_pairs)
         refs.append(
             CrossReference(
                 source_chunk_id=chunk.chunk_id,
@@ -142,16 +152,20 @@ def extract_cross_references(chunk: Chunk) -> list[CrossReference]:
 
 def build_crossref_graph(
     chunks: list[Chunk],
+    high_value_pairs: list[set[str]] | None = None,
 ) -> dict[str, list[CrossReference]]:
     """Build the full cross-reference graph from all chunks.
 
     Returns a dict mapping each chunk_id to its outgoing cross-references.
     Also updates each chunk's ``metadata.cross_references`` with target paths.
+
+    *high_value_pairs* configures which top-level folder pairs are classified
+    as HIGH value cross-references (default: ``guide`` <-> ``api``).
     """
     graph: dict[str, list[CrossReference]] = {}
 
     for chunk in chunks:
-        refs = extract_cross_references(chunk)
+        refs = extract_cross_references(chunk, high_value_pairs)
         if refs:
             graph[chunk.chunk_id] = refs
             chunk.metadata.cross_references = [r.target_path for r in refs]

@@ -12,6 +12,7 @@ from rich.table import Table
 
 from vue_docs_core.config import settings
 from vue_docs_core.data.sources import SOURCE_REGISTRY, SourceDefinition, get_enabled_sources
+from vue_docs_core.parsing.adapters import get_adapter
 
 app = typer.Typer(name="vue-docs-ingest", help="Vue ecosystem docs indexing pipeline")
 console = Console()
@@ -73,6 +74,11 @@ def _clone_or_pull(source_def: SourceDefinition, base_data_path: Path) -> Path:
             ],
             check=True,
         )
+
+    # Run adapter post-clone hook (e.g. TypeDoc generation)
+    adapter = get_adapter(source_def.name)
+    with console.status(f"Running post-clone setup for {source_def.display_name}..."):
+        adapter.post_clone(repo_dir)
 
     return docs_path
 

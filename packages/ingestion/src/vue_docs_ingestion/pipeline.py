@@ -26,15 +26,15 @@ from vue_docs_core.clients.qdrant import QdrantDocClient
 from vue_docs_core.config import UPSERT_BATCH_SIZE, settings
 from vue_docs_core.data.sources import SourceDefinition
 from vue_docs_core.models.chunk import Chunk, ChunkMetadata, ChunkType
+from vue_docs_core.parsing.adapters import get_adapter
 from vue_docs_core.parsing.crossrefs import build_crossref_graph
 from vue_docs_core.parsing.entities import (
     build_entity_index,
     load_dictionary,
     save_dictionary,
 )
-from vue_docs_core.parsing.extractors import get_extractor
 from vue_docs_core.parsing.markdown import parse_markdown_file
-from vue_docs_core.parsing.sort_keys import compute_sort_key, parse_sidebar_config
+from vue_docs_core.parsing.sort_keys import compute_sort_key
 from vue_docs_ingestion.embedder import embed_dense, embed_hype_questions
 from vue_docs_ingestion.enrichment import (
     enrich_chunks_contextual,
@@ -44,7 +44,7 @@ from vue_docs_ingestion.enrichment import (
     generate_top_summaries,
 )
 from vue_docs_ingestion.indexer import upsert_chunks_batch, upsert_hype_batch
-from vue_docs_ingestion.scanner import find_markdown_files, hash_file
+from vue_docs_ingestion.scanner import hash_file
 from vue_docs_ingestion.state import FileState, IndexState
 
 logger = logging.getLogger(__name__)
@@ -129,14 +129,11 @@ async def run_pipeline(
     """
     source_name = source.name
     framework_context = source.gemini_context
+    adapter = get_adapter(source_name)
 
     pipeline_version = settings.pipeline_version
     entity_dict_path = data_path / f"entity_dictionary_{source_name}.json"
     bm25_model_path = data_path / "bm25_model"
-    if source.sidebar_config_path:
-        sidebar_config_path = docs_path.parent / source.sidebar_config_path
-    else:
-        sidebar_config_path = docs_path.parent / ".vitepress" / "config.ts"
 
     # ---- Header -------------------------------------------------------------
     console.print(f"[bold blue]{source.display_name} Docs Ingestion Pipeline[/bold blue]")
@@ -152,7 +149,7 @@ async def run_pipeline(
 
     # ---- Step 1: Discover files + detect deletions --------------------------
     with console.status("Discovering markdown files..."):
-        md_files = find_markdown_files(docs_path)
+        md_files = adapter.discover_files(docs_path)
     current_files = {str(p.relative_to(docs_path)) for p in md_files}
     console.print(f"Found [green]{len(md_files)}[/green] markdown files")
 
@@ -199,18 +196,22 @@ async def run_pipeline(
                 console.print(f"  [red]-[/red] {df}")
         return
 
-    # ---- Step 3: Parse sidebar sort keys ------------------------------------
-    sidebar_map: dict[str, str] = {}
-    if sidebar_config_path.exists():
-        with console.status("Parsing sidebar config..."):
-            sidebar_map = parse_sidebar_config(sidebar_config_path)
+    # ---- Step 3: Parse sidebar sort keys (via adapter) ----------------------
+    with console.status("Parsing sidebar config..."):
+        # Adapter receives the repo root (parent of docs_path for sources
+        # where docs_subpath is non-empty, or docs_path itself)
+        repo_root = docs_path.parent
+        # Walk up to the actual repo root (where .git lives)
+        while repo_root != repo_root.parent and not (repo_root / ".git").exists():
+            repo_root = repo_root.parent
+        sidebar_map = adapter.parse_sort_keys(repo_root)
+    if sidebar_map:
         console.print(f"Sidebar: [green]{len(sidebar_map)}[/green] pages mapped")
     else:
-        console.print("[yellow]Sidebar config not found — using fallback sort keys[/yellow]")
+        console.print("[yellow]No sidebar config found — using fallback sort keys[/yellow]")
 
-    # ---- Step 4: Load / bootstrap entity dictionary -------------------------
+    # ---- Step 4: Load / bootstrap entity dictionary (via adapter) -----------
     api_dictionary: dict = {}
-    extractor = get_extractor(source_name)
     if not entity_dict_path.exists():
         seed_dict = Path(f"seed/entity_dictionary_{source_name}.json")
         if not seed_dict.exists():
@@ -224,7 +225,7 @@ async def run_pipeline(
     else:
         console.print("[yellow]Entity dictionary not found — bootstrapping from docs...[/yellow]")
         with console.status("Building entity dictionary..."):
-            api_dictionary = extractor.build_dictionary(docs_path)
+            api_dictionary = adapter.build_entity_dictionary(docs_path)
             if api_dictionary:
                 save_dictionary(api_dictionary, entity_dict_path)
         if api_dictionary:
@@ -249,7 +250,9 @@ async def run_pipeline(
             for path in to_process:
                 rel = str(path.relative_to(docs_path))
                 try:
-                    chunks = parse_markdown_file(path, docs_root=docs_path)
+                    chunks = parse_markdown_file(
+                        path, docs_root=docs_path, content_cleaner=adapter.clean_content
+                    )
                     sort_key = compute_sort_key(rel, sidebar_map)
                     for chunk in chunks:
                         chunk.metadata.source = source_name
@@ -481,7 +484,7 @@ async def run_pipeline(
     all_chunks = all_leaf_chunks + summary_chunks
 
     # ---- Step 8: Entity extraction + cross-references (full corpus) ---------
-    import_patterns = extractor.get_import_patterns()
+    import_patterns = adapter.get_import_patterns()
     with console.status(f"Extracting API entities from {len(all_chunks)} chunks..."):
         entity_index = build_entity_index(all_chunks, api_dictionary, import_patterns)
     total_entity_refs = sum(len(v) for v in entity_index.entity_to_chunks.values())
@@ -497,7 +500,7 @@ async def run_pipeline(
     console.print(f"Saved [green]{len(synonym_table)}[/green] synonyms to database")
 
     with console.status("Extracting cross-references..."):
-        crossref_graph = build_crossref_graph(all_chunks)
+        crossref_graph = build_crossref_graph(all_chunks, adapter.high_value_folder_pairs)
     total_refs = sum(len(v) for v in crossref_graph.values())
     console.print(
         f"Cross-references: [green]{total_refs}[/green] links "

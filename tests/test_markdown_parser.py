@@ -10,12 +10,15 @@ from pathlib import Path
 import pytest
 
 from vue_docs_core.models.chunk import ChunkType
+from vue_docs_core.parsing.adapters.vue import VueAdapter
 from vue_docs_core.parsing.markdown import (
     _build_api_style_map,
     _extract_headings,
     _extract_slug,
     parse_markdown_file,
 )
+
+_vue_adapter = VueAdapter()
 
 DOCS_ROOT = Path(__file__).resolve().parent.parent / "data" / "vue-docs" / "src"
 COMPUTED_MD = DOCS_ROOT / "guide" / "essentials" / "computed.md"
@@ -123,12 +126,12 @@ class TestBuildApiStyleMap:
 
 @pytest.fixture
 def computed_chunks():
-    return parse_markdown_file(COMPUTED_MD, DOCS_ROOT)
+    return parse_markdown_file(COMPUTED_MD, DOCS_ROOT, content_cleaner=_vue_adapter.clean_content)
 
 
 @pytest.fixture
 def lifecycle_chunks():
-    return parse_markdown_file(LIFECYCLE_MD, DOCS_ROOT)
+    return parse_markdown_file(LIFECYCLE_MD, DOCS_ROOT, content_cleaner=_vue_adapter.clean_content)
 
 
 @needs_vue_docs
@@ -227,14 +230,18 @@ class TestLargeSectionSplitting:
 
     def test_props_page_splits_large_sections(self):
         props_md = DOCS_ROOT / "guide" / "components" / "props.md"
-        chunks = parse_markdown_file(props_md, DOCS_ROOT)
+        chunks = parse_markdown_file(
+            props_md, DOCS_ROOT, content_cleaner=_vue_adapter.clean_content
+        )
         subs = [c for c in chunks if c.chunk_type == ChunkType.SUBSECTION]
         # Prop Passing Details is >3000 chars with H3s, should split
         assert len(subs) > 0
 
     def test_subsection_has_intro_prepended(self):
         props_md = DOCS_ROOT / "guide" / "components" / "props.md"
-        chunks = parse_markdown_file(props_md, DOCS_ROOT)
+        chunks = parse_markdown_file(
+            props_md, DOCS_ROOT, content_cleaner=_vue_adapter.clean_content
+        )
         subs = [c for c in chunks if c.chunk_type == ChunkType.SUBSECTION]
         # First subsection should start with the H2 heading
         first_sub = subs[0]
@@ -243,7 +250,9 @@ class TestLargeSectionSplitting:
     def test_h4_not_split(self):
         """H4 headings should stay inline, not create separate chunks."""
         props_md = DOCS_ROOT / "guide" / "components" / "props.md"
-        chunks = parse_markdown_file(props_md, DOCS_ROOT)
+        chunks = parse_markdown_file(
+            props_md, DOCS_ROOT, content_cleaner=_vue_adapter.clean_content
+        )
         # "Number", "Boolean", "Array", "Object" are H4s — should NOT be chunks
         chunk_ids = {c.chunk_id for c in chunks}
         assert "guide/components/props#number" not in chunk_ids
@@ -252,7 +261,9 @@ class TestLargeSectionSplitting:
     def test_near_empty_parent_not_emitted(self):
         """If a section's intro is tiny, skip the parent section chunk."""
         props_md = DOCS_ROOT / "guide" / "components" / "props.md"
-        chunks = parse_markdown_file(props_md, DOCS_ROOT)
+        chunks = parse_markdown_file(
+            props_md, DOCS_ROOT, content_cleaner=_vue_adapter.clean_content
+        )
         # "Prop Passing Details" has almost no intro
         prop_passing = [
             c for c in chunks if c.chunk_id == "guide/components/props#prop-passing-details"
@@ -263,7 +274,9 @@ class TestLargeSectionSplitting:
 
     def test_subsection_parent_id(self):
         props_md = DOCS_ROOT / "guide" / "components" / "props.md"
-        chunks = parse_markdown_file(props_md, DOCS_ROOT)
+        chunks = parse_markdown_file(
+            props_md, DOCS_ROOT, content_cleaner=_vue_adapter.clean_content
+        )
         subs = [c for c in chunks if c.chunk_type == ChunkType.SUBSECTION]
         for sub in subs:
             assert sub.metadata.parent_chunk_id != ""
@@ -275,12 +288,16 @@ class TestEdgeCases:
         """Files with only H1 or no headings should still produce chunks."""
         index_md = DOCS_ROOT / "index.md"
         if index_md.exists():
-            chunks = parse_markdown_file(index_md, DOCS_ROOT)
+            chunks = parse_markdown_file(
+                index_md, DOCS_ROOT, content_cleaner=_vue_adapter.clean_content
+            )
             assert len(chunks) >= 1
 
     def test_api_reference_file(self):
         api_file = DOCS_ROOT / "api" / "reactivity-core.md"
-        chunks = parse_markdown_file(api_file, DOCS_ROOT)
+        chunks = parse_markdown_file(
+            api_file, DOCS_ROOT, content_cleaner=_vue_adapter.clean_content
+        )
         sections = [c for c in chunks if c.chunk_type == ChunkType.SECTION]
         slugs = [c.chunk_id.split("#")[1] for c in sections]
         assert "ref" in slugs
@@ -290,7 +307,9 @@ class TestEdgeCases:
     def test_api_sections_contain_code_inline(self):
         """API reference sections should have type signatures inline."""
         api_file = DOCS_ROOT / "api" / "reactivity-core.md"
-        chunks = parse_markdown_file(api_file, DOCS_ROOT)
+        chunks = parse_markdown_file(
+            api_file, DOCS_ROOT, content_cleaner=_vue_adapter.clean_content
+        )
         ref_section = next(c for c in chunks if c.chunk_id.endswith("#ref"))
         assert "```ts" in ref_section.content
         assert "function ref<T>" in ref_section.content
@@ -320,7 +339,7 @@ class TestContentCleaning:
             "</div>",
             "After",
         ]
-        result = _clean_section_content(lines, 0, len(lines))
+        result = _clean_section_content(lines, 0, len(lines), _vue_adapter.clean_content)
         assert "options-api" not in result
         assert "composition-api" not in result
         assert "Options content" in result
@@ -335,7 +354,7 @@ class TestContentCleaning:
             "[Try it in the Playground](https://play.vuejs.org/#abc123)",
             "More text.",
         ]
-        result = _clean_section_content(lines, 0, len(lines))
+        result = _clean_section_content(lines, 0, len(lines), _vue_adapter.clean_content)
         assert "play.vuejs.org" not in result
         assert "Some text." in result
         assert "More text." in result

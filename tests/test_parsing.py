@@ -7,6 +7,7 @@ import pytest
 from vue_docs_core.models.chunk import Chunk, ChunkMetadata, ChunkType
 from vue_docs_core.models.crossref import CrossRefType
 from vue_docs_core.models.entity import EntityType
+from vue_docs_core.parsing.adapters.vue import VueAdapter
 from vue_docs_core.parsing.crossrefs import (
     _classify_ref_type,
     _resolve_target_path,
@@ -23,6 +24,8 @@ from vue_docs_core.parsing.entities import (
 )
 from vue_docs_core.parsing.markdown import parse_markdown_file
 from vue_docs_core.parsing.sort_keys import compute_sort_key, parse_sidebar_config
+
+_vue_adapter = VueAdapter()
 
 DOCS_ROOT = Path(__file__).resolve().parent.parent / "data" / "vue-docs" / "src"
 API_DIR = DOCS_ROOT / "api"
@@ -197,7 +200,11 @@ class TestExtractEntitiesFromChunk:
         assert "v-if" in entities
 
     def test_real_computed_md(self, dictionary):
-        chunks = parse_markdown_file(DOCS_ROOT / "guide/essentials/computed.md", DOCS_ROOT)
+        chunks = parse_markdown_file(
+            DOCS_ROOT / "guide/essentials/computed.md",
+            DOCS_ROOT,
+            content_cleaner=_vue_adapter.clean_content,
+        )
         all_entities: set[str] = set()
         for chunk in chunks:
             all_entities.update(extract_entities_from_chunk(chunk, dictionary))
@@ -290,7 +297,11 @@ class TestClassifyRefType:
 @needs_vue_docs
 class TestExtractCrossReferences:
     def test_lifecycle_md_has_high_refs(self):
-        chunks = parse_markdown_file(DOCS_ROOT / "guide/essentials/lifecycle.md", DOCS_ROOT)
+        chunks = parse_markdown_file(
+            DOCS_ROOT / "guide/essentials/lifecycle.md",
+            DOCS_ROOT,
+            content_cleaner=_vue_adapter.clean_content,
+        )
         all_refs = []
         for chunk in chunks:
             all_refs.extend(extract_cross_references(chunk))
@@ -301,7 +312,11 @@ class TestExtractCrossReferences:
         assert any("composition-api-lifecycle" in t for t in targets)
 
     def test_computed_md_cross_refs(self):
-        chunks = parse_markdown_file(DOCS_ROOT / "guide/essentials/computed.md", DOCS_ROOT)
+        chunks = parse_markdown_file(
+            DOCS_ROOT / "guide/essentials/computed.md",
+            DOCS_ROOT,
+            content_cleaner=_vue_adapter.clean_content,
+        )
         all_refs = []
         for chunk in chunks:
             all_refs.extend(extract_cross_references(chunk))
@@ -314,7 +329,11 @@ class TestExtractCrossReferences:
 @needs_vue_docs
 class TestBuildCrossrefGraph:
     def test_graph_structure(self):
-        chunks = parse_markdown_file(DOCS_ROOT / "guide/essentials/computed.md", DOCS_ROOT)
+        chunks = parse_markdown_file(
+            DOCS_ROOT / "guide/essentials/computed.md",
+            DOCS_ROOT,
+            content_cleaner=_vue_adapter.clean_content,
+        )
         graph = build_crossref_graph(chunks)
         assert len(graph) >= 1
         # Check that chunk metadata was updated

@@ -1,17 +1,16 @@
 """Markdown file parser — converts .md files into structured Chunks.
 
-Walks the markdown-it-py token stream to decompose a Vue documentation page
+Walks the markdown-it-py token stream to decompose a documentation page
 into **section-level** chunks (one per H2), each carrying full metadata for
 downstream retrieval and reconstruction.
 
-Design (Option A — section-only chunking):
+Design:
   - The H2 section is the primary and *only* retrieval unit for text content.
   - Code blocks, subsection headings, tips, and warnings are kept inline in
     the section content — they are part of the narrative.
-  - ``<div class="options-api/composition-api">`` wrapper divs and
-    ``</div>`` closing tags are stripped from the content so the embedding
-    sees clean prose + code without rendering directives.
-  - Playground links are stripped (noise for retrieval).
+  - Source-specific content cleaning (e.g. stripping Vue API-style divs,
+    VueSchoolLink components) is delegated to the source adapter's
+    ``clean_content()`` hook.
   - Image references are extracted as separate chunks (they need special
     handling for multimodal search).
   - If a section exceeds ``MAX_SECTION_CHARS``, it is split at H3
@@ -20,6 +19,7 @@ Design (Option A — section-only chunking):
 
 import hashlib
 import re
+from collections.abc import Callable
 from pathlib import Path
 from typing import NamedTuple
 
@@ -31,8 +31,6 @@ from vue_docs_core.models.chunk import Chunk, ChunkMetadata, ChunkType
 _SLUG_RE = re.compile(r"\{#([\w-]+)\}\s*$")
 _API_STYLE_OPEN_RE = re.compile(r'<div\s+class="(options-api|composition-api)"')
 _DIV_CLOSE_RE = re.compile(r"^\s*</div>\s*$")
-_PLAYGROUND_RE = re.compile(r"\[Try it in the Playground\]\([^)]+\)\s*")
-_API_DIV_OPEN_RE = re.compile(r'^\s*<div\s+class="(options-api|composition-api)">\s*$')
 
 
 # ---------------------------------------------------------------------------
@@ -122,47 +120,31 @@ def _breadcrumb(*parts: str) -> str:
     return " > ".join(p for p in parts if p)
 
 
-def _clean_section_content(lines: list[str], start: int, end: int) -> str:
+def _clean_section_content(
+    lines: list[str],
+    start: int,
+    end: int,
+    content_cleaner: Callable[[str], str] | None = None,
+) -> str:
     """Clean a section's raw lines for embedding.
 
-    Strips:
-      - ``<div class="options-api/composition-api">`` lines
-      - Standalone ``</div>`` lines that close API divs
-      - Playground links
-      - Leading/trailing blank lines
+    Generic cleaning: collapses runs of 3+ blank lines, strips
+    leading/trailing whitespace.
 
-    Keeps:
-      - All prose, headings, code fences, tips/warnings, images
+    Source-specific cleaning (e.g. removing API-style divs, playground links,
+    Vue components) is handled by the *content_cleaner* callable provided
+    by the source adapter.
     """
-    cleaned: list[str] = []
-    api_div_depth = 0
+    result = "\n".join(lines[start:end]).strip()
 
-    for i in range(start, end):
-        line = lines[i]
-        stripped = line.strip()
-
-        # Track and remove API-style div wrappers
-        if _API_DIV_OPEN_RE.match(stripped):
-            api_div_depth += 1
-            continue
-        if _DIV_CLOSE_RE.match(stripped) and api_div_depth > 0:
-            api_div_depth -= 1
-            continue
-
-        # Remove playground links
-        if _PLAYGROUND_RE.search(line):
-            line = _PLAYGROUND_RE.sub("", line)
-            if not line.strip():
-                continue
-
-        cleaned.append(line)
-
-    result = "\n".join(cleaned).strip()
+    # Apply source-specific cleaning
+    if content_cleaner:
+        result = content_cleaner(result)
 
     # Collapse runs of 3+ blank lines into 2
     result = re.sub(r"\n{3,}", "\n\n", result)
 
-    return result
+    return result.strip()
 
 
 def _extract_section_code_langs(lines: list[str], start: int, end: int) -> list[str]:
@@ -182,7 +164,11 @@ def _extract_section_code_langs(lines: list[str], start: int, end: int) -> list[
 # ---------------------------------------------------------------------------
 
 
-def parse_markdown_file(file_path: Path, docs_root: Path) -> list[Chunk]:
+def parse_markdown_file(
+    file_path: Path,
+    docs_root: Path,
+    content_cleaner: Callable[[str], str] | None = None,
+) -> list[Chunk]:
     """Parse a markdown file into structured :class:`Chunk` objects.
 
     Produces section chunks (H2) as the primary retrieval unit. Code blocks,
@@ -190,6 +176,10 @@ def parse_markdown_file(file_path: Path, docs_root: Path) -> list[Chunk]:
     Images are extracted as separate chunks.
 
     Large sections (>{MAX_SECTION_CHARS} chars) are split at H3 boundaries.
+
+    *content_cleaner* is an optional callable (from the source adapter) that
+    performs source-specific content cleaning (e.g. stripping Vue-specific
+    ``<div>`` wrappers or custom Vue components).
     """
     raw = file_path.read_text(encoding="utf-8")
     lines = raw.split("\n")
@@ -275,7 +265,7 @@ def parse_markdown_file(file_path: Path, docs_root: Path) -> list[Chunk]:
                 img_idx += 1
 
         # ---- clean section content ----
-        sec_content = _clean_section_content(lines, sec_start, sec_end)
+        sec_content = _clean_section_content(lines, sec_start, sec_end, content_cleaner)
 
         # ---- H3 subsections within this H2 (for splitting large sections) ---
         # Only split at H3 level, not H4 — H4s stay inline within their H3
@@ -298,6 +288,7 @@ def parse_markdown_file(file_path: Path, docs_root: Path) -> list[Chunk]:
                 page_title=page_title,
                 api_map=api_map,
                 sec_image_ids=sec_image_ids,
+                content_cleaner=content_cleaner,
             )
         else:
             # Single section chunk
@@ -325,7 +316,7 @@ def parse_markdown_file(file_path: Path, docs_root: Path) -> list[Chunk]:
 
     # --- fallback: files without H2 headings ---
     if not h2s:
-        content = _clean_section_content(lines, 0, total)
+        content = _clean_section_content(lines, 0, total, content_cleaner)
         slug = headings[0].slug if headings else file_path.stem
         chunk_id = f"{file_stem}#{slug}"
         chunks.append(
@@ -364,6 +355,7 @@ def _emit_split_sections(
     page_title: str,
     api_map: list[str],
     sec_image_ids: list[str],
+    content_cleaner: Callable[[str], str] | None = None,
 ):
     """Split a large section at H3 boundaries and emit subsection chunks.
 
@@ -374,7 +366,7 @@ def _emit_split_sections(
     sec_bc = _breadcrumb(page_title, h2.text)
 
     # Intro: content between H2 and first H3
-    intro_content = _clean_section_content(lines, sec_start, h3s[0].line)
+    intro_content = _clean_section_content(lines, sec_start, h3s[0].line, content_cleaner)
 
     all_sub_ids: list[str] = []
 
@@ -387,7 +379,7 @@ def _emit_split_sections(
                 sub_end = nxt.line
                 break
 
-        sub_content = _clean_section_content(lines, sub_start, sub_end)
+        sub_content = _clean_section_content(lines, sub_start, sub_end, content_cleaner)
         sub_id = f"{file_stem}#{h3.slug}"
         sub_style = _section_api_style(api_map, sub_start, sub_end)
         sub_bc = _breadcrumb(page_title, h2.text, h3.text)

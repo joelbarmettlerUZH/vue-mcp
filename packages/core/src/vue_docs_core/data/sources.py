@@ -1,7 +1,8 @@
 """Source definitions for Vue ecosystem documentation frameworks."""
 
-from pydantic import BaseModel, Field
 from typing import Annotated
+
+from pydantic import BaseModel, Field
 
 
 class SourceDefinition(BaseModel):
@@ -199,12 +200,11 @@ SOURCE_REGISTRY: dict[str, SourceDefinition] = {
         name="vue-router",
         display_name="Vue Router",
         git_url="https://github.com/vuejs/router.git",
-        docs_subpath="packages/docs/src",
+        docs_subpath="packages/docs",
         base_url="https://router.vuejs.org",
         import_packages=["vue-router"],
         synonyms=VUE_ROUTER_SYNONYMS,
         gemini_context="Vue Router",
-        sidebar_config_path="packages/docs/.vitepress/config.ts",
     ),
 }
 
