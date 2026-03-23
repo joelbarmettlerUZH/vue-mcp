@@ -31,9 +31,7 @@ All results include source references so you can verify them.
 |---|---|---|
 | [Vue.js](https://vuejs.org) | :white_check_mark: Available | Core framework: reactivity, components, Composition API |
 | [Vue Router](https://router.vuejs.org) | :white_check_mark: Available | Official router: navigation guards, dynamic routes |
-| [Pinia](https://pinia.vuejs.org) | :calendar: Planned | Official state management |
-| [VueUse](https://vueuse.org) | :calendar: Planned | Composition API utilities |
-| [Nuxt](https://nuxt.com) | :calendar: Planned | Full-stack framework |
+| [VueUse](https://vueuse.org), [Vite](https://vite.dev), [Vitest](https://vitest.dev), [Nuxt](https://nuxt.com), [Pinia](https://pinia.vuejs.org), and 14 more | :calendar: Planned | |
 
 See the full list on the [Supported Frameworks](/frameworks/) page. Each framework gets its own tools, resources, prompts, and benchmarks.
 

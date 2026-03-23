@@ -31,16 +31,26 @@ Read `ecosystem://preferences` to check which frameworks are currently active.
 
 ## Roadmap
 
-| Framework | Status | Description |
-|---|---|---|
-| [Vue.js](https://vuejs.org) | :white_check_mark: Available | Core framework |
-| [Vue Router](https://router.vuejs.org) | :white_check_mark: Available | Official router |
-| [Pinia](https://pinia.vuejs.org) | :calendar: Planned | Official state management |
-| [VueUse](https://vueuse.org) | :calendar: Planned | Composition API utilities |
-| [Nuxt](https://nuxt.com) | :calendar: Planned | Full-stack framework |
-| [Vuetify](https://vuetifyjs.com) | :calendar: Planned | Material Design component library |
-| [Vite](https://vite.dev) | :calendar: Planned | Build tool |
-| [Vitest](https://vitest.dev) | :calendar: Planned | Unit testing framework |
-| [VitePress](https://vitepress.dev) | :calendar: Planned | Static site generator |
+| Framework | Status |
+|---|---|
+| [Vue.js](https://vuejs.org) | :white_check_mark: Available |
+| [Vue Router](https://router.vuejs.org) | :white_check_mark: Available |
+| [VueUse](https://vueuse.org) | :calendar: Planned |
+| [Vite](https://vite.dev) | :calendar: Planned |
+| [Vitest](https://vitest.dev) | :calendar: Planned |
+| [Nuxt](https://nuxt.com) | :calendar: Planned |
+| [Pinia](https://pinia.vuejs.org) | :calendar: Planned |
+| [Vue DevTools](https://devtools.vuejs.org) | :calendar: Planned |
+| [VitePress](https://vitepress.dev) | :calendar: Planned |
+| [Pinia Colada](https://pinia-colada.esm.dev) | :calendar: Planned |
+| [VeeValidate](https://vee-validate.logaretm.com/v4/) | :calendar: Planned |
+| [FormKit](https://formkit.com) | :calendar: Planned |
+| [shadcn-vue](https://www.shadcn-vue.com) | :calendar: Planned |
+| [Nuxt UI](https://ui.nuxt.com) | :calendar: Planned |
+| [TanStack Query](https://tanstack.com/query/latest/docs/framework/vue/overview) | :calendar: Planned |
+| [PrimeVue](https://primevue.org) | :calendar: Planned |
+| [Vuetify](https://vuetifyjs.com) | :calendar: Planned |
+| [Quasar](https://quasar.dev) | :calendar: Planned |
+| [Radix Vue](https://www.radix-vue.com) | :calendar: Planned |
 
-Want to see a framework added? [Open an issue](https://github.com/joelbarmettlerUZH/vue-mcp/issues) on GitHub.
+Want to see a framework added or reprioritized? [Open an issue](https://github.com/joelbarmettlerUZH/vue-mcp/issues) on GitHub.
