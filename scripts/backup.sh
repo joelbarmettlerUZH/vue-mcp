@@ -31,11 +31,11 @@ fi
 # 2. Qdrant snapshot
 echo "Creating Qdrant snapshot..."
 QDRANT_FILE="$BACKUP_DIR/qdrant-$DATE.snapshot"
-SNAP_RESPONSE=$(curl -sf -X POST "http://localhost:6333/collections/vue_docs/snapshots" 2>/dev/null || true)
+SNAP_RESPONSE=$(curl -sf -X POST "http://localhost:6333/collections/vue_ecosystem/snapshots" 2>/dev/null || true)
 if [ -n "$SNAP_RESPONSE" ]; then
   SNAP_NAME=$(echo "$SNAP_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['result']['name'])" 2>/dev/null || true)
   if [ -n "$SNAP_NAME" ]; then
-    curl -sf "http://localhost:6333/collections/vue_docs/snapshots/$SNAP_NAME" \
+    curl -sf "http://localhost:6333/collections/vue_ecosystem/snapshots/$SNAP_NAME" \
       -o "$QDRANT_FILE"
     if [ ! -s "$QDRANT_FILE" ]; then
       echo "  [ERROR] Qdrant snapshot is empty"

@@ -20,9 +20,9 @@ echo "  PostgreSQL restored."
 if [ -n "$QDRANT_SNAPSHOT" ]; then
   echo "Restoring Qdrant from $QDRANT_SNAPSHOT..."
   # Delete existing collection first
-  curl -sf -X DELETE "http://localhost:6333/collections/vue_docs" || true
+  curl -sf -X DELETE "http://localhost:6333/collections/vue_ecosystem" || true
   # Upload snapshot
-  curl -sf -X POST "http://localhost:6333/collections/vue_docs/snapshots/upload" \
+  curl -sf -X POST "http://localhost:6333/collections/vue_ecosystem/snapshots/upload" \
     -H "Content-Type: multipart/form-data" \
     -F "snapshot=@$QDRANT_SNAPSHOT"
   echo "  Qdrant restored."
