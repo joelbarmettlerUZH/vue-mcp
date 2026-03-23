@@ -1,8 +1,6 @@
 """Usage analytics: log tool calls and resource reads to PostgreSQL."""
 
 import logging
-import time
-from functools import wraps
 
 from vue_docs_server.startup import state
 

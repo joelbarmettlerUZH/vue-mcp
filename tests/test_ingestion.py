@@ -509,9 +509,16 @@ class TestCLI:
 
         runner = CliRunner()
         mock_db = _mock_db()
-        with patch("vue_docs_ingestion.cli._get_db", return_value=mock_db):
-            result = runner.invoke(app, ["run", "--docs-path", str(tmp_path / "nonexistent")])
-        assert result.exit_code != 0
+        nonexistent = tmp_path / "nonexistent"
+
+        # Mock _clone_or_pull to return the same nonexistent path (avoid real git clone)
+        with (
+            patch("vue_docs_ingestion.cli._get_db", return_value=mock_db),
+            patch("vue_docs_ingestion.cli._clone_or_pull", return_value=nonexistent),
+        ):
+            result = runner.invoke(app, ["run", "--docs-path", str(nonexistent)])
+        # CLI skips missing sources gracefully (exit 0) but prints an error
+        assert "does not exist" in result.output
 
     def test_run_dry_run_lists_files(self, tmp_path):
         from typer.testing import CliRunner

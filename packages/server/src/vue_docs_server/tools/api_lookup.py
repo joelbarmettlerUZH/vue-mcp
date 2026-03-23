@@ -121,7 +121,9 @@ async def _do_api_lookup(
         lines.append(f"- `{lookup_tool}` on related APIs: {related_names}")
 
     result = "\n".join(lines)
-    log_tool_call("api_lookup", query=api_name, framework=source, latency_ms=0, response_chars=len(result))
+    log_tool_call(
+        "api_lookup", query=api_name, framework=source, latency_ms=0, response_chars=len(result)
+    )
     return result
 
 

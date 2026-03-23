@@ -102,7 +102,9 @@ async def _do_get_related(
         lines.append(f'- `{lookup_tool}` on `"{name}"` for API details')
 
     result = "\n".join(lines)
-    log_tool_call("get_related", query=topic, framework=source, latency_ms=0, response_chars=len(result))
+    log_tool_call(
+        "get_related", query=topic, framework=source, latency_ms=0, response_chars=len(result)
+    )
     return result
 
 

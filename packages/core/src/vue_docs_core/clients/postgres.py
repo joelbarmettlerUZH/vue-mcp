@@ -9,7 +9,6 @@ from pathlib import Path
 
 from sqlalchemy import (
     DateTime,
-    Float,
     Integer,
     LargeBinary,
     String,
