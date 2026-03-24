@@ -90,15 +90,120 @@ Each adapter (in `packages/core/src/vue_docs_core/parsing/adapters/`) implements
 
 ### Adding a New Framework
 
-1. Create adapter in `packages/core/src/vue_docs_core/parsing/adapters/{name}.py`
-2. Register in `adapters/__init__.py` ADAPTER_REGISTRY
-3. Add `SourceDefinition` to `packages/core/src/vue_docs_core/data/sources.py` SOURCE_REGISTRY
-4. Optionally create entity extractor in `packages/core/src/vue_docs_core/parsing/extractors/`
-5. Add synonyms to `sources.py`
-6. Set `ENABLED_SOURCES=vue,vue-router,{name}` in `.env`
+Follow these steps end-to-end. Use the Vue Router adapter (`vue_router.py`) as a reference implementation.
 
-The pipeline backbone (change detection, Gemini enrichment, Jina embedding, BM25, Qdrant upsert, state management)
-requires no changes. The server auto-discovers new sources and creates per-source tools, resources, and prompts.
+#### 1. Analyze the documentation source
+
+Clone the repo and study its structure before writing any code:
+
+- What is the docs subpath within the repo? (e.g. `src/`, `packages/docs/`, `docs/`)
+- What doc framework is used? (VitePress, Nuxt Content, custom)
+- Where is the sidebar/navigation config?
+- Are there i18n directories to exclude?
+- Are there auto-generated files (TypeDoc, etc.) that need a build step?
+- What custom components or syntax need stripping?
+- What are the API entities and how are they organized?
+
+#### 2. Create the adapter
+
+Create `packages/core/src/vue_docs_core/parsing/adapters/{name}.py` implementing:
+
+- `post_clone()`: any post-clone setup (npm build for TypeDoc, etc.). Must gracefully skip if tools are unavailable
+  (e.g. no npm in Docker). Use `shutil.which()` to check.
+- `discover_files()`: return sorted list of `.md` files, excluding translations, generated dirs, etc.
+- `parse_sort_keys()`: parse the sidebar config into `{page_path: sort_key}` map. Different doc frameworks need
+  different parsers (VitePress `config.ts`, Nuxt Content `.navigation.yml`, etc.).
+- `clean_content()`: strip framework-specific noise (custom Vue components, rendering directives, sponsor blocks,
+  standalone `<script setup>` blocks). Be careful not to strip content inside code fences.
+- `build_entity_dictionary()`: scan API docs for entity names. Seed with known APIs if the docs structure is unusual.
+- `get_import_patterns()`: regex patterns matching `import { X } from "{package}"`.
+- `high_value_folder_pairs`: which top-level folder pairs produce HIGH-value cross-references.
+
+Register the adapter in `adapters/__init__.py` ADAPTER_REGISTRY.
+
+#### 3. Create the entity extractor (optional)
+
+If the framework's API docs follow a non-standard structure, create a dedicated extractor in
+`packages/core/src/vue_docs_core/parsing/extractors/{name}.py`. Register it in `extractors/__init__.py`
+EXTRACTOR_REGISTRY. Otherwise the adapter's `build_entity_dictionary()` can use the generic extractor or a hardcoded
+seed list.
+
+#### 4. Add source definition and synonyms
+
+In `packages/core/src/vue_docs_core/data/sources.py`:
+
+- Add a synonym dict (`{NAME}_SYNONYMS`) mapping developer phrases to API entity names.
+- Add a `SourceDefinition` entry to `SOURCE_REGISTRY` with: `name`, `display_name`, `git_url`, `docs_subpath`,
+  `base_url`, `import_packages`, `synonyms`, `gemini_context`.
+
+#### 5. Run the ingestion locally
+
+```bash
+# Start dev infra
+make docker-dev-up
+
+# Clone the docs and run ingestion
+ENABLED_SOURCES=vue,vue-router,{name} uv run vue-docs-ingest run --source {name} --verbose
+
+# Verify with dry run first if unsure
+uv run vue-docs-ingest run --source {name} --dry-run
+```
+
+Check the output for: file count, chunk count, noise in content, entity references, cross-references, small/large
+chunk warnings. Fix adapter issues and re-run until clean.
+
+#### 6. Run evaluation
+
+```bash
+# Generate eval questions
+make eval-generate FRAMEWORK={name} DOCS=data/{name}-docs/{subpath}
+
+# Run eval (ours only, quick check)
+uv run vue-docs-eval run --providers ours --frameworks {name}
+
+# Run comparison against Context7
+uv run vue-docs-eval run --providers ours,context7 --frameworks {name}
+```
+
+Target: composite score >= 4.5/5, API recall >= 85%.
+
+#### 7. Update documentation
+
+- Add framework page: `docs/frameworks/{name}.md` with tools, resources, prompts, and benchmark results
+- Update `docs/frameworks/index.md`: add to the Available table, move from Planned to Available in roadmap
+- Update `docs/.vitepress/config.ts`: add to sidebar Frameworks section
+- Update `docs/guide/what-is-vue-mcp.md`: update the supported frameworks table
+- Update `docs/index.md` if headline stats change (question count, etc.)
+- Update `README.md` supported frameworks table
+
+#### 8. Update scripts
+
+- `scripts/bootstrap.sh`: add git clone for the new docs repo
+
+#### 9. Run tests and lint
+
+```bash
+make pr-ready   # lint + format + test
+```
+
+#### 10. Deploy
+
+```bash
+# Add ENABLED_SOURCES to .env.production on the server (via SSH)
+# Then:
+git push                    # triggers GHCR image build
+gh run watch $(gh run list --workflow=build-and-push.yml -L 1 --json databaseId -q '.[0].databaseId')
+make deploy                 # syncs compose file, pulls images, restarts
+```
+
+The ingestion container will clone the new docs and run the pipeline on its next cycle. To trigger immediately:
+
+```bash
+ssh ubuntu@mcp.vue-mcp.org "cd /opt/vue-mcp && docker compose --env-file .env.production \
+  -f docker-compose.prod.yml exec -T ingestion vue-docs-ingest run --source {name} --verbose"
+```
+
+The server's hot reload (60s PG poll) will pick up the new data automatically.
 
 ## Deployment
 
