@@ -124,11 +124,13 @@ Evaluated by an LLM judge (Gemini, temperature 0) scoring retrieved documentatio
 |---|---|---|---|
 | Vue.js | 173 | **4.82** | 2.41 |
 | Vue Router | 49 | **4.78** | 3.33 |
+| VueUse | 50 | **4.88** | - |
 
 | Metric | Vue Docs MCP | Context7 |
 |---|---|---|
 | API Recall (Vue.js) | **98.7%** | 53.1% |
 | API Recall (Vue Router) | **88.8%** | 34.4% |
+| API Recall (VueUse) | **100.0%** | - |
 | Cost per query | Free | $0.002 |
 
 <details>

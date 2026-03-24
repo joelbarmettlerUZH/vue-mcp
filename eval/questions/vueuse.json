@@ -1,0 +1,661 @@
+[
+  {
+    "question": "How can I save data to localStorage using VueUse?",
+    "intent": "howto",
+    "relevant_apis": [
+      "useLocalStorage",
+      "useStorage"
+    ],
+    "difficulty": "easy",
+    "expected_answer": "You can use the `useLocalStorage` or `useStorage` composables to persist state in localStorage. `useLocalStorage` is a convenience wrapper for `useStorage`.",
+    "relevant_paths": [
+      "guide/index.md",
+      "core/useStorage/index.md"
+    ],
+    "framework": "vueuse"
+  },
+  {
+    "relevant_apis": [
+      "useMouse"
+    ],
+    "intent": "conceptual",
+    "question": "How do I access the returned values from a VueUse function?",
+    "difficulty": "easy",
+    "expected_answer": "Most VueUse functions return an object of refs. You can use ES6 object destructuring to take what you need, or pass the returned object to `reactive()` to unwrap all refs automatically.",
+    "relevant_paths": [
+      "guide/best-practice.md"
+    ],
+    "framework": "vueuse"
+  },
+  {
+    "relevant_paths": [
+      "guide/best-practice.md"
+    ],
+    "relevant_apis": [
+      "useEventListener"
+    ],
+    "intent": "api_lookup",
+    "question": "Does useEventListener need to be manually removed?",
+    "expected_answer": "`useEventListener` automatically calls `removeEventListener` when the component is unmounted. You can also manually dispose of it by calling the stop handler returned by the function.",
+    "difficulty": "medium",
+    "framework": "vueuse"
+  },
+  {
+    "expected_answer": "`useStorage` defaults to `localStorage`. You can specify a different storage source, such as `sessionStorage`, by passing it as the third argument.",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "useStorage"
+    ],
+    "intent": "api_lookup",
+    "question": "What is the default storage for useStorage, and how do I change it?",
+    "relevant_paths": [
+      "core/useStorage/index.md"
+    ],
+    "framework": "vueuse"
+  },
+  {
+    "question": "How can I group multiple VueUse composables to dispose of them all at once?",
+    "intent": "conceptual",
+    "relevant_apis": [
+      "useEventListener",
+      "onClickOutside"
+    ],
+    "expected_answer": "`effectScope` is a Vue API used to stop multiple composables at once. By wrapping them in `scope.run(() => { ... })`, you can call `scope.stop()` to dispose of all effects created within that scope.",
+    "difficulty": "hard",
+    "relevant_paths": [
+      "guide/best-practice.md"
+    ],
+    "framework": "vueuse"
+  },
+  {
+    "relevant_paths": [
+      "guide/components.md",
+      "core/onClickOutside/index.md"
+    ],
+    "expected_answer": "You can use the `OnClickOutside` renderless component from `@vueuse/components` or the `onClickOutside` composable from `@vueuse/core`.",
+    "difficulty": "easy",
+    "relevant_apis": [
+      "onClickOutside"
+    ],
+    "intent": "comparison",
+    "question": "What's the difference between using `onClickOutside` and `OnClickOutside`?",
+    "framework": "vueuse"
+  },
+  {
+    "question": "How do I limit the rate at which an event triggers in VueUse?",
+    "intent": "howto",
+    "relevant_apis": [
+      "useMouse",
+      "useLocalStorage",
+      "throttleFilter",
+      "debounceFilter"
+    ],
+    "difficulty": "medium",
+    "expected_answer": "You can use `throttleFilter` or `debounceFilter` in the `eventFilter` option of supported functions like `useMouse` or `useLocalStorage`.",
+    "relevant_paths": [
+      "guide/config.md"
+    ],
+    "framework": "vueuse"
+  },
+  {
+    "relevant_paths": [
+      "guide/config.md"
+    ],
+    "difficulty": "hard",
+    "expected_answer": "For `watch`-like composables, the default is `{ flush: 'pre' }`. For `computed`-like composables, the default is `{ flush: 'sync' }`. You can override this by passing the `flush` option.",
+    "question": "What is the default flush timing for VueUse composables?",
+    "intent": "conceptual",
+    "relevant_apis": [
+      "watchPausable",
+      "syncRef"
+    ],
+    "framework": "vueuse"
+  },
+  {
+    "relevant_paths": [
+      "guide/config.md"
+    ],
+    "expected_answer": "You can pass a `scheduler` function in the composable's options. This scheduler receives a callback and controls how the repeated execution is scheduled.",
+    "difficulty": "medium",
+    "question": "How can I customize the timing of time-based functions like `useNow`?",
+    "intent": "api_lookup",
+    "relevant_apis": [
+      "useNow",
+      "useRafFn"
+    ],
+    "framework": "vueuse"
+  },
+  {
+    "relevant_paths": [
+      "guide/index.md"
+    ],
+    "difficulty": "easy",
+    "expected_answer": "VueUse no longer supports Vue 2 starting from v12.0. You must use v11.x if you need Vue 2 support.",
+    "intent": "migration",
+    "question": "Does VueUse support Vue 2?",
+    "relevant_apis": [],
+    "framework": "vueuse"
+  },
+  {
+    "relevant_paths": [
+      "guide/best-practice.md"
+    ],
+    "question": "How can I make arguments to VueUse functions reactive?",
+    "intent": "conceptual",
+    "relevant_apis": [
+      "useTitle"
+    ],
+    "expected_answer": "VueUse functions can accept refs as arguments, which makes them reactive. Additionally, since v9.0, you can pass a \"Reactive Getter\" as an argument.",
+    "difficulty": "medium",
+    "framework": "vueuse"
+  },
+  {
+    "relevant_paths": [
+      "guide/index.md"
+    ],
+    "difficulty": "easy",
+    "expected_answer": "You can install the `@vueuse/nuxt` module and add it to your `nuxt.config.ts` file under `modules`.",
+    "relevant_apis": [],
+    "question": "How do I use VueUse with Nuxt 3?",
+    "intent": "howto",
+    "framework": "vueuse"
+  },
+  {
+    "difficulty": "medium",
+    "expected_answer": "You can use `useLocalStorage('key', initialValue, { eventFilter: throttleFilter(1000) })` to throttle writes to localStorage.",
+    "question": "How can I throttle writes to localStorage?",
+    "intent": "howto",
+    "relevant_apis": [
+      "useLocalStorage",
+      "throttleFilter"
+    ],
+    "relevant_paths": [
+      "guide/config.md"
+    ],
+    "framework": "vueuse"
+  },
+  {
+    "relevant_paths": [
+      "guide/config.md"
+    ],
+    "difficulty": "hard",
+    "expected_answer": "When working with iframes or testing, you can pass an option field to specify global dependencies like `window`, `document`, or `navigator` to the composable.",
+    "intent": "api_lookup",
+    "question": "How do I use VueUse functions inside an iframe?",
+    "relevant_apis": [
+      "useMouse"
+    ],
+    "framework": "vueuse"
+  },
+  {
+    "relevant_paths": [
+      "core/useAsyncState/index.md"
+    ],
+    "intent": "api_lookup",
+    "question": "How does `useAsyncState` handle the loading status?",
+    "relevant_apis": [
+      "useAsyncState"
+    ],
+    "difficulty": "medium",
+    "expected_answer": "`useAsyncState` returns a `shallowRef` by default. It also provides `isLoading` and `isReady` flags to handle the async state.",
+    "framework": "vueuse"
+  },
+  {
+    "expected_answer": "`computedAsync` dependency tracking does not consider dependencies accessed asynchronously. Only dependencies in the first call stack are tracked.",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "computedAsync"
+    ],
+    "intent": "debugging",
+    "question": "Why is my `computedAsync` not re-evaluating when a dependency changes?",
+    "relevant_paths": [
+      "core/computedAsync/index.md"
+    ],
+    "framework": "vueuse"
+  },
+  {
+    "relevant_apis": [
+      "useCounter"
+    ],
+    "question": "What functions does `useCounter` return?",
+    "intent": "api_lookup",
+    "difficulty": "easy",
+    "expected_answer": "`useCounter` provides `count`, `inc`, `dec`, `set`, and `reset` functions.",
+    "relevant_paths": [
+      "core/_template/index.md"
+    ],
+    "framework": "vueuse"
+  },
+  {
+    "intent": "howto",
+    "question": "How do I cancel a previous `computedAsync` execution?",
+    "relevant_apis": [
+      "computedAsync"
+    ],
+    "difficulty": "medium",
+    "expected_answer": "You can pass an `onCancel` callback to `computedAsync` to handle aborting previous async operations, like using an `AbortController` with `fetch`.",
+    "relevant_paths": [
+      "core/computedAsync/index.md"
+    ],
+    "framework": "vueuse"
+  },
+  {
+    "question": "What is the purpose of `computedInject`?",
+    "intent": "conceptual",
+    "relevant_apis": [
+      "computedInject"
+    ],
+    "difficulty": "medium",
+    "expected_answer": "`computedInject` combines `computed` and `inject`. It is useful for creating a computed property based on a value provided by a parent component.",
+    "relevant_paths": [
+      "core/computedInject/index.md"
+    ],
+    "framework": "vueuse"
+  },
+  {
+    "relevant_paths": [
+      "core/computedInject/index.md"
+    ],
+    "relevant_apis": [
+      "computedInject"
+    ],
+    "question": "How do I provide a factory function as a default value for `computedInject`?",
+    "intent": "api_lookup",
+    "expected_answer": "You can pass a factory function as the third argument and `true` as the fourth argument to `computedInject` to treat the default value as a factory.",
+    "difficulty": "hard",
+    "framework": "vueuse"
+  },
+  {
+    "difficulty": "medium",
+    "expected_answer": "`createReusableTemplate` allows you to define a template once and reuse it multiple times within a component, avoiding the overhead of creating separate child components for simple template segments.",
+    "question": "When should I use `createReusableTemplate`?",
+    "intent": "conceptual",
+    "relevant_apis": [
+      "createReusableTemplate"
+    ],
+    "relevant_paths": [
+      "core/createReusableTemplate/index.md"
+    ],
+    "framework": "vueuse"
+  },
+  {
+    "relevant_paths": [
+      "core/createReusableTemplate/index.md"
+    ],
+    "relevant_apis": [
+      "createReusableTemplate"
+    ],
+    "question": "Can I pass slots back from `<ReuseTemplate>`?",
+    "intent": "howto",
+    "expected_answer": "Yes, you can access the slots on `<DefineTemplate>` using `$slots` and render them using `<component :is=\"$slots.default\" />`.",
+    "difficulty": "hard",
+    "framework": "vueuse"
+  },
+  {
+    "difficulty": "medium",
+    "expected_answer": "`createTemplatePromise` lets you trigger UI (like dialogs) programmatically as a promise, returning values when the user interacts with the rendered template.",
+    "intent": "conceptual",
+    "question": "What is the use case for `createTemplatePromise`?",
+    "relevant_apis": [
+      "createTemplatePromise"
+    ],
+    "relevant_paths": [
+      "core/createTemplatePromise/index.md"
+    ],
+    "framework": "vueuse"
+  },
+  {
+    "expected_answer": "Yes, use the `singleton: true` option in `createTemplatePromise` to ensure only one instance is active at a time.",
+    "difficulty": "hard",
+    "relevant_apis": [
+      "createTemplatePromise"
+    ],
+    "intent": "api_lookup",
+    "question": "How do I ensure only one dialog instance is open with `createTemplatePromise`?",
+    "relevant_paths": [
+      "core/createTemplatePromise/index.md"
+    ],
+    "framework": "vueuse"
+  },
+  {
+    "relevant_apis": [
+      "createUnrefFn"
+    ],
+    "intent": "api_lookup",
+    "question": "What does `createUnrefFn` do?",
+    "expected_answer": "`createUnrefFn` wraps a plain function so it can accept reactive refs as arguments. It automatically unwraps them before passing them to the original function.",
+    "difficulty": "medium",
+    "relevant_paths": [
+      "core/createUnrefFn/index.md"
+    ],
+    "framework": "vueuse"
+  },
+  {
+    "relevant_paths": [
+      "core/onClickOutside/index.md"
+    ],
+    "expected_answer": "The `ignore` option allows you to pass an array of refs or CSS selectors to prevent those elements from triggering the click-outside handler.",
+    "difficulty": "easy",
+    "relevant_apis": [
+      "onClickOutside"
+    ],
+    "intent": "api_lookup",
+    "question": "How do I ignore certain elements when using `onClickOutside`?",
+    "framework": "vueuse"
+  },
+  {
+    "expected_answer": "`onElementRemoval` fires when an element is removed from the DOM. It provides an array of `MutationRecord` objects to the callback.",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "onElementRemoval"
+    ],
+    "intent": "api_lookup",
+    "question": "What information does `onElementRemoval` provide to its callback?",
+    "relevant_paths": [
+      "core/onElementRemoval/index.md"
+    ],
+    "framework": "vueuse"
+  },
+  {
+    "relevant_apis": [
+      "onKeyStroke"
+    ],
+    "question": "How do I listen for multiple keys with `onKeyStroke`?",
+    "intent": "howto",
+    "difficulty": "medium",
+    "expected_answer": "You can pass an array of keys (e.g., `['s', 'S', 'ArrowDown']`) to `onKeyStroke` to listen for multiple keys.",
+    "relevant_paths": [
+      "core/onKeyStroke/index.md"
+    ],
+    "framework": "vueuse"
+  },
+  {
+    "relevant_paths": [
+      "core/onLongPress/index.md"
+    ],
+    "relevant_apis": [
+      "onLongPress"
+    ],
+    "intent": "api_lookup",
+    "question": "How do I change the delay for `onLongPress`?",
+    "expected_answer": "`onLongPress` uses a 500ms delay by default, but you can customize it by passing a `delay` option (number or function).",
+    "difficulty": "medium",
+    "framework": "vueuse"
+  },
+  {
+    "relevant_paths": [
+      "core/onStartTyping/index.md"
+    ],
+    "intent": "conceptual",
+    "question": "Why is my `onStartTyping` callback not triggering?",
+    "relevant_apis": [
+      "onStartTyping"
+    ],
+    "expected_answer": "`onStartTyping` only triggers if no editable element is focused, the key is alphanumeric, and no modifier keys (Ctrl, Alt, Meta) are held.",
+    "difficulty": "hard",
+    "framework": "vueuse"
+  },
+  {
+    "relevant_paths": [
+      "core/templateRef/index.md"
+    ],
+    "relevant_apis": [
+      "templateRef"
+    ],
+    "question": "Should I use `templateRef` or `useTemplateRef`?",
+    "intent": "migration",
+    "expected_answer": "`useTemplateRef` is the recommended native API for binding refs to template elements, effectively replacing `templateRef` from VueUse.",
+    "difficulty": "medium",
+    "framework": "vueuse"
+  },
+  {
+    "difficulty": "easy",
+    "expected_answer": "`unrefElement` retrieves the underlying DOM element from a Vue ref or component instance.",
+    "relevant_apis": [
+      "unrefElement"
+    ],
+    "intent": "api_lookup",
+    "question": "What is the purpose of `unrefElement`?",
+    "relevant_paths": [
+      "core/unrefElement/index.md"
+    ],
+    "framework": "vueuse"
+  },
+  {
+    "expected_answer": "`useActiveElement` returns a shallow ref of `document.activeElement` that updates when focus changes. You can set `deep: true` to traverse into Shadow DOM.",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "useActiveElement"
+    ],
+    "intent": "api_lookup",
+    "question": "Does `useActiveElement` support Shadow DOM?",
+    "relevant_paths": [
+      "core/useActiveElement/index.md"
+    ],
+    "framework": "vueuse"
+  },
+  {
+    "relevant_paths": [
+      "core/useAnimate/index.md"
+    ],
+    "question": "What controls does `useAnimate` provide?",
+    "intent": "api_lookup",
+    "relevant_apis": [
+      "useAnimate"
+    ],
+    "expected_answer": "`useAnimate` returns an animation instance and control functions like `play`, `pause`, `reverse`, `finish`, and `cancel`.",
+    "difficulty": "medium",
+    "framework": "vueuse"
+  },
+  {
+    "relevant_paths": [
+      "core/useAsyncQueue/index.md"
+    ],
+    "relevant_apis": [
+      "useAsyncQueue"
+    ],
+    "intent": "conceptual",
+    "question": "How does `useAsyncQueue` handle failures?",
+    "expected_answer": "`useAsyncQueue` executes tasks sequentially, passing the result of one task to the next. By default, it stops if a task fails, but you can set `interrupt: false` to continue.",
+    "difficulty": "hard",
+    "framework": "vueuse"
+  },
+  {
+    "difficulty": "medium",
+    "expected_answer": "`useBase64` supports various types including plain text, `Blob`, `ArrayBuffer`, `HTMLCanvasElement`, `HTMLImageElement`, and JSON-serializable objects.",
+    "intent": "api_lookup",
+    "question": "What input types does `useBase64` support?",
+    "relevant_apis": [
+      "useBase64"
+    ],
+    "relevant_paths": [
+      "core/useBase64/index.md"
+    ],
+    "framework": "vueuse"
+  },
+  {
+    "expected_answer": "The Battery Status API is only available in Chromium-based browsers, so you should always check the `isSupported` property.",
+    "difficulty": "easy",
+    "relevant_apis": [
+      "useBattery"
+    ],
+    "question": "Why is `useBattery` not working in my browser?",
+    "intent": "debugging",
+    "relevant_paths": [
+      "core/useBattery/index.md"
+    ],
+    "framework": "vueuse"
+  },
+  {
+    "expected_answer": "`useBluetooth` is not available in Web Workers because it is not exposed via `WorkerNavigator`.",
+    "difficulty": "medium",
+    "question": "Can I use `useBluetooth` in a Web Worker?",
+    "intent": "conceptual",
+    "relevant_apis": [
+      "useBluetooth"
+    ],
+    "relevant_paths": [
+      "core/useBluetooth/index.md"
+    ],
+    "framework": "vueuse"
+  },
+  {
+    "relevant_paths": [
+      "core/useBreakpoints/index.md"
+    ],
+    "difficulty": "medium",
+    "expected_answer": "`useBreakpoints` allows you to define custom breakpoints and use strategies like `min-width` (mobile-first) or `max-width` (desktop-first).",
+    "relevant_apis": [
+      "useBreakpoints"
+    ],
+    "intent": "api_lookup",
+    "question": "How do I define custom breakpoints with `useBreakpoints`?",
+    "framework": "vueuse"
+  },
+  {
+    "relevant_paths": [
+      "core/useBreakpoints/index.md"
+    ],
+    "relevant_apis": [
+      "useBreakpoints"
+    ],
+    "intent": "howto",
+    "question": "How do I avoid hydration mismatches with `useBreakpoints` in Nuxt?",
+    "expected_answer": "When using `useBreakpoints` with SSR, you must specify `ssrWidth` to render the correct breakpoint size during hydration to avoid mismatches.",
+    "difficulty": "hard",
+    "framework": "vueuse"
+  },
+  {
+    "difficulty": "easy",
+    "expected_answer": "`useBroadcastChannel` allows communication between different windows, tabs, or iframes of the same origin. It automatically closes the channel on component unmount.",
+    "intent": "conceptual",
+    "question": "What is `useBroadcastChannel` used for?",
+    "relevant_apis": [
+      "useBroadcastChannel"
+    ],
+    "relevant_paths": [
+      "core/useBroadcastChannel/index.md"
+    ],
+    "framework": "vueuse"
+  },
+  {
+    "relevant_paths": [
+      "core/useClipboard/index.md"
+    ],
+    "relevant_apis": [
+      "useClipboard"
+    ],
+    "question": "Can `useClipboard` read from the clipboard?",
+    "intent": "api_lookup",
+    "expected_answer": "`useClipboard` supports reading clipboard content if you set `read: true` and the user has granted the necessary permissions.",
+    "difficulty": "medium",
+    "framework": "vueuse"
+  },
+  {
+    "relevant_paths": [
+      "core/useClipboardItems/index.md"
+    ],
+    "question": "What is the difference between `useClipboard` and `useClipboardItems`?",
+    "intent": "comparison",
+    "relevant_apis": [
+      "useClipboard",
+      "useClipboardItems"
+    ],
+    "expected_answer": "`useClipboardItems` is used for `ClipboardItem` based operations, allowing you to copy content types beyond just plain text, such as images.",
+    "difficulty": "medium",
+    "framework": "vueuse"
+  },
+  {
+    "question": "How do I create a reactive clone of a ref?",
+    "intent": "api_lookup",
+    "relevant_apis": [
+      "useCloned"
+    ],
+    "difficulty": "easy",
+    "expected_answer": "`useCloned` returns a reactive clone of a ref, using `JSON.parse(JSON.stringify())` by default.",
+    "relevant_paths": [
+      "core/useCloned/index.md"
+    ],
+    "framework": "vueuse"
+  },
+  {
+    "relevant_paths": [
+      "core/useColorMode/index.md",
+      "core/useDark/index.md"
+    ],
+    "intent": "comparison",
+    "question": "Should I use `useColorMode` or `useDark`?",
+    "relevant_apis": [
+      "useColorMode",
+      "useDark"
+    ],
+    "difficulty": "medium",
+    "expected_answer": "`useColorMode` handles persistence and DOM class/attribute updates, while `useDark` is a simplified version specifically for dark mode. `useColorMode` is more flexible for custom modes.",
+    "framework": "vueuse"
+  },
+  {
+    "relevant_paths": [
+      "core/useConfirmDialog/index.md"
+    ],
+    "difficulty": "medium",
+    "expected_answer": "`useConfirmDialog` returns `isRevealed` state and `reveal`, `confirm`, `cancel` functions, which can be hooked into modals or dialog chains.",
+    "relevant_apis": [
+      "useConfirmDialog"
+    ],
+    "question": "How do I control a dialog with `useConfirmDialog`?",
+    "intent": "api_lookup",
+    "framework": "vueuse"
+  },
+  {
+    "question": "Can I restart `useCountdown` with a new value?",
+    "intent": "api_lookup",
+    "relevant_apis": [
+      "useCountdown"
+    ],
+    "expected_answer": "`useCountdown` provides `start`, `stop`, `pause`, and `resume`. `start()` can accept a new countdown value.",
+    "difficulty": "medium",
+    "relevant_paths": [
+      "core/useCountdown/index.md"
+    ],
+    "framework": "vueuse"
+  },
+  {
+    "question": "What is `useCssSupports` used for?",
+    "intent": "api_lookup",
+    "relevant_apis": [
+      "useCssSupports"
+    ],
+    "expected_answer": "`useCssSupports` provides a reactive, SSR-compatible wrapper for `CSS.supports`.",
+    "difficulty": "medium",
+    "relevant_paths": [
+      "core/useCssSupports/index.md"
+    ],
+    "framework": "vueuse"
+  },
+  {
+    "relevant_paths": [
+      "core/useCssVar/index.md"
+    ],
+    "difficulty": "medium",
+    "expected_answer": "`useCssVar` allows you to manipulate CSS variables on a specific element. It accepts a string (the variable name) and an optional element reference.",
+    "question": "How do I update a CSS variable using VueUse?",
+    "intent": "api_lookup",
+    "relevant_apis": [
+      "useCssVar"
+    ],
+    "framework": "vueuse"
+  },
+  {
+    "relevant_paths": [
+      "core/useCurrentElement/index.md"
+    ],
+    "difficulty": "hard",
+    "expected_answer": "`useCurrentElement` returns the component's root element. It is recommended for components with a single root element; otherwise, it returns a placeholder DOM node.",
+    "relevant_apis": [
+      "useCurrentElement"
+    ],
+    "intent": "conceptual",
+    "question": "Why is `useCurrentElement` returning an unexpected DOM node?",
+    "framework": "vueuse"
+  }
+]

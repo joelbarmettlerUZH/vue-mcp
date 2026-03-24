@@ -4,7 +4,7 @@ layout: home
 hero:
   name: Vue Docs MCP
   text: Vue ecosystem docs for your AI assistant
-  tagline: "4.82/5 retrieval quality. 98.7% API recall. Free. Purpose-built for Vue."
+  tagline: "4.88/5 retrieval quality. 100% API recall. Free. Purpose-built for Vue."
   actions:
     - theme: brand
       text: Get Started
@@ -18,13 +18,13 @@ hero:
 
 features:
   - icon: "\U0001F3C6"
-    title: "4.82/5 Quality Score"
-    details: "Scored by an independent LLM judge across 222 questions on relevance, completeness, correctness, and API coverage. 2x higher than general-purpose alternatives."
+    title: "4.88/5 Quality Score"
+    details: "Scored by an independent LLM judge across 272 questions on relevance, completeness, correctness, and API coverage. 2x higher than general-purpose alternatives."
     link: /frameworks/
     linkText: See benchmarks
   - icon: "\U0001F4DA"
     title: Vue Ecosystem Coverage
-    details: "Vue.js and Vue Router today, with Pinia, VueUse, Nuxt, and more coming. Every page indexed, every API searchable."
+    details: "Vue.js, Vue Router, and VueUse today, with Pinia, Nuxt, and more coming. Every page indexed, every API searchable."
     link: /frameworks/
     linkText: View frameworks
   - icon: "\U0001F4B0"
@@ -38,7 +38,7 @@ features:
     link: /clients/
     linkText: Setup guides
   - icon: "\U0001F50D"
-    title: "98.7% API Recall"
+    title: "100% API Recall"
     details: "Ask about any Vue API and get the right documentation back. Handles typos, synonyms, and informal phrasing."
     link: /frameworks/vue
     linkText: See Vue benchmarks

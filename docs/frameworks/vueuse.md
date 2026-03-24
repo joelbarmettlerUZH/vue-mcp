@@ -1,5 +1,7 @@
 # VueUse
 
+<span style="color: var(--vp-c-brand-1); font-weight: 600;">4.88 / 5 composite score</span> &middot; 100% API recall &middot; 50 questions evaluated
+
 Vue Docs MCP provides deep access to the official [VueUse documentation](https://vueuse.org), covering 200+ composable utility functions for the Vue Composition API, including state management, browser APIs, sensors, network, animation, and more.
 
 ## Activation
@@ -60,3 +62,33 @@ Find related APIs, concepts, and documentation pages for a given VueUse composab
 | `debug_vueuse_issue` | `symptom`, `code_snippet` (optional) | Systematic debugging for composable issues: reactivity problems, SSR compatibility, lifecycle timing |
 | `compare_vueuse_apis` | `items` (comma-separated) | Side-by-side comparison (e.g. `useStorage, useLocalStorage` or `useDebounceFn, useThrottleFn`) |
 | `migrate_vueuse_pattern` | `from_pattern`, `to_pattern` | Migration guide between patterns or VueUse versions |
+
+## Benchmarks
+
+Evaluated on 50 VueUse questions scored by an LLM judge (Gemini, temperature 0) across 5 dimensions on a 1-5 scale.
+
+### Overall Scores
+
+| Metric | Vue Docs MCP |
+|---|---|
+| Relevance | **5.00** |
+| Completeness | **4.82** |
+| Correctness | **4.90** |
+| API Coverage | **4.78** |
+| Conciseness | **4.88** |
+| **Composite** | **4.88** |
+
+### Retrieval and Cost
+
+| Metric | Vue Docs MCP |
+|---|---|
+| Path Recall | **97.0%** |
+| API Recall | **100.0%** |
+| Avg Latency | 0.65s |
+| Cost per Query (user-facing) | **Free** |
+
+### Notes
+
+- VueUse achieves the highest composite score (4.88) across all three supported frameworks, with perfect 100% API recall.
+- The high scores reflect VueUse's consistent per-composable documentation structure, which maps cleanly to the adapter's directory-based entity extraction.
+- The evaluation framework is open source in the `eval/` directory.
