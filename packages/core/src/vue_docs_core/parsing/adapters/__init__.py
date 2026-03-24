@@ -3,11 +3,13 @@
 from vue_docs_core.parsing.adapters.base import SourceAdapter
 from vue_docs_core.parsing.adapters.vue import VueAdapter
 from vue_docs_core.parsing.adapters.vue_router import VueRouterAdapter
+from vue_docs_core.parsing.adapters.vueuse import VueUseAdapter
 
 # Registry mapping source name -> adapter class
 ADAPTER_REGISTRY: dict[str, type[SourceAdapter]] = {
     "vue": VueAdapter,
     "vue-router": VueRouterAdapter,
+    "vueuse": VueUseAdapter,
 }
 
 
@@ -27,5 +29,6 @@ __all__ = [
     "SourceAdapter",
     "VueAdapter",
     "VueRouterAdapter",
+    "VueUseAdapter",
     "get_adapter",
 ]

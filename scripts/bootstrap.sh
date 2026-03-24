@@ -24,6 +24,15 @@ else
     git -C "$PROJECT_ROOT/data/vue-router-docs" pull
 fi
 
+# Clone VueUse docs if not present
+if [ ! -d "$PROJECT_ROOT/data/vueuse-docs" ]; then
+    echo "Cloning VueUse documentation..."
+    git clone --depth 1 https://github.com/vueuse/vueuse.git "$PROJECT_ROOT/data/vueuse-docs"
+else
+    echo "VueUse docs already cloned, pulling latest..."
+    git -C "$PROJECT_ROOT/data/vueuse-docs" pull
+fi
+
 # Install dependencies
 echo "Installing dependencies with uv..."
 cd "$PROJECT_ROOT"

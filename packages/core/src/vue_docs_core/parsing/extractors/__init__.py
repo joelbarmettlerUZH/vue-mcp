@@ -4,11 +4,13 @@ from vue_docs_core.parsing.extractors.base import EntityExtractor
 from vue_docs_core.parsing.extractors.generic import GenericEntityExtractor
 from vue_docs_core.parsing.extractors.vue import VueEntityExtractor
 from vue_docs_core.parsing.extractors.vue_router import VueRouterEntityExtractor
+from vue_docs_core.parsing.extractors.vueuse import VueUseEntityExtractor
 
 # Registry mapping source name → extractor class
 EXTRACTOR_REGISTRY: dict[str, type[EntityExtractor]] = {
     "vue": VueEntityExtractor,
     "vue-router": VueRouterEntityExtractor,
+    "vueuse": VueUseEntityExtractor,
 }
 
 
@@ -24,5 +26,6 @@ __all__ = [
     "GenericEntityExtractor",
     "VueEntityExtractor",
     "VueRouterEntityExtractor",
+    "VueUseEntityExtractor",
     "get_extractor",
 ]

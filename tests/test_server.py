@@ -1606,10 +1606,10 @@ class TestFrameworkPreferences:
         ctx.enable_components = AsyncMock()
         ctx.disable_components = AsyncMock()
 
-        await set_framework_preferences(vue=True, vue_router=False, ctx=ctx)
+        await set_framework_preferences(vue=True, vue_router=False, vueuse=False, ctx=ctx)
 
         ctx.set_state.assert_called_once_with(
-            "framework_preferences", {"vue": True, "vue-router": False}
+            "framework_preferences", {"vue": True, "vue-router": False, "vueuse": False}
         )
 
     @pytest.mark.asyncio
