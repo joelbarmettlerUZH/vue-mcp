@@ -1,6 +1,6 @@
 # VueUse
 
-<span style="color: var(--vp-c-brand-1); font-weight: 600;">4.88 / 5 composite score</span> &middot; 100% API recall &middot; 50 questions evaluated
+<span style="color: var(--vp-c-brand-1); font-weight: 600;">4.89 / 5 composite score</span> &middot; 100% API recall &middot; 50 questions evaluated
 
 Vue Docs MCP provides deep access to the official [VueUse documentation](https://vueuse.org), covering 200+ composable utility functions for the Vue Composition API, including state management, browser APIs, sensors, network, animation, and more.
 
@@ -69,26 +69,45 @@ Evaluated on 50 VueUse questions scored by an LLM judge (Gemini, temperature 0) 
 
 ### Overall Scores
 
-| Metric | Vue Docs MCP |
-|---|---|
-| Relevance | **5.00** |
-| Completeness | **4.82** |
-| Correctness | **4.90** |
-| API Coverage | **4.78** |
-| Conciseness | **4.88** |
-| **Composite** | **4.88** |
+<ClientOnly>
+<ApexChart
+  type="radar"
+  height="400"
+  :options="{
+    chart: { toolbar: { show: false } },
+    xaxis: { categories: ['Relevance', 'Completeness', 'Correctness', 'API Coverage', 'Conciseness'] },
+    yaxis: { min: 0, max: 5, tickAmount: 5 },
+    colors: ['#42b883', '#f97316'],
+    legend: { position: 'bottom' },
+    markers: { size: 4 },
+  }"
+  :series="[
+    { name: 'Vue Docs MCP', data: [5.00, 4.88, 4.94, 4.86, 4.78] },
+    { name: 'Context7', data: [4.04, 3.54, 3.68, 4.10, 4.82] },
+  ]"
+/>
+</ClientOnly>
+
+| Metric | Vue Docs MCP | Context7 |
+|---|---|---|
+| Relevance | **5.00** | 4.04 |
+| Completeness | **4.88** | 3.54 |
+| Correctness | **4.94** | 3.68 |
+| API Coverage | **4.86** | 4.10 |
+| Conciseness | 4.78 | 4.82 |
+| **Composite** | **4.89** | **4.04** |
 
 ### Retrieval and Cost
 
-| Metric | Vue Docs MCP |
-|---|---|
-| Path Recall | **97.0%** |
-| API Recall | **100.0%** |
-| Avg Latency | 0.65s |
-| Cost per Query (user-facing) | **Free** |
+| Metric | Vue Docs MCP | Context7 |
+|---|---|---|
+| Path Recall | **97.0%** | 85.0% |
+| API Recall | **100.0%** | 92.0% |
+| Avg Latency | **0.78s** | 1.84s |
+| Cost per Query (user-facing) | **Free** | $0.002 |
 
 ### Notes
 
-- VueUse achieves the highest composite score (4.88) across all three supported frameworks, with perfect 100% API recall.
-- The high scores reflect VueUse's consistent per-composable documentation structure, which maps cleanly to the adapter's directory-based entity extraction.
+- VueUse achieves the highest composite score (4.89) across all three supported frameworks, with perfect 100% API recall.
+- Context7 performs notably better on VueUse (4.04 composite) than on Vue.js (2.41) or Vue Router (3.33), likely because VueUse's per-function documentation structure is clean and self-contained.
 - The evaluation framework is open source in the `eval/` directory.

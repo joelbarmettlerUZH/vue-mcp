@@ -4,7 +4,7 @@ layout: home
 hero:
   name: Vue Docs MCP
   text: Vue ecosystem docs for your AI assistant
-  tagline: "4.88/5 retrieval quality. 100% API recall. Free. Purpose-built for Vue."
+  tagline: "4.89/5 retrieval quality. 100% API recall. Free. Purpose-built for Vue."
   actions:
     - theme: brand
       text: Get Started
@@ -18,7 +18,7 @@ hero:
 
 features:
   - icon: "\U0001F3C6"
-    title: "4.88/5 Quality Score"
+    title: "4.89/5 Quality Score"
     details: "Scored by an independent LLM judge across 272 questions on relevance, completeness, correctness, and API coverage. 2x higher than general-purpose alternatives."
     link: /frameworks/
     linkText: See benchmarks

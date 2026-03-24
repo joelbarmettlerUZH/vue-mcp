@@ -16,6 +16,7 @@ CONTEXT7_URL = "https://mcp.context7.com/mcp"
 FRAMEWORK_TO_LIBRARY_ID: dict[str, str] = {
     "vue": "/vuejs/vue",
     "vue-router": "/vuejs/vue-router",
+    "vueuse": "/vueuse/vueuse",
 }
 
 

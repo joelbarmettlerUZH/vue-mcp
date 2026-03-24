@@ -8,7 +8,7 @@ Vue Docs MCP provides deep, structured access to the Vue ecosystem documentation
 |---|---|---|---|
 | [Vue.js](./vue) | [vuejs.org](https://vuejs.org) | 173 | **4.82 / 5** |
 | [Vue Router](./vue-router) | [router.vuejs.org](https://router.vuejs.org) | 49 | **4.78 / 5** |
-| [VueUse](./vueuse) | [vueuse.org](https://vueuse.org) | 50 | **4.88 / 5** |
+| [VueUse](./vueuse) | [vueuse.org](https://vueuse.org) | 50 | **4.89 / 5** |
 
 ## What Each Framework Provides
 
