@@ -1,21 +1,23 @@
-# Vue Documentation MCP Server
+# Vue Ecosystem MCP Server
 
-MCP server providing semantic search and retrieval over Vue.js documentation. Combines dense embeddings (Jina) and sparse
-search (BM25) to return structure-aware, readable documentation fragments.
+MCP server providing semantic search and retrieval over Vue ecosystem documentation. Supports multiple frameworks
+(Vue.js, Vue Router, and more planned). Combines dense embeddings (Jina) and sparse search (BM25) to return
+structure-aware, readable documentation fragments.
 
 ## Repository Structure
 
 ```
 packages/
-  core/       Shared library: models, clients (Jina, Qdrant, Gemini, BM25, PostgreSQL), parsing, retrieval
+  core/       Shared library: models, clients (Jina, Qdrant, Gemini, BM25, PostgreSQL), parsing, adapters
   ingestion/  CLI tool (Typer): scan → parse → enrich → embed → store
   server/     MCP server (FastMCP): tools, resources, prompts, query pipeline
 eval/         Evaluation suite: multi-provider comparison (ours vs Context7), LLM judge, metrics
 tests/        Root-level pytest suite
 scripts/      Deployment, backup, restore, and debug utilities
+docs/         Documentation site (VitePress), deployed to vue-mcp.org
 ```
 
-All packages use `hatchling` build backend, Python ≥3.13, and share `vue-docs-core` via `[tool.uv.sources]` workspace
+All packages use `hatchling` build backend, Python >=3.13, and share `vue-docs-core` via `[tool.uv.sources]` workspace
 references.
 
 ## Commands
@@ -25,18 +27,19 @@ All commands are available via `make`. Run `make help` to see the full list.
 | Command | What it does |
 |---|---|
 | `make install` | Install all workspace packages (`uv sync`) |
-| `make bootstrap` | Clone Vue docs + install dependencies |
+| `make bootstrap` | Clone Vue + Vue Router docs + install dependencies |
 | `make lint` | Run ruff linter (no changes) |
 | `make lint-fix` | Auto-fix lint issues |
 | `make format` | Apply formatting |
 | `make check` | Lint + format check (CI-friendly, no modifications) |
 | `make test` | Run tests (skips integration tests requiring live APIs) |
 | `make test-all` | Run all tests including integration tests |
-| `make ingest` | Run ingestion pipeline (incremental) |
+| `make ingest` | Run ingestion pipeline (incremental, all enabled sources) |
 | `make ingest-full` | Run ingestion pipeline (full re-index) |
 | `make serve` | Start the MCP server |
 | `make inspect FILE=<path>` | Debug chunk output for a markdown file |
 | `make pr-ready` | Fix lint + format + test (run before committing) |
+| `make deploy` | Deploy latest images to production (syncs compose file, pulls from GHCR, restarts) |
 | `make docker-build` | Build both Docker images locally |
 | `make docker-dev-up` | Start dev infra (postgres + qdrant only) |
 | `make docker-dev-down` | Stop dev infra |
@@ -59,6 +62,44 @@ Before committing, always run:
 make pr-ready
 ```
 
+## Multi-Framework Architecture
+
+The ingestion pipeline uses a **SourceAdapter** pattern to support multiple documentation sources. Each framework
+implements its own adapter with source-specific hooks, while sharing the common pipeline backbone.
+
+### SourceAdapter Protocol
+
+Each adapter (in `packages/core/src/vue_docs_core/parsing/adapters/`) implements:
+
+| Hook | Purpose |
+|---|---|
+| `post_clone(repo_root)` | Run after git clone (e.g. TypeDoc generation for Vue Router) |
+| `discover_files(docs_path)` | File discovery with filtering (e.g. exclude `zh/` translations) |
+| `parse_sort_keys(repo_root)` | Parse sidebar/navigation config into sort key map |
+| `clean_content(raw)` | Source-specific content cleaning (e.g. strip `<VueSchoolLink>`, API-style divs) |
+| `build_entity_dictionary(docs_path)` | Build API entity dictionary from docs |
+| `get_import_patterns()` | Regex patterns for matching import statements in code blocks |
+| `high_value_folder_pairs` | Folder pairs for HIGH-value cross-reference classification |
+
+### Registered Adapters
+
+| Source | Adapter | Key Behaviors |
+|---|---|---|
+| `vue` | `VueAdapter` | Strips `<div class="options-api">` wrappers, Playground links. Single `config.ts` sidebar. |
+| `vue-router` | `VueRouterAdapter` | Strips `<VueSchoolLink>`, `<RuleKitLink>`, `<script setup>` blocks. Excludes `zh/`. Split sidebar config (`config/en.ts`). Optional TypeDoc API generation (graceful skip if no npm). |
+
+### Adding a New Framework
+
+1. Create adapter in `packages/core/src/vue_docs_core/parsing/adapters/{name}.py`
+2. Register in `adapters/__init__.py` ADAPTER_REGISTRY
+3. Add `SourceDefinition` to `packages/core/src/vue_docs_core/data/sources.py` SOURCE_REGISTRY
+4. Optionally create entity extractor in `packages/core/src/vue_docs_core/parsing/extractors/`
+5. Add synonyms to `sources.py`
+6. Set `ENABLED_SOURCES=vue,vue-router,{name}` in `.env`
+
+The pipeline backbone (change detection, Gemini enrichment, Jina embedding, BM25, Qdrant upsert, state management)
+requires no changes. The server auto-discovers new sources and creates per-source tools, resources, and prompts.
+
 ## Deployment
 
 The server is deployed as a Docker Compose stack on an Infomaniak OpenStack VM.
@@ -66,10 +107,10 @@ The server is deployed as a Docker Compose stack on an Infomaniak OpenStack VM.
 ### Architecture
 
 ```
-Internet → Traefik (:80/:443, TLS via Let's Encrypt) → MCP Server (:8000, streamable-http)
-                                                             ├── PostgreSQL (shared data layer)
-                                                             ├── Qdrant (vector search)
-                                                             └── Ingestion (self-scheduling, writes to PG + Qdrant)
+Internet -> Traefik (:80/:443, TLS via Let's Encrypt) -> MCP Server (:8000, streamable-http)
+                                                              |-- PostgreSQL (shared data layer)
+                                                              |-- Qdrant (vector search)
+                                                              +-- Ingestion (self-scheduling, writes to PG + Qdrant)
 ```
 
 ### Services
@@ -79,14 +120,14 @@ Internet → Traefik (:80/:443, TLS via Let's Encrypt) → MCP Server (:8000, st
 | `mcp-server` | `ghcr.io/.../vue-mcp-server` | FastMCP server (streamable-http transport) |
 | `ingestion` | `ghcr.io/.../vue-mcp-ingestion` | Self-scheduling pipeline (`watch` command, runs every 24h) |
 | `postgres` | `postgres:17-alpine` | Shared data: entities, synonyms, pages, BM25 model, index state |
-| `qdrant` | `qdrant/qdrant:v1.17.0` | Vector database (dense + sparse hybrid search) |
+| `qdrant` | `qdrant/qdrant:v1.17.0` | Vector database (dense + sparse hybrid search), collection: `vue_ecosystem` |
 | `traefik` | `traefik:v3.6` | Reverse proxy, TLS, rate limiting (60 req/min, 10 concurrent, 100KB body) |
 
 ### Docker Images
 
 One multi-target `Dockerfile` produces two images:
-- **server**: `vue-docs-core` + `fastmcp` + `psycopg` + `sqlalchemy`. No git.
-- **ingestion**: `vue-docs-core` + `typer` + `rich` + `psycopg` + `sqlalchemy` + `git`.
+- **server**: `vue-docs-core` + `fastmcp` + `psycopg` + `sqlalchemy`. No git, no npm.
+- **ingestion**: `vue-docs-core` + `typer` + `rich` + `psycopg` + `sqlalchemy` + `git`. No npm (TypeDoc generation skipped in Docker).
 
 Build locally: `make docker-build`
 
@@ -123,10 +164,12 @@ DOMAIN=$(hostname -I | awk '{print $1}').nip.io make docker-local-up
 ### Production Deployment
 
 ```bash
-# On the VM: /opt/vue-mcp/.env.production (from .env.production.example)
-# Set ACME_EMAIL, DOMAIN, POSTGRES_PASSWORD, API keys
-make docker-prod-up
+make deploy   # syncs compose file + scripts, pulls latest GHCR images, restarts stack
 ```
+
+The deploy script (`scripts/deploy.sh`) SCPs `docker-compose.prod.yml`, `backup.sh`, and `restore.sh` to the server,
+then pulls images and restarts services. The `.env.production` file on the server (not in git) provides secrets and
+`ENABLED_SOURCES`.
 
 ### Server Transport
 
@@ -142,7 +185,7 @@ models, the server reloads them automatically with zero downtime.
 ### Backup & Restore
 
 ```bash
-scripts/backup.sh [backup_dir]    # pg_dump + Qdrant snapshot, 7-day rotation
+scripts/backup.sh [backup_dir]    # pg_dump + Qdrant snapshot (vue_ecosystem collection), 7-day rotation
 scripts/restore.sh <dump.sql.gz> [snapshot]  # Restore from backup
 ```
 
@@ -150,11 +193,11 @@ scripts/restore.sh <dump.sql.gz> [snapshot]  # Restore from backup
 
 - `.github/workflows/ci.yml`: Lint + test on PRs
 - `.github/workflows/build-and-push.yml`: Build both images, push to GHCR on push to main
-- `scripts/deploy.sh`: SSH to VM, pull images, restart stack
+- `scripts/deploy.sh`: SSH to VM, sync config files, pull images, restart stack
 
 ## Design Principles
 
-- **Structure-aware chunking.** Respect the documentation's heading hierarchy (page → section → subsection → block).
+- **Structure-aware chunking.** Respect the documentation's heading hierarchy (page -> section -> subsection -> block).
   Never use fixed-size token chunking.
 - **Readable reconstruction.** Reassemble results into coherent mini-documents using metadata and sort keys, returned in
   documentation reading order, preserving the natural flow of the docs.
@@ -163,10 +206,13 @@ scripts/restore.sh <dump.sql.gz> [snapshot]  # Restore from backup
 - **Hybrid retrieval.** Every search combines dense semantic embeddings, BM25 sparse search, and entity metadata
   boosting. No single retrieval method is trusted alone.
 - **Unified embedding space.** All content types (prose, code, images, summaries, HyPE questions) share one embedding
-  model (jina-embeddings-v4). No separate code or image embedding models.
+  model (jina-embeddings-v5-text-small). No separate code or image embedding models.
 - **Cost-conscious.** Per-query API cost must stay under $0.001. Favor token-based pricing, cheap LLMs for query-time
   tasks, and deterministic processing wherever possible.
 - **Incremental by design.** Content hashing at every layer to skip unchanged files during re-indexing.
+- **Adapter-driven multi-framework.** Each documentation source owns its customization via a SourceAdapter. The shared
+  pipeline backbone handles change detection, enrichment, embedding, indexing, and state. No source-specific conditionals
+  in the pipeline.
 
 ## Coding Conventions
 
@@ -199,8 +245,8 @@ scripts/restore.sh <dump.sql.gz> [snapshot]  # Restore from backup
 9. **SQLAlchemy ORM for PostgreSQL.** ORM models in `vue_docs_core.clients.postgres`. Sync `psycopg` driver. Tables
    created via `Base.metadata.create_all()`. No separate migration tool or SQL scripts.
 
-10. **Curated data as package code.** Static lookup tables (e.g., synonym table) live as Python dicts in
-    `vue_docs_core.data`, not as external files.
+10. **Curated data as package code.** Static lookup tables (e.g., synonym tables, source definitions) live as Python
+    dicts in `vue_docs_core.data`, not as external files.
 
 ## Testing
 
@@ -209,14 +255,18 @@ scripts/restore.sh <dump.sql.gz> [snapshot]  # Restore from backup
 - **Integration tests:** Marked with `@pytest.mark.integration`, skipped by default (require live API keys)
 - **Mocking pattern:** Use `unittest.mock.AsyncMock` for FastMCP Context and async clients. Use `patch()` on client
   methods. Helper functions (`_mock_ctx()`, `_make_hit()`) over pytest fixtures for test data construction.
+- **Adapter in tests:** When testing parsing on real Vue docs, pass `content_cleaner=VueAdapter().clean_content` to
+  `parse_markdown_file()`. The generic parser does not do source-specific cleaning.
 - **Test before commit:** `make test` must pass (or `make pr-ready` for the full check)
 
 ## Key Technical Decisions
 
 | Decision | Rationale |
 |---|---|
+| SourceAdapter pattern | Each framework owns its customization hooks. Pipeline backbone stays generic. No conditionals per source. |
 | Jina AI as unified search provider | Single vendor, single token pool, single embedding space |
 | No LLM at query time | Per-query LLM cost + hallucination risk; vocab gap handled by HyPE at indexing time |
+| Per-source BM25 models | Each library has distinct vocabulary and term frequencies. Shared BM25 would dilute IDF weights. |
 | `bm25s` for sparse vectors | Lightweight, no external API needed |
 | `markdown-it-py` for parsing | Token/tree API, heading hierarchy, code blocks, links, images |
 | `rapidfuzz` for entity matching | Sub-millisecond fuzzy matching with typo tolerance |
@@ -232,9 +282,9 @@ scripts/restore.sh <dump.sql.gz> [snapshot]  # Restore from backup
 
 | Service | Purpose | Client |
 |---|---|---|
-| Jina AI | Embeddings (jina-embeddings-v4) + reranking (jina-reranker-v3) | `httpx` |
-| Google Gemini | Contextual enrichment, HyPE generation, RAPTOR summaries (ingestion only) | `google-genai` |
-| Qdrant | Vector database (dense + sparse hybrid search) | `qdrant-client` |
+| Jina AI | Embeddings (jina-embeddings-v5-text-small) + reranking (jina-reranker-v3) | `httpx` |
+| Google Gemini | Contextual enrichment, HyPE generation, RAPTOR summaries (ingestion only, gemini-2.5-flash) | `google-genai` |
+| Qdrant | Vector database (dense + sparse hybrid search), collection `vue_ecosystem` | `qdrant-client` |
 | PostgreSQL | Shared data layer (entities, synonyms, pages, index state, BM25 model) | `sqlalchemy` + `psycopg` |
 
 API keys configured via `.env` (see `.env.example`). All API calls go through clients in
@@ -253,13 +303,14 @@ Don't manually enforce style rules. Run `make lint-fix && make format` instead.
 
 ## Data Flow
 
-**Ingestion** (offline, self-scheduled): Clone/pull Vue docs → parse into structural chunks → extract entities +
-cross-refs → enrich with contextual prefixes (Gemini) → generate HyPE questions (Gemini) → embed all (Jina) → generate
-BM25 sparse vectors → upsert to Qdrant → save entities, synonyms, pages, BM25 model, and index state to PostgreSQL.
+**Ingestion** (offline, self-scheduled, per source): Clone/pull docs -> adapter.discover_files() -> parse into
+structural chunks (adapter.clean_content()) -> extract entities + cross-refs -> enrich with contextual prefixes
+(Gemini) -> generate HyPE questions (Gemini) -> embed all (Jina) -> generate BM25 sparse vectors -> upsert to Qdrant ->
+save entities, synonyms, pages, BM25 model, and index state to PostgreSQL.
 
-**Query** (online, per-request): Embed query (Jina) + BM25 sparse vector → hybrid search (Qdrant: dense + BM25, native
-RRF) → resolve HyPE hits → cross-reference expansion → reranking (Jina) → reconstruction (sort by reading order, merge
-adjacent, format). No LLM calls at query time.
+**Query** (online, per-request): Embed query (Jina) + BM25 sparse vector -> hybrid search (Qdrant: dense + BM25,
+native RRF) -> resolve HyPE hits -> cross-reference expansion -> reranking (Jina) -> reconstruction (sort by reading
+order, merge adjacent, format). No LLM calls at query time.
 
 ## Do Not
 
@@ -273,3 +324,5 @@ adjacent, format). No LLM calls at query time.
 - Write raw SQL. Use SQLAlchemy ORM models in `vue_docs_core.clients.postgres`.
 - Store generated data as files. All ingestion output goes to PostgreSQL and Qdrant.
 - Add `init-db.sql` or migration scripts. SQLAlchemy `create_tables()` is the source of truth for schema.
+- Add source-specific conditionals in the pipeline. Use the SourceAdapter pattern instead.
+- Hardcode Vue-specific logic in the generic markdown parser. Put it in the adapter's `clean_content()`.
