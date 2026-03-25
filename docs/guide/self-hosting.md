@@ -33,9 +33,7 @@ Edit `.env` with your API keys:
 JINA_API_KEY=your-jina-api-key
 GEMINI_API_KEY=your-gemini-api-key
 QDRANT_URL=http://localhost:6333
-QDRANT_API_KEY=
-QDRANT_COLLECTION=vue_docs
-VUE_DOCS_PATH=./data/vue-docs/src
+DATABASE_URL=postgresql+psycopg://vue_mcp:vue_mcp@localhost:5432/vue_mcp
 ```
 
 ### 3. Run the ingestion pipeline
@@ -147,11 +145,9 @@ Backups are rotated on a 7-day schedule.
 |---|---|---|
 | `JINA_API_KEY` | *required* | Jina AI API key |
 | `GEMINI_API_KEY` | *required* | Google Gemini API key |
+| `DATABASE_URL` | *required* | PostgreSQL connection string |
 | `QDRANT_URL` | `http://localhost:6333` | Qdrant server URL |
-| `QDRANT_API_KEY` | *none* | Qdrant authentication key |
-| `QDRANT_COLLECTION` | `vue_docs` | Qdrant collection name |
-| `VUE_DOCS_PATH` | `./data/vue-docs/src` | Path to Vue docs source |
-| `DATABASE_URL` | *none* | PostgreSQL connection string |
+| `DATA_PATH` | `./data` | Working directory for cloned docs |
 | `SERVER_TRANSPORT` | `stdio` | `stdio` or `streamable-http` |
 | `SERVER_HOST` | `0.0.0.0` | Server bind address |
 | `SERVER_PORT` | `8000` | Server port |

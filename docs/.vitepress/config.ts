@@ -96,7 +96,7 @@ export default defineConfig({
     footer: {
       message:
         'Released under the <a href="https://github.com/joelbarmettlerUZH/vue-mcp/blob/main/LICENSE.md">FSL-1.1-ALv2 License</a>.',
-      copyright: "Copyright &copy; 2025 Joel Barmettler",
+      copyright: "Copyright &copy; 2026 Joel Barmettler",
     },
 
     search: {

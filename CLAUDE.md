@@ -1,8 +1,8 @@
 # Vue Ecosystem MCP Server
 
 MCP server providing semantic search and retrieval over Vue ecosystem documentation. Supports multiple frameworks
-(Vue.js, Vue Router, and more planned). Combines dense embeddings (Jina) and sparse search (BM25) to return
-structure-aware, readable documentation fragments.
+(Vue.js, Vue Router, VueUse). Combines dense embeddings (Jina) and sparse search (BM25) to return structure-aware,
+readable documentation fragments.
 
 ## Repository Structure
 
@@ -27,7 +27,7 @@ All commands are available via `make`. Run `make help` to see the full list.
 | Command | What it does |
 |---|---|
 | `make install` | Install all workspace packages (`uv sync`) |
-| `make bootstrap` | Clone Vue + Vue Router docs + install dependencies |
+| `make bootstrap` | Clone Vue + Vue Router + VueUse docs + install dependencies |
 | `make lint` | Run ruff linter (no changes) |
 | `make lint-fix` | Auto-fix lint issues |
 | `make format` | Apply formatting |
@@ -39,7 +39,8 @@ All commands are available via `make`. Run `make help` to see the full list.
 | `make serve` | Start the MCP server |
 | `make inspect FILE=<path>` | Debug chunk output for a markdown file |
 | `make pr-ready` | Fix lint + format + test (run before committing) |
-| `make deploy` | Deploy latest images to production (syncs compose file, pulls from GHCR, restarts) |
+| `make deploy` | Show deploy info (deploys are automated via GitHub Actions) |
+| `make deploy-manual` | Deploy manually (escape hatch, bypasses CI/CD) |
 | `make docker-build` | Build both Docker images locally |
 | `make docker-dev-up` | Start dev infra (postgres + qdrant only) |
 | `make docker-dev-down` | Stop dev infra |
@@ -87,6 +88,7 @@ Each adapter (in `packages/core/src/vue_docs_core/parsing/adapters/`) implements
 |---|---|---|
 | `vue` | `VueAdapter` | Strips `<div class="options-api">` wrappers, Playground links. Single `config.ts` sidebar. |
 | `vue-router` | `VueRouterAdapter` | Strips `<VueSchoolLink>`, `<RuleKitLink>`, `<script setup>` blocks. Excludes `zh/`. Split sidebar config (`config/en.ts`). Optional TypeDoc API generation (graceful skip if no npm). |
+| `vueuse` | `VueUseAdapter` | Strips `<CourseLink>`, `<script setup>` blocks, TwoSlash cut markers. Frontmatter-based category sorting (no static sidebar config). Directory-name entity extraction. |
 
 ### Adding a New Framework
 
@@ -143,7 +145,7 @@ In `packages/core/src/vue_docs_core/data/sources.py`:
 make docker-dev-up
 
 # Clone the docs and run ingestion
-ENABLED_SOURCES=vue,vue-router,{name} uv run vue-docs-ingest run --source {name} --verbose
+uv run vue-docs-ingest run --source {name} --verbose
 
 # Verify with dry run first if unsure
 uv run vue-docs-ingest run --source {name} --dry-run
@@ -189,12 +191,13 @@ make pr-ready   # lint + format + test
 #### 10. Deploy
 
 ```bash
-# Add ENABLED_SOURCES to .env.production on the server (via SSH)
-# Then:
-git push                    # triggers GHCR image build
-gh run watch $(gh run list --workflow=build-and-push.yml -L 1 --json databaseId -q '.[0].databaseId')
-make deploy                 # syncs compose file, pulls images, restarts
+git push    # triggers automated build -> backup -> deploy pipeline
 ```
+
+Pushing to main triggers the full CI/CD pipeline (`.github/workflows/deploy.yml`):
+1. Build & push Docker images to GHCR
+2. Backup PostgreSQL (encrypted artifact, 90-day retention)
+3. Deploy: sync compose + scripts, write `.env.production` from GitHub secrets, pull & restart
 
 The ingestion container will clone the new docs and run the pipeline on its next cycle. To trigger immediately:
 
@@ -226,7 +229,7 @@ Internet -> Traefik (:80/:443, TLS via Let's Encrypt) -> MCP Server (:8000, stre
 | `ingestion` | `ghcr.io/.../vue-mcp-ingestion` | Self-scheduling pipeline (`watch` command, runs every 24h) |
 | `postgres` | `postgres:17-alpine` | Shared data: entities, synonyms, pages, BM25 model, index state |
 | `qdrant` | `qdrant/qdrant:v1.17.0` | Vector database (dense + sparse hybrid search), collection: `vue_ecosystem` |
-| `traefik` | `traefik:v3.6` | Reverse proxy, TLS, rate limiting (60 req/min, 10 concurrent, 100KB body) |
+| `traefik` | `traefik:v3.6` | Reverse proxy, TLS, rate limiting (60 req/min, 10 concurrent). No response buffering (required for SSE notifications). |
 
 ### Docker Images
 
@@ -268,13 +271,17 @@ DOMAIN=$(hostname -I | awk '{print $1}').nip.io make docker-local-up
 
 ### Production Deployment
 
-```bash
-make deploy   # syncs compose file + scripts, pulls latest GHCR images, restarts stack
+Deploys are automated via GitHub Actions. Pushing to `main` triggers the full pipeline:
+
+```
+build (GHCR images) -> backup (encrypted PG artifact) -> deploy (sync + restart)
 ```
 
-The deploy script (`scripts/deploy.sh`) SCPs `docker-compose.prod.yml`, `backup.sh`, and `restore.sh` to the server,
-then pulls images and restarts services. The `.env.production` file on the server (not in git) provides secrets and
-`ENABLED_SOURCES`.
+The pipeline (`.github/workflows/deploy.yml`) writes `.env.production` on the server from GitHub secrets. No manual
+env file management needed. For emergency manual deploys: `make deploy-manual`.
+
+All registered sources are enabled by default. No `ENABLED_SOURCES` env var is needed. Adding a new source to
+`SOURCE_REGISTRY` automatically makes it available.
 
 ### Server Transport
 
@@ -289,16 +296,36 @@ models, the server reloads them automatically with zero downtime.
 
 ### Backup & Restore
 
+Every deploy automatically backs up PostgreSQL before restarting. Backups are encrypted and stored as GitHub Actions
+artifacts with 90-day retention. Qdrant snapshots are stored on the server with 7-day rotation.
+
 ```bash
-scripts/backup.sh [backup_dir]    # pg_dump + Qdrant snapshot (vue_ecosystem collection), 7-day rotation
-scripts/restore.sh <dump.sql.gz> [snapshot]  # Restore from backup
+# Manual backup (on server or locally via scripts/)
+scripts/backup.sh [backup_dir] [compose_file] [env_file]
+
+# Restore from backup
+scripts/restore.sh <dump.sql.gz> [qdrant_snapshot] [compose_file] [env_file]
 ```
+
+To restore from a GitHub Actions artifact, use the manual restore workflow:
+`.github/workflows/restore.yml` (trigger via Actions tab with the run ID of the backup to restore from).
 
 ### CI/CD
 
-- `.github/workflows/ci.yml`: Lint + test on PRs
-- `.github/workflows/build-and-push.yml`: Build both images, push to GHCR on push to main
-- `scripts/deploy.sh`: SSH to VM, sync config files, pull images, restart stack
+| Workflow | Trigger | What it does |
+|---|---|---|
+| `ci.yml` | Pull requests | Lint + format check + tests |
+| `deploy.yml` | Push to main | Build images -> backup PG (encrypted artifact) -> deploy to production |
+| `restore.yml` | Manual (workflow_dispatch) | Download encrypted PG artifact, decrypt, restore on server |
+| `deploy-docs.yml` | Push to `docs/**` | Build and deploy VitePress docs to GitHub Pages |
+
+**GitHub Secrets** (required for deploy pipeline):
+`DEPLOY_SSH_KEY`, `DEPLOY_HOST`, `DEPLOY_USER`, `JINA_API_KEY`, `GEMINI_API_KEY`, `POSTGRES_PASSWORD`, `ACME_EMAIL`,
+`BACKUP_ENCRYPTION_KEY`
+
+**GitHub Variables**: `DOMAIN`
+
+`scripts/deploy.sh` remains as a manual escape hatch (`make deploy-manual`).
 
 ## Design Principles
 
@@ -379,7 +406,7 @@ scripts/restore.sh <dump.sql.gz> [snapshot]  # Restore from backup
 | PostgreSQL as shared data layer | Decouples ingestion and server containers, atomic writes, simple backup (`pg_dump`) |
 | SQLAlchemy ORM | Typed models, `create_tables()` for schema management, no raw SQL |
 | Two Docker images from one Dockerfile | Shared base layer, separate concerns (server vs ingestion), independent restart |
-| Traefik for reverse proxy | Auto TLS via Let's Encrypt, Docker-native service discovery, built-in rate limiting |
+| Traefik for reverse proxy | Auto TLS via Let's Encrypt, Docker-native service discovery, built-in rate limiting. No `buffering` middleware (breaks SSE streaming for MCP notifications). |
 | Self-scheduling ingestion | `watch` command with configurable interval, no host cron jobs needed |
 | Server hot reload | Background task polls PG every 60s, zero-downtime data refresh |
 
@@ -431,3 +458,6 @@ order, merge adjacent, format). No LLM calls at query time.
 - Add `init-db.sql` or migration scripts. SQLAlchemy `create_tables()` is the source of truth for schema.
 - Add source-specific conditionals in the pipeline. Use the SourceAdapter pattern instead.
 - Hardcode Vue-specific logic in the generic markdown parser. Put it in the adapter's `clean_content()`.
+- Add Traefik's `buffering` middleware. It breaks SSE streaming, which MCP needs for `tools/list_changed` notifications.
+- Use `ENABLED_SOURCES` to gate framework availability. All sources in `SOURCE_REGISTRY` are always enabled.
+  Session visibility is controlled by `set_framework_preferences`.

@@ -134,9 +134,8 @@ jobs:
           POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
           DATABASE_URL=postgresql+psycopg://vue_mcp:${{ secrets.POSTGRES_PASSWORD }}@postgres:5432/vue_mcp
 
-          # Qdrant (internal network only, no auth needed)
+          # Qdrant (internal network, no auth)
           QDRANT_URL=http://qdrant:6333
-          QDRANT_COLLECTION=vue_ecosystem
 
           # Server
           SERVER_TRANSPORT=streamable-http

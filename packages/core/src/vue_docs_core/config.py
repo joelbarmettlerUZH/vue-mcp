@@ -23,8 +23,6 @@ class Settings(BaseSettings):
     qdrant_collection: str = "vue_ecosystem"
 
     # Paths
-    vue_docs_path: str = "./data/vue-docs/src"  # Kept for backward compat
-    sources_data_path: str = "./data"
     data_path: str = "./data"
 
     # Sources (empty = all registered sources)

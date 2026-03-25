@@ -92,7 +92,7 @@ def run(
         help=f"Source to ingest (default: all enabled). Available: {', '.join(SOURCE_REGISTRY)}",
     ),
     docs_path: str = typer.Option("", help="Override docs source directory path"),
-    data_path: str = typer.Option(settings.sources_data_path, help="Path to shared data directory"),
+    data_path: str = typer.Option(settings.data_path, help="Path to shared data directory"),
     full: bool = typer.Option(False, "--full", help="Force full re-index of all files"),
     dry_run: bool = typer.Option(
         False, "--dry-run", help="Show what would change without processing"
@@ -150,7 +150,7 @@ def run(
 @app.command()
 def watch(
     interval_hours: int = typer.Option(24, help="Hours between ingestion runs"),
-    data_path: str = typer.Option(settings.sources_data_path, help="Path to shared data directory"),
+    data_path: str = typer.Option(settings.data_path, help="Path to shared data directory"),
     full: bool = typer.Option(False, "--full", help="Force full re-index on first run"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable debug logging"),
 ):
