@@ -27,8 +27,8 @@ class Settings(BaseSettings):
     sources_data_path: str = "./data"
     data_path: str = "./data"
 
-    # Sources
-    enabled_sources: str = "vue"
+    # Sources (empty = all registered sources)
+    enabled_sources: str = ""
 
     # Server
     server_transport: str = "stdio"

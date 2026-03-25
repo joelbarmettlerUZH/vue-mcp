@@ -325,9 +325,14 @@ SOURCE_REGISTRY: dict[str, SourceDefinition] = {
 }
 
 
-def get_enabled_sources(enabled_csv: str) -> list[SourceDefinition]:
-    """Return SourceDefinition objects for the comma-separated enabled source names."""
+def get_enabled_sources(enabled_csv: str = "") -> list[SourceDefinition]:
+    """Return SourceDefinition objects for the comma-separated enabled source names.
+
+    If *enabled_csv* is empty or not provided, returns **all** registered sources.
+    """
     names = [s.strip() for s in enabled_csv.split(",") if s.strip()]
+    if not names:
+        return list(SOURCE_REGISTRY.values())
     sources = []
     for name in names:
         if name in SOURCE_REGISTRY:

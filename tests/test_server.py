@@ -1582,20 +1582,22 @@ class TestFrameworkPreferences:
         assert "Inactive" in result
 
     @pytest.mark.asyncio
-    async def test_preferences_skips_unknown_sources(self):
-        """Sources not in enabled_sources are silently skipped."""
+    async def test_preferences_activates_all_requested(self):
+        """All requested sources are activated."""
         from vue_docs_server.main import set_framework_preferences
 
         ctx = _mock_ctx()
         ctx.enable_components = AsyncMock()
         ctx.disable_components = AsyncMock()
 
-        # vue_router is not in enabled_sources (default is "vue" only)
-        result = await set_framework_preferences(vue=True, vue_router=True, ctx=ctx)
+        result = await set_framework_preferences(vue=True, vue_router=True, vueuse=False, ctx=ctx)
 
-        # Only vue should be activated (vue-router is not in _source_info)
         assert "Vue.js" in result
-        ctx.enable_components.assert_called_once_with(tags={"vue"})
+        assert "Vue Router" in result
+        assert ctx.enable_components.call_count == 2
+        ctx.enable_components.assert_any_call(tags={"vue"})
+        ctx.enable_components.assert_any_call(tags={"vue-router"})
+        ctx.disable_components.assert_called_once_with(tags={"vueuse"})
 
     @pytest.mark.asyncio
     async def test_preferences_stores_state(self):

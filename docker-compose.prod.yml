@@ -21,7 +21,6 @@ services:
       QDRANT_URL: http://qdrant:6333
       DATABASE_URL: postgresql+psycopg://vue_mcp:${POSTGRES_PASSWORD}@postgres:5432/vue_mcp
       JINA_API_KEY: ${JINA_API_KEY}
-      ENABLED_SOURCES: ${ENABLED_SOURCES:-vue}
       MASK_ERROR_DETAILS: ${MASK_ERROR_DETAILS:-true}
     depends_on:
       postgres:
@@ -38,13 +37,12 @@ services:
       - "traefik.http.routers.mcp.entrypoints=websecure"
       - "traefik.http.routers.mcp.tls=true"
       - "traefik.http.routers.mcp.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.mcp.middlewares=ratelimit,connlimit,bodylimit"
+      - "traefik.http.routers.mcp.middlewares=ratelimit,connlimit"
       - "traefik.http.services.mcp.loadbalancer.server.port=8000"
       - "traefik.http.middlewares.ratelimit.ratelimit.average=60"
       - "traefik.http.middlewares.ratelimit.ratelimit.burst=20"
       - "traefik.http.middlewares.ratelimit.ratelimit.period=1m"
       - "traefik.http.middlewares.connlimit.inflightreq.amount=10"
-      - "traefik.http.middlewares.bodylimit.buffering.maxRequestBodyBytes=102400"
     mem_limit: 2g
     cpus: 1.0
     logging: *default-logging
@@ -63,7 +61,6 @@ services:
       DATA_PATH: /app/data
       JINA_API_KEY: ${JINA_API_KEY}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
-      ENABLED_SOURCES: ${ENABLED_SOURCES:-vue}
     volumes:
       - vue-docs-data:/app/data
     depends_on:

@@ -1,0 +1,81 @@
+name: Restore from Backup
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Workflow run ID to restore PG backup from (find in Actions tab)"
+        required: true
+        type: string
+      restore_qdrant:
+        description: "Also restore Qdrant from the server's latest local backup"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Download encrypted backup artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: pg-backup-${{ inputs.run_id }}
+          path: backup
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Decrypt backup
+        run: |
+          echo "${{ secrets.BACKUP_ENCRYPTION_KEY }}" | gpg --batch --yes --passphrase-fd 0 \
+            --decrypt -o backup/pg-backup.sql.gz backup/pg-backup.sql.gz.gpg
+
+      - name: Upload backup to server
+        env:
+          DEPLOY_DIR: ${{ vars.DEPLOY_DIR || '/opt/vue-mcp' }}
+        run: |
+          scp backup/pg-backup.sql.gz \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/pg-restore.sql.gz"
+
+      - name: Run restore on server
+        env:
+          DEPLOY_DIR: ${{ vars.DEPLOY_DIR || '/opt/vue-mcp' }}
+        run: |
+          QDRANT_ARG=""
+          if [ "${{ inputs.restore_qdrant }}" = "true" ]; then
+            # Find latest local Qdrant snapshot on server
+            QDRANT_ARG=$(ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+              "ls -t /opt/backups/vue-mcp/qdrant-*.snapshot 2>/dev/null | head -1" || true)
+          fi
+
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+            bash ${DEPLOY_DIR}/restore.sh \
+              /tmp/pg-restore.sql.gz \
+              ${QDRANT_ARG} \
+              docker-compose.prod.yml \
+              .env.production
+          "
+
+      - name: Verify restore
+        env:
+          DEPLOY_DIR: ${{ vars.DEPLOY_DIR || '/opt/vue-mcp' }}
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+            cd ${DEPLOY_DIR}
+            echo '=== Entity counts ==='
+            docker compose --env-file .env.production -f docker-compose.prod.yml \
+              exec -T postgres psql -U vue_mcp vue_mcp -c 'SELECT source, count(*) FROM entities GROUP BY source ORDER BY source;'
+            echo '=== Service status ==='
+            docker compose --env-file .env.production -f docker-compose.prod.yml \
+              ps --format 'table {{.Name}}\t{{.Status}}'
+          "
