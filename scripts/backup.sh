@@ -2,23 +2,41 @@
 set -euo pipefail
 
 # Backup PostgreSQL and Qdrant data.
-# Usage: ./scripts/backup.sh [backup_dir]
+# Works with any compose file (prod, local, dev) by routing all calls through
+# Docker exec instead of assuming localhost port access.
+#
+# Usage: ./scripts/backup.sh [backup_dir] [compose_file] [env_file]
 # Schedule via cron: 0 3 * * * /opt/vue-mcp/scripts/backup.sh
 
 BACKUP_DIR="${1:-/opt/backups/vue-mcp}"
+COMPOSE_FILE="${2:-docker-compose.prod.yml}"
+ENV_FILE="${3:-.env.production}"
 DATE=$(date +%Y%m%d-%H%M%S)
-COMPOSE_DIR="${COMPOSE_DIR:-/opt/vue-mcp}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# When deployed flat to /opt/vue-mcp/, SCRIPT_DIR == COMPOSE_DIR.
+# When run from repo, scripts/ is one level down from the compose files.
+if [ -f "$SCRIPT_DIR/$COMPOSE_FILE" ]; then
+  COMPOSE_DIR="${COMPOSE_DIR:-$SCRIPT_DIR}"
+else
+  COMPOSE_DIR="${COMPOSE_DIR:-$(dirname "$SCRIPT_DIR")}"
+fi
 ERRORS=0
+
+# Build compose command with optional env file
+COMPOSE_CMD="docker compose -f $COMPOSE_DIR/$COMPOSE_FILE"
+if [ -f "$COMPOSE_DIR/$ENV_FILE" ]; then
+  COMPOSE_CMD="$COMPOSE_CMD --env-file $COMPOSE_DIR/$ENV_FILE"
+fi
 
 mkdir -p "$BACKUP_DIR"
 
 echo "=== Backup started at $(date) ==="
+echo "  Compose: $COMPOSE_FILE, env: $ENV_FILE"
 
 # 1. PostgreSQL dump
 echo "Dumping PostgreSQL..."
 PG_FILE="$BACKUP_DIR/pg-$DATE.sql.gz"
-docker compose -f "$COMPOSE_DIR/docker-compose.prod.yml" exec -T postgres \
-  pg_dump -U vue_mcp vue_mcp | gzip > "$PG_FILE"
+$COMPOSE_CMD exec -T postgres pg_dump -U vue_mcp vue_mcp | gzip > "$PG_FILE"
 
 if [ ! -s "$PG_FILE" ]; then
   echo "  [ERROR] PostgreSQL dump is empty or failed"
@@ -28,28 +46,33 @@ else
   echo "  Saved: pg-$DATE.sql.gz ($(du -h "$PG_FILE" | cut -f1))"
 fi
 
-# 2. Qdrant snapshot
+# 2. Qdrant snapshot (via mcp-server container which can reach qdrant)
 echo "Creating Qdrant snapshot..."
 QDRANT_FILE="$BACKUP_DIR/qdrant-$DATE.snapshot"
-SNAP_RESPONSE=$(curl -sf -X POST "http://localhost:6333/collections/vue_ecosystem/snapshots" 2>/dev/null || true)
-if [ -n "$SNAP_RESPONSE" ]; then
-  SNAP_NAME=$(echo "$SNAP_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['result']['name'])" 2>/dev/null || true)
-  if [ -n "$SNAP_NAME" ]; then
-    curl -sf "http://localhost:6333/collections/vue_ecosystem/snapshots/$SNAP_NAME" \
-      -o "$QDRANT_FILE"
-    if [ ! -s "$QDRANT_FILE" ]; then
-      echo "  [ERROR] Qdrant snapshot is empty"
-      rm -f "$QDRANT_FILE"
-      ERRORS=$((ERRORS + 1))
-    else
-      echo "  Saved: qdrant-$DATE.snapshot ($(du -h "$QDRANT_FILE" | cut -f1))"
-    fi
-  else
-    echo "  [ERROR] Could not parse Qdrant snapshot name"
+SNAP_NAME=$($COMPOSE_CMD exec -T mcp-server python3 -c "
+import urllib.request, json
+req = urllib.request.Request('http://qdrant:6333/collections/vue_ecosystem/snapshots', method='POST')
+resp = urllib.request.urlopen(req)
+data = json.loads(resp.read())
+print(data['result']['name'])
+" 2>/dev/null || true)
+
+if [ -n "$SNAP_NAME" ]; then
+  $COMPOSE_CMD exec -T mcp-server python3 -c "
+import urllib.request, sys
+resp = urllib.request.urlopen('http://qdrant:6333/collections/vue_ecosystem/snapshots/$SNAP_NAME')
+sys.stdout.buffer.write(resp.read())
+" > "$QDRANT_FILE" 2>/dev/null
+
+  if [ ! -s "$QDRANT_FILE" ]; then
+    echo "  [ERROR] Qdrant snapshot is empty"
+    rm -f "$QDRANT_FILE"
     ERRORS=$((ERRORS + 1))
+  else
+    echo "  Saved: qdrant-$DATE.snapshot ($(du -h "$QDRANT_FILE" | cut -f1))"
   fi
 else
-  echo "  [ERROR] Qdrant snapshot failed (is Qdrant running?)"
+  echo "  [ERROR] Qdrant snapshot failed (is mcp-server running?)"
   ERRORS=$((ERRORS + 1))
 fi
 

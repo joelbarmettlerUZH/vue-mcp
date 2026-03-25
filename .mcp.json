@@ -1,8 +1,12 @@
 {
   "mcpServers": {
-    "vue-docs": {
+    "vue-docs-remote": {
       "type": "http",
       "url": "https://mcp.vue-mcp.org/mcp"
+    },
+    "vue-docs-local": {
+      "type": "http",
+      "url": "https://127.0.0.1.nip.io/mcp"
     }
   }
 }
