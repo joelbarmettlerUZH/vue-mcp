@@ -76,19 +76,20 @@ jobs:
       - name: Run pre-deploy backup on server
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
-            "bash ${{ vars.DEPLOY_DIR || '/opt/vue-mcp' }}/backup.sh /tmp/pre-deploy-backup docker-compose.prod.yml .env.production"
+            "rm -rf /tmp/pre-deploy-backup && bash ${{ vars.DEPLOY_DIR || '/opt/vue-mcp' }}/backup.sh /tmp/pre-deploy-backup docker-compose.prod.yml .env.production"
 
       - name: Download PG backup from server
         run: |
           mkdir -p backup
-          scp "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/pre-deploy-backup/pg-*.sql.gz" backup/pg-backup.sql.gz
+          scp "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/pre-deploy-backup/pg-*.sql.gz" backup/
 
       - name: Encrypt backup
         run: |
+          PG_DUMP=$(ls -t backup/pg-*.sql.gz | head -1)
           echo "${{ secrets.BACKUP_ENCRYPTION_KEY }}" | gpg --batch --yes --passphrase-fd 0 \
             --symmetric --cipher-algo AES256 \
-            -o backup/pg-backup.sql.gz.gpg backup/pg-backup.sql.gz
-          rm backup/pg-backup.sql.gz
+            -o backup/pg-backup.sql.gz.gpg "$PG_DUMP"
+          rm backup/pg-*.sql.gz
 
       - name: Upload encrypted backup artifact
         uses: actions/upload-artifact@v4
