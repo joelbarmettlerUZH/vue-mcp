@@ -33,7 +33,8 @@ All results include source references so you can verify them.
 | [Vue Router](https://router.vuejs.org) | :white_check_mark: Available | Official router: navigation guards, dynamic routes |
 | [VueUse](https://vueuse.org) | :white_check_mark: Available | 200+ composable utility functions |
 | [Vite](https://vite.dev) | :white_check_mark: Available | Next-generation frontend build tool |
-| [Vitest](https://vitest.dev), [Nuxt](https://nuxt.com), [Pinia](https://pinia.vuejs.org), and 12 more | :calendar: Planned | |
+| [Vitest](https://vitest.dev) | :white_check_mark: Available | Vite-native testing framework |
+| [Nuxt](https://nuxt.com), [Pinia](https://pinia.vuejs.org), and 11 more | :calendar: Planned | |
 
 See the full list on the [Supported Frameworks](/frameworks/) page. Each framework gets its own tools, resources, prompts, and benchmarks.
 

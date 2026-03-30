@@ -447,6 +447,7 @@ async def set_framework_preferences(
     vue_router: bool = False,
     vueuse: bool = False,
     vite: bool = False,
+    vitest: bool = False,
     ctx: Context = None,
 ) -> str:
     """Activate or deactivate Vue ecosystem framework documentation.
@@ -456,7 +457,13 @@ async def set_framework_preferences(
 
     Vue is active by default. Set other frameworks to true to activate them.
     """
-    prefs = {"vue": vue, "vue-router": vue_router, "vueuse": vueuse, "vite": vite}
+    prefs = {
+        "vue": vue,
+        "vue-router": vue_router,
+        "vueuse": vueuse,
+        "vite": vite,
+        "vitest": vitest,
+    }
 
     # Map param names to source registry names
     activated = []

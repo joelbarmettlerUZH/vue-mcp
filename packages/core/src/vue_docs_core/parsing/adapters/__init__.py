@@ -2,6 +2,7 @@
 
 from vue_docs_core.parsing.adapters.base import SourceAdapter
 from vue_docs_core.parsing.adapters.vite import ViteAdapter
+from vue_docs_core.parsing.adapters.vitest import VitestAdapter
 from vue_docs_core.parsing.adapters.vue import VueAdapter
 from vue_docs_core.parsing.adapters.vue_router import VueRouterAdapter
 from vue_docs_core.parsing.adapters.vueuse import VueUseAdapter
@@ -12,6 +13,7 @@ ADAPTER_REGISTRY: dict[str, type[SourceAdapter]] = {
     "vue-router": VueRouterAdapter,
     "vueuse": VueUseAdapter,
     "vite": ViteAdapter,
+    "vitest": VitestAdapter,
 }
 
 
@@ -30,6 +32,7 @@ __all__ = [
     "ADAPTER_REGISTRY",
     "SourceAdapter",
     "ViteAdapter",
+    "VitestAdapter",
     "VueAdapter",
     "VueRouterAdapter",
     "VueUseAdapter",

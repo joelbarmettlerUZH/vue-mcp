@@ -1,0 +1,670 @@
+[
+  {
+    "intent": "api_lookup",
+    "expected_answer": "The `recordArtifact` function records an artifact during test execution and returns it. It expects a task (a test or suite) as the first parameter and an object assignable to `TestArtifact` as the second.",
+    "relevant_paths": [
+      "api/advanced/artifacts.md"
+    ],
+    "question": "What are the parameters for the recordArtifact function and what does it do?",
+    "difficulty": "easy",
+    "relevant_apis": [
+      "recordArtifact"
+    ],
+    "framework": "vitest"
+  },
+  {
+    "question": "Is it possible to share data between my tests and the Node.js process in Vitest?",
+    "difficulty": "easy",
+    "relevant_apis": [
+      "TestCase",
+      "TestSuite"
+    ],
+    "relevant_paths": [
+      "api/advanced/metadata.md"
+    ],
+    "expected_answer": "Yes, you can use the `meta` property available on every task (suite or test) to share data between tests and the Node.js process. It is one-way communication: data can be modified from the test context but not from the Node.js process.",
+    "intent": "conceptual",
+    "framework": "vitest"
+  },
+  {
+    "question": "When should I use test annotations versus test artifacts?",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "recordArtifact"
+    ],
+    "relevant_paths": [
+      "api/advanced/artifacts.md"
+    ],
+    "expected_answer": "You should use `recordArtifact` if you need to store custom data or files during a test. You should use annotations if you just want to add simple notes or context to your tests, as they are designed for end-users.",
+    "intent": "comparison",
+    "framework": "vitest"
+  },
+  {
+    "relevant_apis": [
+      "onTestCaseArtifactRecord",
+      "recordArtifact"
+    ],
+    "question": "How do I interact with recorded artifacts in a custom reporter?",
+    "difficulty": "hard",
+    "relevant_paths": [
+      "api/advanced/reporters.md"
+    ],
+    "expected_answer": "The `onTestCaseArtifactRecord` hook is associated with the `recordArtifact` utility. When `recordArtifact` is invoked, Vitest serializes the artifact and sends it to the main thread where the reporter can interact with it. Note that annotations, despite being built on artifacts, do not trigger this hook.",
+    "intent": "howto",
+    "framework": "vitest"
+  },
+  {
+    "intent": "howto",
+    "expected_answer": "You can implement a class that implements the methods of the `VitestRunner` interface and specify the path to this file in the `runner` option of your configuration file.",
+    "relevant_paths": [
+      "api/advanced/runner.md"
+    ],
+    "question": "How can I define a custom test runner in Vitest?",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "VitestRunner"
+    ],
+    "framework": "vitest"
+  },
+  {
+    "intent": "api_lookup",
+    "expected_answer": "The `onInit` hook is called when Vitest is initiated or started, but before the tests are filtered. It provides access to the `Vitest` instance.",
+    "relevant_paths": [
+      "api/advanced/reporters.md"
+    ],
+    "relevant_apis": [
+      "onInit"
+    ],
+    "question": "What is the purpose of the onInit hook in a reporter?",
+    "difficulty": "easy",
+    "framework": "vitest"
+  },
+  {
+    "relevant_paths": [
+      "api/advanced/plugin.md"
+    ],
+    "question": "How does the configureVitest plugin hook differ from a reporter's onInit hook?",
+    "difficulty": "hard",
+    "relevant_apis": [
+      "configureVitest",
+      "onInit"
+    ],
+    "intent": "conceptual",
+    "expected_answer": "The `configureVitest` plugin hook runs early in the lifecycle, allowing you to manipulate global configuration like coverage and reporters. Unlike `reporter.onInit`, it runs before the test projects are fully resolved or reporters are initialized.",
+    "framework": "vitest"
+  },
+  {
+    "intent": "debugging",
+    "expected_answer": "If a test fails during execution, `testCase.result()` returns a `TestResultFailed` object, which contains the `state` as 'failed' and an array of `errors` containing the `TestError` objects.",
+    "relevant_paths": [
+      "api/advanced/test-case.md"
+    ],
+    "relevant_apis": [
+      "TestCase"
+    ],
+    "question": "How do I access the error information for a test case that failed?",
+    "difficulty": "medium",
+    "framework": "vitest"
+  },
+  {
+    "intent": "howto",
+    "expected_answer": "You can use the `vitest` instance's `vitest.config` property to mutate settings, or use `injectTestProjects` to programmatically add new projects to the test run.",
+    "relevant_paths": [
+      "api/advanced/plugin.md"
+    ],
+    "question": "How can a plugin dynamically modify the Vitest configuration?",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "VitestPluginContext",
+      "injectTestProjects"
+    ],
+    "framework": "vitest"
+  },
+  {
+    "relevant_apis": [
+      "TestCase",
+      "TestSuite"
+    ],
+    "question": "What is the difference between the name and fullName properties on a test case?",
+    "difficulty": "easy",
+    "relevant_paths": [
+      "api/advanced/test-case.md"
+    ],
+    "expected_answer": "The `fullName` property of a `TestCase` or `TestSuite` includes the name of the task along with all its parent suites, separated by a '>' symbol.",
+    "intent": "api_lookup",
+    "framework": "vitest"
+  },
+  {
+    "intent": "conceptual",
+    "expected_answer": "When running inside a worker thread, Vitest uses a message port to send data. If running in a child process, it uses `process.send`. If running in the browser, data is stringified using the `flatted` package.",
+    "relevant_paths": [
+      "api/advanced/metadata.md"
+    ],
+    "relevant_apis": [
+      "TestCase"
+    ],
+    "question": "How does Vitest communicate task metadata between workers and the main process?",
+    "difficulty": "medium",
+    "framework": "vitest"
+  },
+  {
+    "relevant_apis": [
+      "TestArtifactBase"
+    ],
+    "question": "Why are the attachments in my custom artifact empty when I try to access them in the reporter?",
+    "difficulty": "hard",
+    "relevant_paths": [
+      "api/advanced/artifacts.md"
+    ],
+    "expected_answer": "If you disable `api.allowWrite`, Vitest will empty the `attachments` array on every artifact before reporting it. This is a security measure.",
+    "intent": "debugging",
+    "framework": "vitest"
+  },
+  {
+    "relevant_paths": [
+      "api/advanced/runner.md"
+    ],
+    "question": "How do I create my own custom test function like test.todo or test.each?",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "TestRunner"
+    ],
+    "intent": "howto",
+    "expected_answer": "To create a custom test method, use the `createTaskCollector` utility provided by `TestRunner`. It behaves like a standard test but allows you to call custom logic during the collection phase.",
+    "framework": "vitest"
+  },
+  {
+    "expected_answer": "The `at` method in `TestCollection` returns the test or suite at a specific index. It supports negative indexes, similar to standard array methods.",
+    "intent": "api_lookup",
+    "question": "How can I retrieve a specific test or suite from a TestCollection?",
+    "difficulty": "easy",
+    "relevant_apis": [
+      "TestCollection"
+    ],
+    "relevant_paths": [
+      "api/advanced/test-collection.md"
+    ],
+    "framework": "vitest"
+  },
+  {
+    "expected_answer": "The `experimental_defineCacheKeyGenerator` allows plugins to define a custom generator applied before hashing the cache key. This is useful if your plugin registers with different options that affect the transformation result and should invalidate the cache.",
+    "intent": "conceptual",
+    "relevant_apis": [
+      "experimental_defineCacheKeyGenerator"
+    ],
+    "question": "When should I use experimental_defineCacheKeyGenerator in a Vitest plugin?",
+    "difficulty": "hard",
+    "relevant_paths": [
+      "api/advanced/plugin.md"
+    ],
+    "framework": "vitest"
+  },
+  {
+    "intent": "howto",
+    "expected_answer": "You can use `vitest.provide(key, value)` on the Vitest instance or a specific Project to share data, and access it in tests using the `inject(key)` function.",
+    "relevant_paths": [
+      "api/advanced/test-project.md"
+    ],
+    "question": "What is the recommended way to share values from the main thread to my tests?",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "Vitest",
+      "TestProject"
+    ],
+    "framework": "vitest"
+  },
+  {
+    "question": "What is the difference between onTestModuleQueued and onTestModuleCollected?",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "onTestModuleQueued",
+      "onTestModuleCollected"
+    ],
+    "relevant_paths": [
+      "api/advanced/reporters.md"
+    ],
+    "expected_answer": "`onTestModuleQueued` is called before the setup file and test module are imported. `onTestModuleCollected` is called after all tests in the file have been collected and the task tree is populated, but before results are available.",
+    "intent": "comparison",
+    "framework": "vitest"
+  },
+  {
+    "relevant_paths": [
+      "api/advanced/test-case.md"
+    ],
+    "relevant_apis": [
+      "TestCase"
+    ],
+    "question": "How is the unique ID of a test generated, and can I parse it?",
+    "difficulty": "easy",
+    "intent": "conceptual",
+    "expected_answer": "The id is deterministic and based on the project name, module ID, and the order of the test within the suite. You should not try to parse it as it can change format (e.g., start with a minus).",
+    "framework": "vitest"
+  },
+  {
+    "expected_answer": "You can use the `experimental_parseSpecification` method on the `Vitest` instance. It statically analyzes the file using Rollup's AST parser to collect tests without executing them.",
+    "intent": "howto",
+    "question": "Is there a way to collect tests from a file without actually running the code?",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "experimental_parseSpecification"
+    ],
+    "relevant_paths": [
+      "api/advanced/vitest.md"
+    ],
+    "framework": "vitest"
+  },
+  {
+    "intent": "debugging",
+    "expected_answer": "If the test was running too fast, it is possible for both `onTestCaseReady` and `onTestCaseResult` to be scheduled in the same microtask, which might cause the result to be available when the 'ready' event triggers.",
+    "relevant_paths": [
+      "api/advanced/reporters.md"
+    ],
+    "question": "Why does my reporter show a 'passed' state for a test even inside the 'onTestCaseReady' hook?",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "onTestCaseReady",
+      "onTestCaseResult"
+    ],
+    "framework": "vitest"
+  },
+  {
+    "intent": "howto",
+    "expected_answer": "You can use `vitest.projects` to map over the projects and access their `name` property.",
+    "relevant_paths": [
+      "api/advanced/test-project.md"
+    ],
+    "question": "How do I list all test projects currently registered in the Vitest instance?",
+    "difficulty": "easy",
+    "relevant_apis": [
+      "Vitest",
+      "TestProject"
+    ],
+    "framework": "vitest"
+  },
+  {
+    "relevant_apis": [
+      "TestCase",
+      "TestSuite"
+    ],
+    "question": "Are there any restrictions on what data I can put in the task meta property?",
+    "difficulty": "medium",
+    "relevant_paths": [
+      "api/advanced/metadata.md"
+    ],
+    "expected_answer": "Yes, but you must ensure that your metadata can be serialized into JSON, as Vitest uses RPC or structured cloning to send this data to the Node.js process.",
+    "intent": "conceptual",
+    "framework": "vitest"
+  },
+  {
+    "expected_answer": "If you rely on a browser feature in a plugin, `project.browser` might not be initialized yet. You should use the `reporter.onBrowserInit` event instead.",
+    "intent": "debugging",
+    "relevant_apis": [
+      "configureVitest",
+      "onBrowserInit"
+    ],
+    "question": "Why is my plugin failing to access browser-specific properties in the configureVitest hook?",
+    "difficulty": "hard",
+    "relevant_paths": [
+      "api/advanced/plugin.md"
+    ],
+    "framework": "vitest"
+  },
+  {
+    "expected_answer": "`TestSpecification` objects are used to filter or run specific tests or modules, and they are created using `project.createSpecification(moduleId, locations)`.",
+    "intent": "api_lookup",
+    "question": "What is the purpose of a TestSpecification and how do I create one?",
+    "difficulty": "easy",
+    "relevant_apis": [
+      "TestSpecification",
+      "TestProject"
+    ],
+    "relevant_paths": [
+      "api/advanced/test-specification.md"
+    ],
+    "framework": "vitest"
+  },
+  {
+    "relevant_paths": [
+      "api/advanced/runner.md"
+    ],
+    "question": "What does the moduleRunner property do in a custom runner?",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "VitestRunner"
+    ],
+    "intent": "conceptual",
+    "expected_answer": "The `moduleRunner` is an instance of `ModuleRunner` from `vite/module-runner`. It is used to process files, resolve imports, and transform code at runtime so the environment understands it.",
+    "framework": "vitest"
+  },
+  {
+    "relevant_paths": [
+      "api/advanced/vitest.md"
+    ],
+    "question": "When should I use rerunTestSpecifications instead of runTestSpecifications?",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "rerunTestSpecifications",
+      "runTestSpecifications"
+    ],
+    "intent": "comparison",
+    "expected_answer": "Use `vitest.rerunTestSpecifications(specifications)` if you want to trigger the `onWatcherRerun` and `onTestsRerun` reporter events, whereas `runTestSpecifications` does not trigger these events.",
+    "framework": "vitest"
+  },
+  {
+    "intent": "howto",
+    "expected_answer": "The `TestCollection` is an iterator. You can spread it into an array (`[...collection]`) or use a `for...of` loop to iterate over its children.",
+    "relevant_paths": [
+      "api/advanced/test-collection.md"
+    ],
+    "relevant_apis": [
+      "TestCollection"
+    ],
+    "question": "How do I iterate over the tests and suites in a TestCollection?",
+    "difficulty": "easy",
+    "framework": "vitest"
+  },
+  {
+    "intent": "api_lookup",
+    "expected_answer": "`TestModule.moduleId` corresponds to the absolute file path and Vite's ModuleGraph ID, while `relativeModuleId` is the path relative to the project root.",
+    "relevant_paths": [
+      "api/advanced/test-module.md"
+    ],
+    "question": "What is the difference between TestModule.moduleId and TestModule.relativeModuleId?",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "TestModule"
+    ],
+    "framework": "vitest"
+  },
+  {
+    "question": "Can I treat a TestModule instance like a TestSuite?",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "TestModule",
+      "TestSuite"
+    ],
+    "relevant_paths": [
+      "api/advanced/test-module.md"
+    ],
+    "expected_answer": "`TestModule` inherits all methods from `TestSuite`. This means you can use `children`, `state()`, and `meta()` on a module instance just like you would on a suite.",
+    "intent": "conceptual",
+    "framework": "vitest"
+  },
+  {
+    "intent": "debugging",
+    "expected_answer": "The `serializedConfig` is a getter that serializes the config every time it is accessed. This means it always returns a new object reference, so `project.serializedConfig === project.serializedConfig` will be false.",
+    "relevant_paths": [
+      "api/advanced/test-project.md"
+    ],
+    "relevant_apis": [
+      "TestProject"
+    ],
+    "question": "Why does my serializedConfig equality check fail?",
+    "difficulty": "hard",
+    "framework": "vitest"
+  },
+  {
+    "intent": "howto",
+    "expected_answer": "You can use `project.matchesTestGlob(moduleId)` to verify if a file is considered a test file by the current project configuration.",
+    "relevant_paths": [
+      "api/advanced/test-project.md"
+    ],
+    "relevant_apis": [
+      "TestProject"
+    ],
+    "question": "How do I check if a file is a regular test file within a project?",
+    "difficulty": "easy",
+    "framework": "vitest"
+  },
+  {
+    "relevant_paths": [
+      "api/advanced/test-specification.md"
+    ],
+    "relevant_apis": [
+      "TestSpecification"
+    ],
+    "question": "What does the pool property on a TestSpecification represent?",
+    "difficulty": "medium",
+    "intent": "conceptual",
+    "expected_answer": "`TestSpecification.pool` indicates which pool (e.g., 'forks' or 'threads') the module will run in. In future versions, a project will only support a single pool, so this will be simplified.",
+    "framework": "vitest"
+  },
+  {
+    "intent": "howto",
+    "expected_answer": "You can use `suite.children.allTests()` or `suite.children.allSuites()` to recursively find all nested tests or suites, as standard iteration only covers the immediate children.",
+    "relevant_paths": [
+      "api/advanced/test-suite.md"
+    ],
+    "relevant_apis": [
+      "TestCollection"
+    ],
+    "question": "How do I recursively find all nested tests within a suite?",
+    "difficulty": "medium",
+    "framework": "vitest"
+  },
+  {
+    "relevant_paths": [
+      "api/advanced/test-suite.md"
+    ],
+    "relevant_apis": [
+      "TestSuite"
+    ],
+    "question": "How do I check if a suite passed successfully?",
+    "difficulty": "easy",
+    "intent": "api_lookup",
+    "expected_answer": "`TestSuite.ok()` checks if the suite has any failed tests or if the suite itself failed to collect. If it returns false, you should check `errors()` for details.",
+    "framework": "vitest"
+  },
+  {
+    "relevant_apis": [
+      "Vitest"
+    ],
+    "question": "How do I access reported tasks in Vitest 4?",
+    "difficulty": "medium",
+    "relevant_paths": [
+      "api/advanced/vitest.md"
+    ],
+    "expected_answer": "You can use `vitest.state.getReportedEntity(task)` to access the reported task entity. The old `idMap` property is deprecated and will be removed.",
+    "intent": "migration",
+    "framework": "vitest"
+  },
+  {
+    "relevant_paths": [
+      "api/hooks.md"
+    ],
+    "relevant_apis": [
+      "aroundAll"
+    ],
+    "question": "How do aroundAll hooks behave in nested test suites?",
+    "difficulty": "hard",
+    "intent": "conceptual",
+    "expected_answer": "When using `aroundAll` hooks, parent suite's `aroundAll` wraps around child suite's execution. This allows for hierarchical context management, such as nested AsyncLocalStorage contexts.",
+    "framework": "vitest"
+  },
+  {
+    "intent": "howto",
+    "expected_answer": "The `aroundEach` hook receives a `runTest` function that must be called. It allows you to run code before and after a test, and if you use fixtures inside the test, they are initialized before `runTest()` and torn down after the `aroundEach` hook finishes.",
+    "relevant_paths": [
+      "api/hooks.md"
+    ],
+    "relevant_apis": [
+      "aroundEach"
+    ],
+    "question": "Why must I call runTest() in an aroundEach hook?",
+    "difficulty": "medium",
+    "framework": "vitest"
+  },
+  {
+    "intent": "howto",
+    "expected_answer": "`onTestFinished` is useful for cleaning up resources, like closing a database connection or clearing a spy, that are created inside a test, ensuring they are always cleaned up even if assertions fail.",
+    "relevant_paths": [
+      "api/hooks.md"
+    ],
+    "relevant_apis": [
+      "onTestFinished"
+    ],
+    "question": "When is onTestFinished useful in my tests?",
+    "difficulty": "easy",
+    "framework": "vitest"
+  },
+  {
+    "intent": "comparison",
+    "expected_answer": "`assertType` is for type-checking, while `expectTypeOf` provides a more fluent API for asserting types. Both run only when `--typecheck` is passed.",
+    "relevant_paths": [
+      "api/assert-type.md",
+      "api/expect-typeof.md"
+    ],
+    "relevant_apis": [
+      "assertType",
+      "expectTypeOf"
+    ],
+    "question": "What is the difference between assertType and expectTypeOf?",
+    "difficulty": "medium",
+    "framework": "vitest"
+  },
+  {
+    "relevant_paths": [
+      "api/expect.md"
+    ],
+    "relevant_apis": [
+      "expect",
+      "soft"
+    ],
+    "question": "What is the difference between expect and expect.soft?",
+    "difficulty": "easy",
+    "intent": "comparison",
+    "expected_answer": "`expect.soft` allows the test to continue after a failure, marking it as failed but not terminating, whereas a standard `expect` terminates the test immediately.",
+    "framework": "vitest"
+  },
+  {
+    "intent": "conceptual",
+    "expected_answer": "`expect.poll` is used to retry an assertion until it succeeds or times out. It is useful for flaky tests or waiting for asynchronous changes in the DOM.",
+    "relevant_paths": [
+      "api/expect.md"
+    ],
+    "relevant_apis": [
+      "poll"
+    ],
+    "question": "Why should I use expect.poll?",
+    "difficulty": "medium",
+    "framework": "vitest"
+  },
+  {
+    "relevant_paths": [
+      "api/browser/assertions.md"
+    ],
+    "question": "What is the benefit of using expect.element in Browser Mode?",
+    "difficulty": "easy",
+    "relevant_apis": [
+      "expect"
+    ],
+    "intent": "conceptual",
+    "expected_answer": "`expect.element` provides built-in retry-ability for DOM assertions in Browser Mode, making tests less flaky when waiting for elements to appear or change content.",
+    "framework": "vitest"
+  },
+  {
+    "relevant_paths": [
+      "api/browser/assertions.md"
+    ],
+    "question": "Why is my test failing with toBeInTheDocument when the element exists in memory?",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "toBeInTheDocument",
+      "toContainElement"
+    ],
+    "intent": "debugging",
+    "expected_answer": "No, `toBeInTheDocument` does not find detached elements. The element must be in the document. For detached elements, use `toContainElement` instead.",
+    "framework": "vitest"
+  },
+  {
+    "expected_answer": "`toMatchScreenshot` supports `comparatorOptions` like `allowedMismatchedPixelRatio` and `threshold`. Always set `comparatorName` to 'pixelmatch' for proper TypeScript type inference.",
+    "intent": "api_lookup",
+    "relevant_apis": [
+      "toMatchScreenshot"
+    ],
+    "question": "How can I control the sensitivity of visual regression tests?",
+    "difficulty": "hard",
+    "relevant_paths": [
+      "api/browser/assertions.md"
+    ],
+    "framework": "vitest"
+  },
+  {
+    "relevant_apis": [
+      "userEvent"
+    ],
+    "question": "Why would I need to use userEvent.setup() instead of the default userEvent instance?",
+    "difficulty": "medium",
+    "relevant_paths": [
+      "api/browser/interactivity.md"
+    ],
+    "expected_answer": "`userEvent.setup()` creates a new instance that maintains its own keyboard state, which is necessary for complex sequences like pressing Shift and holding it while typing. Standard methods use the shared default instance.",
+    "intent": "conceptual",
+    "framework": "vitest"
+  },
+  {
+    "question": "When should I use userEvent.fill over userEvent.type?",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "userEvent"
+    ],
+    "relevant_paths": [
+      "api/browser/interactivity.md"
+    ],
+    "expected_answer": "`locator.fill()` is faster as it focuses and sets the value directly, but it does not support special keyboard syntax like `{Shift}` or `{selectall}`. Use `userEvent.type()` if you need granular control.",
+    "intent": "comparison",
+    "framework": "vitest"
+  },
+  {
+    "relevant_apis": [
+      "Locator"
+    ],
+    "question": "What is the difference between locator.elements() and locator.all()?",
+    "difficulty": "easy",
+    "relevant_paths": [
+      "api/browser/locators.md"
+    ],
+    "expected_answer": "`locator.elements()` returns an array of DOM elements, while `locator.all()` returns an array of new Locator instances for each match.",
+    "intent": "comparison",
+    "framework": "vitest"
+  },
+  {
+    "relevant_apis": [
+      "locators"
+    ],
+    "question": "Can I add custom locator methods to my browser tests?",
+    "difficulty": "medium",
+    "relevant_paths": [
+      "api/browser/locators.md"
+    ],
+    "expected_answer": "Yes, you can use `locators.extend` to define custom methods that return selector strings or new locators, which will then be available on the global `page` and any `locator`.",
+    "intent": "howto",
+    "framework": "vitest"
+  },
+  {
+    "question": "Why must I await the render function in vitest-browser-react?",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "render"
+    ],
+    "relevant_paths": [
+      "api/browser/react.md"
+    ],
+    "expected_answer": "`render` in `vitest-browser-react` is asynchronous to correctly handle React's `Suspense` component.",
+    "intent": "conceptual",
+    "framework": "vitest"
+  },
+  {
+    "relevant_apis": [
+      "render"
+    ],
+    "question": "How do I wrap my component with a provider when rendering in vitest-browser-react?",
+    "difficulty": "easy",
+    "relevant_paths": [
+      "api/browser/react.md"
+    ],
+    "expected_answer": "You can provide a `wrapper` component in the `render` options to wrap your component with data providers or other contexts.",
+    "intent": "howto",
+    "framework": "vitest"
+  }
+]

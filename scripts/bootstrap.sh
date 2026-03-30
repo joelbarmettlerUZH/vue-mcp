@@ -42,6 +42,15 @@ else
     git -C "$PROJECT_ROOT/data/vite-docs" pull
 fi
 
+# Clone Vitest docs if not present
+if [ ! -d "$PROJECT_ROOT/data/vitest-docs" ]; then
+    echo "Cloning Vitest documentation..."
+    git clone --depth 1 https://github.com/vitest-dev/vitest.git "$PROJECT_ROOT/data/vitest-docs"
+else
+    echo "Vitest docs already cloned, pulling latest..."
+    git -C "$PROJECT_ROOT/data/vitest-docs" pull
+fi
+
 # Install dependencies
 echo "Installing dependencies with uv..."
 cd "$PROJECT_ROOT"

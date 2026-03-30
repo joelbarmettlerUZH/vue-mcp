@@ -1599,6 +1599,7 @@ class TestFrameworkPreferences:
         ctx.enable_components.assert_any_call(tags={"vue-router"})
         ctx.disable_components.assert_any_call(tags={"vueuse"})
         ctx.disable_components.assert_any_call(tags={"vite"})
+        ctx.disable_components.assert_any_call(tags={"vitest"})
 
     @pytest.mark.asyncio
     async def test_preferences_stores_state(self):
@@ -1613,7 +1614,7 @@ class TestFrameworkPreferences:
 
         ctx.set_state.assert_called_once_with(
             "framework_preferences",
-            {"vue": True, "vue-router": False, "vueuse": False, "vite": False},
+            {"vue": True, "vue-router": False, "vueuse": False, "vite": False, "vitest": False},
         )
 
     @pytest.mark.asyncio

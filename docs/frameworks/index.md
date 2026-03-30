@@ -10,6 +10,7 @@ Vue Docs MCP provides deep, structured access to the Vue ecosystem documentation
 | [Vue Router](./vue-router) | [router.vuejs.org](https://router.vuejs.org) | 49 | **4.78 / 5** |
 | [VueUse](./vueuse) | [vueuse.org](https://vueuse.org) | 50 | **4.89 / 5** |
 | [Vite](./vite) | [vite.dev](https://vite.dev) | 49 | **4.94 / 5** |
+| [Vitest](./vitest) | [vitest.dev](https://vitest.dev) | TBD | TBD |
 
 ## What Each Framework Provides
 
@@ -26,7 +27,7 @@ When two or more frameworks are active, a cross-framework `ecosystem_search` too
 Only **Vue.js** is enabled by default. Call `set_framework_preferences` to activate additional frameworks for the current session:
 
 ```
-set_framework_preferences(vue=true, vue_router=true, vueuse=true, vite=true)
+set_framework_preferences(vue=true, vue_router=true, vueuse=true, vite=true, vitest=true)
 ```
 
 ### Parameters
@@ -37,6 +38,7 @@ set_framework_preferences(vue=true, vue_router=true, vueuse=true, vite=true)
 | `vue_router` | `boolean` | `false` | Enable Vue Router documentation |
 | `vueuse` | `boolean` | `false` | Enable VueUse documentation |
 | `vite` | `boolean` | `false` | Enable Vite documentation |
+| `vitest` | `boolean` | `false` | Enable Vitest documentation |
 
 After calling this, your AI assistant will have access to tools, resources, and prompts for all enabled frameworks. When more than one framework is active, an `ecosystem_search` tool becomes available that searches across all frameworks simultaneously.
 
@@ -50,7 +52,7 @@ Read `ecosystem://preferences` to check which frameworks are currently active. R
 | [Vue Router](https://router.vuejs.org) | :white_check_mark: Available |
 | [VueUse](https://vueuse.org) | :white_check_mark: Available |
 | [Vite](https://vite.dev) | :white_check_mark: Available |
-| [Vitest](https://vitest.dev) | :calendar: Planned |
+| [Vitest](https://vitest.dev) | :white_check_mark: Available |
 | [Nuxt](https://nuxt.com) | :calendar: Planned |
 | [Pinia](https://pinia.vuejs.org) | :calendar: Planned |
 | [Vue DevTools](https://devtools.vuejs.org) | :calendar: Planned |
