@@ -1,6 +1,7 @@
 """Pluggable source adapters for different documentation sources."""
 
 from vue_docs_core.parsing.adapters.base import SourceAdapter
+from vue_docs_core.parsing.adapters.vite import ViteAdapter
 from vue_docs_core.parsing.adapters.vue import VueAdapter
 from vue_docs_core.parsing.adapters.vue_router import VueRouterAdapter
 from vue_docs_core.parsing.adapters.vueuse import VueUseAdapter
@@ -10,6 +11,7 @@ ADAPTER_REGISTRY: dict[str, type[SourceAdapter]] = {
     "vue": VueAdapter,
     "vue-router": VueRouterAdapter,
     "vueuse": VueUseAdapter,
+    "vite": ViteAdapter,
 }
 
 
@@ -27,6 +29,7 @@ def get_adapter(source_name: str) -> SourceAdapter:
 __all__ = [
     "ADAPTER_REGISTRY",
     "SourceAdapter",
+    "ViteAdapter",
     "VueAdapter",
     "VueRouterAdapter",
     "VueUseAdapter",

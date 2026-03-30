@@ -33,6 +33,15 @@ else
     git -C "$PROJECT_ROOT/data/vueuse-docs" pull
 fi
 
+# Clone Vite docs if not present
+if [ ! -d "$PROJECT_ROOT/data/vite-docs" ]; then
+    echo "Cloning Vite documentation..."
+    git clone --depth 1 https://github.com/vitejs/vite.git "$PROJECT_ROOT/data/vite-docs"
+else
+    echo "Vite docs already cloned, pulling latest..."
+    git -C "$PROJECT_ROOT/data/vite-docs" pull
+fi
+
 # Install dependencies
 echo "Installing dependencies with uv..."
 cd "$PROJECT_ROOT"

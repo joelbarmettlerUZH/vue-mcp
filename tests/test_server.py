@@ -1597,7 +1597,8 @@ class TestFrameworkPreferences:
         assert ctx.enable_components.call_count == 2
         ctx.enable_components.assert_any_call(tags={"vue"})
         ctx.enable_components.assert_any_call(tags={"vue-router"})
-        ctx.disable_components.assert_called_once_with(tags={"vueuse"})
+        ctx.disable_components.assert_any_call(tags={"vueuse"})
+        ctx.disable_components.assert_any_call(tags={"vite"})
 
     @pytest.mark.asyncio
     async def test_preferences_stores_state(self):
@@ -1611,7 +1612,8 @@ class TestFrameworkPreferences:
         await set_framework_preferences(vue=True, vue_router=False, vueuse=False, ctx=ctx)
 
         ctx.set_state.assert_called_once_with(
-            "framework_preferences", {"vue": True, "vue-router": False, "vueuse": False}
+            "framework_preferences",
+            {"vue": True, "vue-router": False, "vueuse": False, "vite": False},
         )
 
     @pytest.mark.asyncio

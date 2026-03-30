@@ -1,0 +1,646 @@
+[
+  {
+    "relevant_paths": [
+      "guide/api-environment-frameworks.md"
+    ],
+    "difficulty": "easy",
+    "relevant_apis": [
+      "RunnableDevEnvironment",
+      "FetchableDevEnvironment"
+    ],
+    "expected_answer": "The `RunnableDevEnvironment` is used for environments that can communicate arbitrary values (like the default `ssr` environment), while `FetchableDevEnvironment` is used for environments that communicate via the Fetch API. `RunnableDevEnvironment` is limited to runtimes same as the Vite server, whereas `FetchableDevEnvironment` provides a standardized way to handle requests via `handleRequest`.",
+    "question": "What is the difference between `RunnableDevEnvironment` and `FetchableDevEnvironment` in Vite?",
+    "intent": "comparison",
+    "framework": "vite"
+  },
+  {
+    "expected_answer": "`this.environment` is available in plugin hooks like `transform`, `load`, and `resolveId`. It provides access to the environment instance, allowing plugins to react differently based on the environment's configuration (`environment.config`) or perform actions specific to that environment.",
+    "question": "How can I access the current environment inside a plugin hook?",
+    "intent": "api_lookup",
+    "difficulty": "medium",
+    "relevant_paths": [
+      "guide/api-environment-plugins.md"
+    ],
+    "relevant_apis": [
+      "this.environment"
+    ],
+    "framework": "vite"
+  },
+  {
+    "question": "Why is the `ModuleRunner` API different from `server.ssrLoadModule`?",
+    "intent": "conceptual",
+    "expected_answer": "The `ModuleRunner` is decoupled from the Vite server, allowing it to run in various runtimes (like Node.js, workerd, or worker threads). It fetches and evaluates code transformed by Vite plugins. Unlike `server.ssrLoadModule`, which is coupled to the server process, `ModuleRunner` allows framework authors to implement custom communication logic.",
+    "relevant_apis": [
+      "ModuleRunner"
+    ],
+    "difficulty": "hard",
+    "relevant_paths": [
+      "guide/api-environment-runtimes.md"
+    ],
+    "framework": "vite"
+  },
+  {
+    "relevant_paths": [
+      "guide/api-environment-frameworks.md"
+    ],
+    "difficulty": "easy",
+    "relevant_apis": [
+      "import.meta.hot.accept"
+    ],
+    "expected_answer": "Add `import.meta.hot.accept()` in your server entry file. Without it, changes to server files will cause the entire server module graph to be invalidated.",
+    "question": "How do I enable HMR for my server-side code in a `RunnableDevEnvironment`?",
+    "intent": "howto",
+    "framework": "vite"
+  },
+  {
+    "relevant_apis": [
+      "this.environment"
+    ],
+    "relevant_paths": [
+      "guide/api-environment-plugins.md"
+    ],
+    "difficulty": "medium",
+    "question": "How should I manage plugin state when applying the same plugin to multiple environments?",
+    "intent": "howto",
+    "expected_answer": "You should key your plugin state using `this.environment`. This pattern prevents mixing state between different environments, as the same plugin instance is shared. You can use a `Map<Environment, State>` to store state separately for each environment.",
+    "framework": "vite"
+  },
+  {
+    "difficulty": "easy",
+    "relevant_paths": [
+      "guide/api-environment-plugins.md"
+    ],
+    "relevant_apis": [
+      "hotUpdate"
+    ],
+    "question": "Why is my `hotUpdate` hook being called multiple times?",
+    "intent": "debugging",
+    "expected_answer": "The `hotUpdate` hook is called for each environment independently. You should use `this.environment` to identify which environment is being processed, and return an array of affected modules or perform custom HMR logic.",
+    "framework": "vite"
+  },
+  {
+    "expected_answer": "You can add new environments using the `config` hook by defining them in the `environments` object in the returned config, or configure them specifically using the `configEnvironment` hook.",
+    "question": "How can I register a custom environment in my Vite config using a plugin?",
+    "intent": "howto",
+    "relevant_paths": [
+      "guide/api-environment-plugins.md"
+    ],
+    "difficulty": "medium",
+    "relevant_apis": [
+      "config",
+      "configEnvironment"
+    ],
+    "framework": "vite"
+  },
+  {
+    "difficulty": "hard",
+    "relevant_paths": [
+      "guide/api-environment-frameworks.md"
+    ],
+    "relevant_apis": [
+      "FetchableDevEnvironment",
+      "handleRequest",
+      "dispatchFetch"
+    ],
+    "expected_answer": "`FetchableDevEnvironment` provides a `handleRequest` method to define how to respond to requests. Consumers can then use `dispatchFetch` to send a Request object to the environment and await the Response. Vite validates that the input and output are instances of the global `Request` and `Response` classes.",
+    "question": "How do I use the `FetchableDevEnvironment` to communicate with my custom runtime?",
+    "intent": "api_lookup",
+    "framework": "vite"
+  },
+  {
+    "question": "Why is my HMR boundary not working even though I called `accept`?",
+    "intent": "debugging",
+    "expected_answer": "The `hot.accept` call must appear exactly as `import.meta.hot.accept(` in the source code. The whitespace sensitivity is required for static analysis.",
+    "relevant_paths": [
+      "guide/api-hmr.md"
+    ],
+    "difficulty": "easy",
+    "relevant_apis": [
+      "import.meta.hot.accept"
+    ],
+    "framework": "vite"
+  },
+  {
+    "relevant_apis": [
+      "EnvironmentOptions"
+    ],
+    "relevant_paths": [
+      "guide/api-environment.md"
+    ],
+    "difficulty": "medium",
+    "question": "How do environment options work in Vite 6? Which ones are inherited and which are specific?",
+    "intent": "conceptual",
+    "expected_answer": "`dev.warmup` and `build.outDir` are dev and build specific, respectively. Options like `resolve` apply to both. Some options like `optimizeDeps` are top-level and apply to the client environment globally for backward compatibility.",
+    "framework": "vite"
+  },
+  {
+    "question": "How does the module graph system change from Vite 5 to Vite 6?",
+    "intent": "migration",
+    "expected_answer": "`server.moduleGraph` in Vite 5 was a mixed view of both client and SSR modules. In Vite 6, each environment has its own isolated `EnvironmentModuleGraph` instance, making it impossible to mix modules between environments. Methods like `getModuleByUrl` are now scoped to the environment instance.",
+    "relevant_apis": [
+      "EnvironmentModuleGraph"
+    ],
+    "relevant_paths": [
+      "guide/api-environment-instances.md"
+    ],
+    "difficulty": "medium",
+    "framework": "vite"
+  },
+  {
+    "relevant_paths": [
+      "guide/api-environment-runtimes.md"
+    ],
+    "difficulty": "hard",
+    "relevant_apis": [
+      "ModuleRunnerTransport"
+    ],
+    "question": "How do I implement a custom transport for a `ModuleRunner`?",
+    "intent": "howto",
+    "expected_answer": "You can implement the `ModuleRunnerTransport` interface by defining `connect`, `send`, and `invoke` methods. This allows you to bridge your environment's specific communication (e.g., worker threads, IPC, or HTTP) with the Vite server's `HotChannel`.",
+    "framework": "vite"
+  },
+  {
+    "question": "How do I get an environment instance in my dev server?",
+    "intent": "api_lookup",
+    "expected_answer": "You can access them via `server.environments.<name>`. For example, `server.environments.client` or `server.environments.ssr`.",
+    "difficulty": "easy",
+    "relevant_paths": [
+      "guide/api-environment-instances.md"
+    ],
+    "relevant_apis": [
+      "server.environments"
+    ],
+    "framework": "vite"
+  },
+  {
+    "expected_answer": "In Vite 6, builds happen in a single process. Plugins are shared across environments, but you can filter them using the `applyToEnvironment` hook. This allows for better alignment between dev and build compared to the isolated processes in Vite 5.",
+    "question": "How does building environments differ between Vite 5 and Vite 6?",
+    "intent": "comparison",
+    "relevant_apis": [
+      "applyToEnvironment"
+    ],
+    "relevant_paths": [
+      "guide/api-environment-plugins.md"
+    ],
+    "difficulty": "medium",
+    "framework": "vite"
+  },
+  {
+    "question": "How do I pass state between module hot updates?",
+    "intent": "api_lookup",
+    "expected_answer": "`hot.data` is an object persisted across instances of the same updated module. You should mutate its properties rather than reassigning the object itself to ensure information is preserved.",
+    "relevant_apis": [
+      "hot.data"
+    ],
+    "difficulty": "easy",
+    "relevant_paths": [
+      "guide/api-hmr.md"
+    ],
+    "framework": "vite"
+  },
+  {
+    "difficulty": "medium",
+    "relevant_paths": [
+      "guide/api-hmr.md"
+    ],
+    "relevant_apis": [
+      "hot.invalidate"
+    ],
+    "expected_answer": "`hot.invalidate()` forcibly propagates an update to importers, as if the module were not self-accepting. It logs a message and is useful when a module realizes it cannot handle an update at runtime.",
+    "question": "What should I do if my module can't handle an HMR update dynamically?",
+    "intent": "debugging",
+    "framework": "vite"
+  },
+  {
+    "expected_answer": "You can use `this.meta.rolldownVersion` to detect if the current Vite instance is powered by Rolldown. This is useful for plugins that need to support both Rollup and Rolldown-based Vite versions.",
+    "question": "How can I detect if my plugin is running on a Rolldown-powered Vite instance?",
+    "intent": "api_lookup",
+    "relevant_paths": [
+      "guide/api-plugin.md"
+    ],
+    "difficulty": "hard",
+    "relevant_apis": [
+      "this.meta.rolldownVersion"
+    ],
+    "framework": "vite"
+  },
+  {
+    "expected_answer": "You can add `vite/client` to the `types` array in your `tsconfig.json` compiler options.",
+    "question": "How do I get TypeScript intellisense for `import.meta.hot`?",
+    "intent": "howto",
+    "relevant_apis": [
+      "vite/client"
+    ],
+    "relevant_paths": [
+      "guide/api-hmr.md"
+    ],
+    "difficulty": "easy",
+    "framework": "vite"
+  },
+  {
+    "difficulty": "medium",
+    "relevant_paths": [
+      "guide/api-environment-runtimes.md"
+    ],
+    "relevant_apis": [
+      "server.ssrLoadModule",
+      "ModuleRunner"
+    ],
+    "expected_answer": "`server.ssrLoadModule` is for the default SSR environment and runs in the server process. `ModuleRunner.import` is for custom environments, is decoupled from the server, and allows running code in arbitrary runtimes (e.g., workers, edge).",
+    "question": "Should I use `server.ssrLoadModule` or `ModuleRunner` for SSR?",
+    "intent": "comparison",
+    "framework": "vite"
+  },
+  {
+    "relevant_apis": [
+      "pluginContainer",
+      "transformRequest"
+    ],
+    "difficulty": "hard",
+    "relevant_paths": [
+      "guide/api-environment-instances.md"
+    ],
+    "expected_answer": "`this.environment.pluginContainer` allows running plugin hooks on a given file. `transformRequest` is the higher-level method on the environment instance that resolves, loads, and transforms the code using the plugin pipeline.",
+    "question": "What is the relationship between `environment.pluginContainer` and `environment.transformRequest`?",
+    "intent": "conceptual",
+    "framework": "vite"
+  },
+  {
+    "question": "How do I send a fetch request to my custom dev environment?",
+    "intent": "api_lookup",
+    "expected_answer": "`server.environments.custom.dispatchFetch` is used to send a request to a `FetchableDevEnvironment`. The handler is registered via `createFetchableDevEnvironment` when creating the environment.",
+    "difficulty": "easy",
+    "relevant_paths": [
+      "guide/api-environment-frameworks.md"
+    ],
+    "relevant_apis": [
+      "dispatchFetch"
+    ],
+    "framework": "vite"
+  },
+  {
+    "relevant_paths": [
+      "guide/api-environment-frameworks.md"
+    ],
+    "difficulty": "medium",
+    "relevant_apis": [
+      "RunnableDevEnvironment"
+    ],
+    "expected_answer": "`server.environments.ssr` returns a `DevEnvironment` instance. If you need to access the module runner, you should use `isRunnableDevEnvironment(server.environments.ssr)` to guard it before accessing `environment.runner`.",
+    "question": "I get a TS error when accessing `server.environments.ssr.runner`. Why?",
+    "intent": "debugging",
+    "framework": "vite"
+  },
+  {
+    "question": "What is the benefit of the new single-process build pipeline in Vite 6?",
+    "intent": "conceptual",
+    "expected_answer": "Vite 6 aligns plugin pipelines by building all environments in a single process. Plugins are shared, but you can use `applyToEnvironment` to filter which environments a plugin applies to. This reduces the need for framework-level manifest hacks.",
+    "relevant_apis": [
+      "applyToEnvironment"
+    ],
+    "relevant_paths": [
+      "guide/api-environment-plugins.md"
+    ],
+    "difficulty": "hard",
+    "framework": "vite"
+  },
+  {
+    "expected_answer": "Use `import.meta.hot.prune` to register a callback that cleans up when the module is removed from the page. This is preferred over `dispose` when side-effects are naturally cleaned up on updates.",
+    "question": "What's the best way to clean up side effects when a module is removed?",
+    "intent": "howto",
+    "relevant_apis": [
+      "hot.prune"
+    ],
+    "relevant_paths": [
+      "guide/api-hmr.md"
+    ],
+    "difficulty": "easy",
+    "framework": "vite"
+  },
+  {
+    "expected_answer": "Use `server.ws.send('event-name', data)` on the server, and `import.meta.hot.on('event-name', cb)` on the client. Always prefix event names to avoid collisions.",
+    "question": "How do I send messages from my Vite plugin to the application?",
+    "intent": "howto",
+    "relevant_apis": [
+      "server.ws.send",
+      "hot.on"
+    ],
+    "relevant_paths": [
+      "guide/api-plugin.md"
+    ],
+    "difficulty": "medium",
+    "framework": "vite"
+  },
+  {
+    "relevant_apis": [
+      "ViteDevServer"
+    ],
+    "difficulty": "easy",
+    "relevant_paths": [
+      "guide/api-javascript.md"
+    ],
+    "expected_answer": "The `server` argument in `configureServer` refers to `ViteDevServer`. It provides access to `middlewares`, `httpServer`, `watcher`, `ws`, `moduleGraph`, and `pluginContainer`.",
+    "question": "What can I access from the `server` object in `configureServer`?",
+    "intent": "api_lookup",
+    "framework": "vite"
+  },
+  {
+    "relevant_apis": [
+      "ModuleEvaluator"
+    ],
+    "difficulty": "hard",
+    "relevant_paths": [
+      "guide/api-environment-runtimes.md"
+    ],
+    "expected_answer": "`ESModulesEvaluator` uses `new AsyncFunction` to evaluate code. If you cannot use unsafe evaluation, you must implement your own `ModuleEvaluator` interface, which requires `runInlinedModule` and `runExternalModule` methods.",
+    "question": "Can I run Vite code in a runtime that forbids `new AsyncFunction`?",
+    "intent": "conceptual",
+    "framework": "vite"
+  },
+  {
+    "relevant_apis": [
+      "import.meta.hot.accept"
+    ],
+    "relevant_paths": [
+      "guide/api-hmr.md"
+    ],
+    "difficulty": "medium",
+    "question": "How do I handle updates from multiple dependencies without reloading the module?",
+    "intent": "howto",
+    "expected_answer": "Use `import.meta.hot.accept(deps, cb)` passing an array of module paths. The callback receives an array of modules, where only the updated ones are non-null.",
+    "framework": "vite"
+  },
+  {
+    "difficulty": "easy",
+    "relevant_paths": [
+      "guide/ssr.md"
+    ],
+    "relevant_apis": [
+      "import.meta.env.SSR"
+    ],
+    "question": "How do I write code that runs only on the server?",
+    "intent": "api_lookup",
+    "expected_answer": "Use `import.meta.env.SSR`. It is statically replaced at build time, so it tree-shakes the other branch.",
+    "framework": "vite"
+  },
+  {
+    "expected_answer": "You should use `this.environment.hot.send` or `this.environment.hot.on` to manage communication specific to that environment. This is the equivalent of the client-server communication feature but supports any environment that supports HMR.",
+    "question": "How do I communicate with the application in a custom environment?",
+    "intent": "api_lookup",
+    "relevant_apis": [
+      "environment.hot"
+    ],
+    "relevant_paths": [
+      "guide/api-environment-plugins.md"
+    ],
+    "difficulty": "medium",
+    "framework": "vite"
+  },
+  {
+    "relevant_paths": [
+      "guide/api-environment-runtimes.md"
+    ],
+    "difficulty": "hard",
+    "relevant_apis": [
+      "ModuleRunner.import"
+    ],
+    "expected_answer": "`ModuleRunner` clears caches, removes HMR listeners, and resets sourcemap support. If you rely on the `exports` object, you must call `import` again or get the module from `evaluatedModules` as the runner overrides the `exports` object upon re-execution.",
+    "question": "My `ModuleRunner` re-execution seems to lose the module exports. What's wrong?",
+    "intent": "debugging",
+    "framework": "vite"
+  },
+  {
+    "question": "How do I import an asset as a URL when it's not detected automatically?",
+    "intent": "howto",
+    "expected_answer": "`import imgUrl from './img.png?url'`. The `?url` suffix forces an asset import as a URL, bypassing standard asset detection.",
+    "relevant_paths": [
+      "guide/assets.md"
+    ],
+    "difficulty": "easy",
+    "relevant_apis": [
+      "?url suffix"
+    ],
+    "framework": "vite"
+  },
+  {
+    "relevant_apis": [
+      "server.middlewares"
+    ],
+    "relevant_paths": [
+      "guide/api-javascript.md"
+    ],
+    "difficulty": "medium",
+    "question": "What is `server.middlewares` used for?",
+    "intent": "api_lookup",
+    "expected_answer": "`server.middlewares` is a `Connect.Server` instance. You can use it to add custom middleware, and it can also serve as the handler function for a custom HTTP server.",
+    "framework": "vite"
+  },
+  {
+    "relevant_apis": [
+      "waitForRequestsIdle"
+    ],
+    "difficulty": "hard",
+    "relevant_paths": [
+      "guide/api-javascript.md"
+    ],
+    "expected_answer": "`server.waitForRequestsIdle` delays the processing of static imports until the graph is ready. Tailwind uses this to avoid CSS flashes. Note that this can block one of the six HTTP channels if used in a load/transform hook.",
+    "question": "What is the purpose of `server.waitForRequestsIdle`?",
+    "intent": "conceptual",
+    "framework": "vite"
+  },
+  {
+    "relevant_paths": [
+      "guide/api-environment-instances.md"
+    ],
+    "difficulty": "easy",
+    "relevant_apis": [
+      "transformRequest"
+    ],
+    "question": "How do I programmatically transform a URL in the client environment?",
+    "intent": "api_lookup",
+    "expected_answer": "`server.environments.client.transformRequest(url)`. This method resolves, loads, and transforms a module using the environment's plugin pipeline.",
+    "framework": "vite"
+  },
+  {
+    "relevant_apis": [
+      "perEnvironmentState"
+    ],
+    "relevant_paths": [
+      "guide/api-environment-plugins.md"
+    ],
+    "difficulty": "medium",
+    "expected_answer": "Use the `perEnvironmentState` helper. It allows you to initialize state for each environment separately. It is a cleaner version of managing a `Map<Environment, State>` yourself.",
+    "question": "Is there a helper to manage per-environment state in plugins?",
+    "intent": "howto",
+    "framework": "vite"
+  },
+  {
+    "question": "How do I customize environment-specific configurations like resolution conditions?",
+    "intent": "howto",
+    "expected_answer": "Plugins can add new environments using the `config` hook. They can then further customize each environment's options (like `resolve.conditions`) using the `configEnvironment` hook, which is called for each environment with its partially resolved config.",
+    "relevant_apis": [
+      "configEnvironment"
+    ],
+    "relevant_paths": [
+      "guide/api-environment-plugins.md"
+    ],
+    "difficulty": "hard",
+    "framework": "vite"
+  },
+  {
+    "relevant_apis": [
+      "vite-plugin-inspect"
+    ],
+    "relevant_paths": [
+      "guide/api-plugin.md"
+    ],
+    "difficulty": "easy",
+    "question": "How can I see what my plugins are doing to a module?",
+    "intent": "debugging",
+    "expected_answer": "`vite-plugin-inspect` allows you to inspect the intermediate state of Vite plugins, including module transformation stacks. It's highly recommended during development and debugging.",
+    "framework": "vite"
+  },
+  {
+    "difficulty": "medium",
+    "relevant_paths": [
+      "guide/api-plugin.md"
+    ],
+    "relevant_apis": [
+      "virtual module convention"
+    ],
+    "question": "What is the convention for virtual modules in Vite/Rollup?",
+    "intent": "conceptual",
+    "expected_answer": "Virtual modules should be prefixed with `virtual:` for user-facing paths. Internally, plugins should prefix the module ID with `\\0` to prevent other plugins from trying to process the ID, as `\\0` is not a permitted character in import URLs.",
+    "framework": "vite"
+  },
+  {
+    "relevant_apis": [
+      "hotUpdate"
+    ],
+    "difficulty": "hard",
+    "relevant_paths": [
+      "guide/api-environment-plugins.md"
+    ],
+    "expected_answer": "The `hotUpdate` hook is called for each environment in series. The `modules` list contains only modules affected in the *current* environment. This allows for environment-specific HMR strategies, such as performing a full reload in one environment while doing custom HMR in another.",
+    "question": "How does the new `hotUpdate` hook handle multiple environments differently than the old `handleHotUpdate`?",
+    "intent": "conceptual",
+    "framework": "vite"
+  },
+  {
+    "relevant_apis": [
+      "?raw suffix"
+    ],
+    "difficulty": "easy",
+    "relevant_paths": [
+      "guide/assets.md"
+    ],
+    "question": "How do I import a file as a raw string?",
+    "intent": "howto",
+    "expected_answer": "Use `?raw` suffix. For example, `import shaderString from './shader.glsl?raw'`.",
+    "framework": "vite"
+  },
+  {
+    "question": "What is the purpose of `build.ssrManifest`?",
+    "intent": "conceptual",
+    "expected_answer": "`build.ssrManifest` generates a manifest file that maps module IDs to chunks. This is used by SSR frameworks to collect module IDs of components used during render, allowing for precise preload directives.",
+    "relevant_apis": [
+      "build.ssrManifest"
+    ],
+    "difficulty": "medium",
+    "relevant_paths": [
+      "guide/ssr.md"
+    ],
+    "framework": "vite"
+  },
+  {
+    "relevant_apis": [
+      "this.meta"
+    ],
+    "relevant_paths": [
+      "guide/api-plugin.md"
+    ],
+    "difficulty": "hard",
+    "question": "How can I access version information inside a plugin hook?",
+    "intent": "api_lookup",
+    "expected_answer": "`this.meta.viteVersion` gives the Vite version. `this.meta.rolldownVersion` is available if the current instance is powered by Rolldown, allowing plugins to conditionally support different versions or bundlers.",
+    "framework": "vite"
+  },
+  {
+    "difficulty": "easy",
+    "relevant_paths": [
+      "guide/api-hmr.md"
+    ],
+    "relevant_apis": [
+      "hot.on"
+    ],
+    "expected_answer": "`import.meta.hot.on('vite:ws:disconnect', cb)` or `import.meta.hot.on('vite:ws:connect', cb)`.",
+    "question": "How do I listen for WebSocket connection changes in the client?",
+    "intent": "api_lookup",
+    "framework": "vite"
+  },
+  {
+    "relevant_apis": [
+      "url() import"
+    ],
+    "relevant_paths": [
+      "guide/assets.md"
+    ],
+    "difficulty": "medium",
+    "expected_answer": "You should wrap the variable in double quotes, e.g., `url(\"${imgUrl}\")`. This ensures that Vite correctly processes the URL if it's used in a manually constructed CSS `url()`.",
+    "question": "Why is my SVG URL import failing when used in `style.background`?",
+    "intent": "debugging",
+    "framework": "vite"
+  },
+  {
+    "question": "How can I customize the build order of multiple environments in Vite 6?",
+    "intent": "howto",
+    "expected_answer": "The `builder` option allows you to configure how all environments are built. By default, it builds environments in series. You can define a `builder.buildApp` hook to parallelize or customize the build, using `builder.build(environment)` for each environment.",
+    "relevant_apis": [
+      "builder.buildApp"
+    ],
+    "relevant_paths": [
+      "guide/api-environment-frameworks.md"
+    ],
+    "difficulty": "hard",
+    "framework": "vite"
+  },
+  {
+    "expected_answer": "Use `import.meta.env.PROD` or `import.meta.env.DEV` to tree-shake code for production or development.",
+    "question": "How do I write code that only runs in production?",
+    "intent": "api_lookup",
+    "relevant_apis": [
+      "import.meta.env.PROD"
+    ],
+    "difficulty": "easy",
+    "relevant_paths": [
+      "guide/env-and-mode.md"
+    ],
+    "framework": "vite"
+  },
+  {
+    "question": "How can I force an HMR update to propagate to importers?",
+    "intent": "howto",
+    "expected_answer": "`hot.invalidate()` is used when a module realizes at runtime it cannot handle an update. It is recommended to call it inside the `hot.accept` callback after checking if the update is valid.",
+    "relevant_paths": [
+      "guide/api-hmr.md"
+    ],
+    "difficulty": "medium",
+    "relevant_apis": [
+      "hot.invalidate"
+    ],
+    "framework": "vite"
+  },
+  {
+    "relevant_paths": [
+      "guide/build.md"
+    ],
+    "difficulty": "hard",
+    "relevant_apis": [
+      "experimental.renderBuiltUrl"
+    ],
+    "expected_answer": "`experimental.renderBuiltUrl` allows you to define custom logic for rendering asset URLs, which is useful when deploying assets to different CDNs or paths (e.g., separating hashed assets from public files).",
+    "question": "How can I achieve advanced base path control for assets?",
+    "intent": "api_lookup",
+    "framework": "vite"
+  }
+]

@@ -53,6 +53,7 @@ export default defineConfig({
           { text: "Vue.js", link: "/frameworks/vue" },
           { text: "Vue Router", link: "/frameworks/vue-router" },
           { text: "VueUse", link: "/frameworks/vueuse" },
+          { text: "Vite", link: "/frameworks/vite" },
         ],
       },
       {
