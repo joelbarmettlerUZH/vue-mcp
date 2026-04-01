@@ -432,6 +432,53 @@ VITE_SYNONYMS: dict[str, list[str]] = {
 }
 
 # ---------------------------------------------------------------------------
+# Pinia synonyms
+# ---------------------------------------------------------------------------
+
+PINIA_SYNONYMS: dict[str, list[str]] = {
+    "state management": ["defineStore", "createPinia"],
+    "store": ["defineStore", "createPinia"],
+    "define store": ["defineStore"],
+    "create pinia": ["createPinia"],
+    "getters": ["getters", "mapGetters"],
+    "actions": ["actions", "mapActions"],
+    "mutations": ["$patch"],
+    "state": ["state", "mapState", "$state"],
+    "options api": ["mapStores", "mapState", "mapActions", "mapWritableState"],
+    "map state": ["mapState", "mapWritableState"],
+    "map actions": ["mapActions"],
+    "map stores": ["mapStores"],
+    "writable state": ["mapWritableState"],
+    "testing": ["createTestingPinia", "setActivePinia"],
+    "test store": ["createTestingPinia", "setActivePinia"],
+    "ssr": ["skipHydrate"],
+    "server side rendering": ["skipHydrate"],
+    "hydration": ["skipHydrate"],
+    "vuex migration": ["migration-vuex"],
+    "migrate from vuex": ["migration-vuex"],
+    "hmr": ["acceptHMRUpdate"],
+    "hot module replacement": ["acceptHMRUpdate"],
+    "plugins": ["PiniaPlugin", "PiniaPluginContext"],
+    "pinia plugin": ["PiniaPlugin", "pinia.use"],
+    "subscribe": ["$subscribe", "$onAction"],
+    "state changes": ["$subscribe"],
+    "action subscriber": ["$onAction"],
+    "composing stores": ["composing-stores"],
+    "nested stores": ["composing-stores"],
+    "destructure": ["storeToRefs"],
+    "store to refs": ["storeToRefs"],
+    "reactivity": ["storeToRefs"],
+    "reset state": ["$reset"],
+    "patch state": ["$patch"],
+    "setup store": ["defineStore"],
+    "option store": ["defineStore"],
+    "devtools": ["PiniaPlugin"],
+    "persist state": ["$subscribe", "PiniaPlugin"],
+    "nuxt": ["@pinia/nuxt"],
+    "composables": ["composables"],
+}
+
+# ---------------------------------------------------------------------------
 # Nuxt synonyms
 # ---------------------------------------------------------------------------
 
@@ -577,6 +624,16 @@ SOURCE_REGISTRY: dict[str, SourceDefinition] = {
         synonyms=VITEST_SYNONYMS,
         gemini_context="Vitest",
         sidebar_config_path=".vitepress/config.ts",
+    ),
+    "pinia": SourceDefinition(
+        name="pinia",
+        display_name="Pinia",
+        git_url="https://github.com/vuejs/pinia.git",
+        docs_subpath="packages/docs",
+        base_url="https://pinia.vuejs.org",
+        import_packages=["pinia", "@pinia/testing", "@pinia/nuxt"],
+        synonyms=PINIA_SYNONYMS,
+        gemini_context="Pinia",
     ),
     "nuxt": SourceDefinition(
         name="nuxt",

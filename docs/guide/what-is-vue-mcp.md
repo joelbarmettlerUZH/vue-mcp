@@ -35,7 +35,8 @@ All results include source references so you can verify them.
 | [Vite](https://vite.dev) | :white_check_mark: Available | Next-generation frontend build tool |
 | [Vitest](https://vitest.dev) | :white_check_mark: Available | Vite-native testing framework |
 | [Nuxt](https://nuxt.com) | :white_check_mark: Available | Full-stack Vue framework |
-| [Pinia](https://pinia.vuejs.org) and 10 more | :calendar: Planned | |
+| [Pinia](https://pinia.vuejs.org) | :white_check_mark: Available | Official state management |
+| 9 more frameworks | :calendar: Planned | |
 
 See the full list on the [Supported Frameworks](/frameworks/) page. Each framework gets its own tools, resources, prompts, and benchmarks.
 

@@ -2,6 +2,7 @@
 
 from vue_docs_core.parsing.adapters.base import SourceAdapter
 from vue_docs_core.parsing.adapters.nuxt import NuxtAdapter
+from vue_docs_core.parsing.adapters.pinia import PiniaAdapter
 from vue_docs_core.parsing.adapters.vite import ViteAdapter
 from vue_docs_core.parsing.adapters.vitest import VitestAdapter
 from vue_docs_core.parsing.adapters.vue import VueAdapter
@@ -16,6 +17,7 @@ ADAPTER_REGISTRY: dict[str, type[SourceAdapter]] = {
     "vite": ViteAdapter,
     "vitest": VitestAdapter,
     "nuxt": NuxtAdapter,
+    "pinia": PiniaAdapter,
 }
 
 
@@ -33,6 +35,7 @@ def get_adapter(source_name: str) -> SourceAdapter:
 __all__ = [
     "ADAPTER_REGISTRY",
     "NuxtAdapter",
+    "PiniaAdapter",
     "SourceAdapter",
     "ViteAdapter",
     "VitestAdapter",

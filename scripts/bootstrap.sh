@@ -42,6 +42,15 @@ else
     git -C "$PROJECT_ROOT/data/vite-docs" pull
 fi
 
+# Clone Pinia docs if not present
+if [ ! -d "$PROJECT_ROOT/data/pinia-docs" ]; then
+    echo "Cloning Pinia documentation..."
+    git clone --depth 1 -b v4 https://github.com/vuejs/pinia.git "$PROJECT_ROOT/data/pinia-docs"
+else
+    echo "Pinia docs already cloned, pulling latest..."
+    git -C "$PROJECT_ROOT/data/pinia-docs" pull
+fi
+
 # Clone Nuxt docs if not present
 if [ ! -d "$PROJECT_ROOT/data/nuxt-docs" ]; then
     echo "Cloning Nuxt documentation..."

@@ -1,0 +1,627 @@
+[
+  {
+    "relevant_paths": [
+      "cookbook/options-api.md"
+    ],
+    "expected_answer": "You can use `mapStores()` to access the whole store in the Options API. By default, Pinia adds a \"Store\" suffix to the store ID (e.g., `userStore`), but you can customize this using `setMapStoreSuffix()`.",
+    "question": "How do I access the entire store in Options API and can I change the suffix?",
+    "intent": "api_lookup",
+    "relevant_apis": [
+      "mapStores",
+      "setMapStoreSuffix"
+    ],
+    "difficulty": "easy",
+    "framework": "pinia"
+  },
+  {
+    "relevant_paths": [
+      "cookbook/composables.md"
+    ],
+    "expected_answer": "The `skipHydrate()` helper is used in Setup Stores to mark state properties that should not be picked up from the initial state during hydration.",
+    "question": "What is the skipHydrate helper used for in setup stores?",
+    "intent": "api_lookup",
+    "relevant_apis": [
+      "skipHydrate"
+    ],
+    "difficulty": "easy",
+    "framework": "pinia"
+  },
+  {
+    "difficulty": "medium",
+    "intent": "api_lookup",
+    "relevant_apis": [
+      "storeToRefs"
+    ],
+    "question": "Why should I use storeToRefs when destructuring a Pinia store?",
+    "expected_answer": "`storeToRefs()` creates refs for every reactive property in the store, allowing you to destructure them while maintaining reactivity. It ignores non-reactive properties and actions.",
+    "relevant_paths": [
+      "core-concepts/index.md"
+    ],
+    "framework": "pinia"
+  },
+  {
+    "question": "What is the purpose of the $patch method in Pinia?",
+    "expected_answer": "`$patch()` allows you to apply multiple state changes at once using a partial state object or a function to group mutations, which is more efficient for complex modifications like array manipulations.",
+    "relevant_paths": [
+      "core-concepts/state.md"
+    ],
+    "difficulty": "medium",
+    "intent": "api_lookup",
+    "relevant_apis": [
+      "$patch"
+    ],
+    "framework": "pinia"
+  },
+  {
+    "difficulty": "hard",
+    "intent": "api_lookup",
+    "relevant_apis": [
+      "$onAction"
+    ],
+    "question": "How can I intercept and track action results in Pinia?",
+    "relevant_paths": [
+      "core-concepts/actions.md"
+    ],
+    "expected_answer": "`$onAction()` allows you to track actions and their outcomes. It provides hooks like `after` (for successful completion) and `onError` (for errors) and can be used to track runtime errors.",
+    "framework": "pinia"
+  },
+  {
+    "difficulty": "easy",
+    "intent": "conceptual",
+    "relevant_apis": [],
+    "question": "What exactly is a Pinia store?",
+    "relevant_paths": [
+      "getting-started.md"
+    ],
+    "expected_answer": "Pinia stores are entities holding state and business logic that exist outside the component tree, acting as global state. They consist of state, getters, and actions.",
+    "framework": "pinia"
+  },
+  {
+    "expected_answer": "Setup stores use a function to define reactive properties (ref/computed) and methods (function), while Option stores use an object with state, actions, and getters properties, similar to the Options API.",
+    "relevant_paths": [
+      "core-concepts/index.md"
+    ],
+    "question": "What's the main difference between Setup stores and Option stores?",
+    "intent": "conceptual",
+    "relevant_apis": [
+      "defineStore"
+    ],
+    "difficulty": "easy",
+    "framework": "pinia"
+  },
+  {
+    "intent": "conceptual",
+    "relevant_apis": [
+      "actions",
+      "getters"
+    ],
+    "difficulty": "medium",
+    "relevant_paths": [
+      "core-concepts/actions.md",
+      "core-concepts/getters.md"
+    ],
+    "expected_answer": "Actions can be asynchronous and are perfect for business logic, while getters are computed values that are cached based on their dependencies. Actions can perform API calls and change state.",
+    "question": "Are actions and getters the same thing? How do they differ?",
+    "framework": "pinia"
+  },
+  {
+    "question": "How do Pinia plugins work and when are they applied?",
+    "relevant_paths": [
+      "core-concepts/plugins.md"
+    ],
+    "expected_answer": "Pinia plugins are functions added via `pinia.use()` that can extend stores by adding properties, methods, or options. They are applied to stores created after the plugin is installed.",
+    "difficulty": "medium",
+    "intent": "conceptual",
+    "relevant_apis": [
+      "pinia.use"
+    ],
+    "framework": "pinia"
+  },
+  {
+    "intent": "conceptual",
+    "relevant_apis": [],
+    "difficulty": "hard",
+    "relevant_paths": [
+      "cookbook/composing-stores.md"
+    ],
+    "expected_answer": "Stores cannot create infinite loops through getters or actions when using each other. Additionally, stores cannot both directly read each other's state in their setup function.",
+    "question": "What are the restrictions when composing stores that use each other?",
+    "framework": "pinia"
+  },
+  {
+    "question": "how do i create a store and use it in my vue component?",
+    "expected_answer": "You define a store using `defineStore()`, provide a unique ID, and then call the returned `use...Store()` function inside a component's setup or setup script.",
+    "relevant_paths": [
+      "core-concepts/index.md"
+    ],
+    "difficulty": "easy",
+    "intent": "howto",
+    "relevant_apis": [
+      "defineStore"
+    ],
+    "framework": "pinia"
+  },
+  {
+    "question": "how to get hot module replacement working for my pinia stores?",
+    "relevant_paths": [
+      "cookbook/hot-module-replacement.md"
+    ],
+    "expected_answer": "You can add a snippet next to the store declaration using `import.meta.hot.accept(acceptHMRUpdate(useStoreName, import.meta.hot))`.",
+    "difficulty": "easy",
+    "intent": "howto",
+    "relevant_apis": [
+      "acceptHMRUpdate"
+    ],
+    "framework": "pinia"
+  },
+  {
+    "intent": "howto",
+    "relevant_apis": [
+      "getters"
+    ],
+    "difficulty": "medium",
+    "expected_answer": "You can return a function from a getter that accepts arguments. Note that this will disable caching for that specific getter.",
+    "relevant_paths": [
+      "core-concepts/getters.md"
+    ],
+    "question": "how can i pass params to a getter?",
+    "framework": "pinia"
+  },
+  {
+    "difficulty": "medium",
+    "intent": "howto",
+    "relevant_apis": [
+      "useStore"
+    ],
+    "question": "i need to use a store in a router guard, how do i do that?",
+    "expected_answer": "You need to pass the pinia instance (retrieved from the app) to the `useStore()` function when calling it outside of a setup context.",
+    "relevant_paths": [
+      "core-concepts/outside-component-usage.md"
+    ],
+    "framework": "pinia"
+  },
+  {
+    "difficulty": "hard",
+    "intent": "howto",
+    "relevant_apis": [
+      "createTestingPinia"
+    ],
+    "question": "what is the best way to unit test a component that uses a pinia store?",
+    "relevant_paths": [
+      "cookbook/testing.md"
+    ],
+    "expected_answer": "You should use `createTestingPinia()` in your test setup, pass your plugins to it, and use `stubActions` if you want to mock them or `stubActions: false` if you want to execute them.",
+    "framework": "pinia"
+  },
+  {
+    "difficulty": "easy",
+    "intent": "debugging",
+    "relevant_apis": [
+      "storeToRefs"
+    ],
+    "question": "why is my store state not updating when I destructure it?",
+    "relevant_paths": [
+      "core-concepts/index.md"
+    ],
+    "expected_answer": "You cannot destructure a store directly because it breaks reactivity. Use `storeToRefs()` instead.",
+    "framework": "pinia"
+  },
+  {
+    "intent": "debugging",
+    "relevant_apis": [
+      "useStore"
+    ],
+    "difficulty": "medium",
+    "expected_answer": "Ensure you are calling `useStore()` inside the action and before any `await` statement. Calling it after an `await` can lead to using the wrong pinia instance in SSR apps.",
+    "relevant_paths": [
+      "cookbook/composing-stores.md"
+    ],
+    "question": "i am getting errors when calling another store in an async action, what am I doing wrong?",
+    "framework": "pinia"
+  },
+  {
+    "expected_answer": "You must declare every state piece in the `state()` function, even if its initial value is `undefined`, so Vue can properly detect it for reactivity.",
+    "relevant_paths": [
+      "core-concepts/state.md"
+    ],
+    "question": "my state properties are not being detected by vue, any ideas?",
+    "intent": "debugging",
+    "relevant_apis": [
+      "state"
+    ],
+    "difficulty": "medium",
+    "framework": "pinia"
+  },
+  {
+    "difficulty": "hard",
+    "intent": "debugging",
+    "relevant_apis": [
+      "pinia.use"
+    ],
+    "question": "my pinia plugin is not adding properties to my store, why?",
+    "expected_answer": "Plugins are only applied to stores created after the plugin is installed. Ensure `pinia.use(plugin)` is called before the store is instantiated.",
+    "relevant_paths": [
+      "core-concepts/plugins.md"
+    ],
+    "framework": "pinia"
+  },
+  {
+    "relevant_paths": [
+      "cookbook/migration-v1-v2.md"
+    ],
+    "expected_answer": "If you are using webpack 4, you may need to configure the module rule for `.mjs` files to `javascript/auto` in your webpack config because of modern ESM dist files.",
+    "question": "i am getting \"Can't import the named export\" error in webpack 4, how to fix?",
+    "intent": "debugging",
+    "relevant_apis": [],
+    "difficulty": "hard",
+    "framework": "pinia"
+  },
+  {
+    "intent": "comparison",
+    "relevant_apis": [],
+    "difficulty": "easy",
+    "expected_answer": "Pinia is modular by design and supports multiple stores, whereas Vuex traditionally focuses on a single global store with nested modules. Pinia also has better TypeScript support.",
+    "relevant_paths": [
+      "introduction.md",
+      "cookbook/migration-vuex.md"
+    ],
+    "question": "what is the difference between pinia and vuex?",
+    "framework": "pinia"
+  },
+  {
+    "question": "how does the option store syntax compare to the setup store syntax?",
+    "relevant_paths": [
+      "core-concepts/index.md"
+    ],
+    "expected_answer": "Option stores use `state`, `actions`, and `getters` properties, while Setup stores use a function with `ref`, `computed`, and `function` to define the store.",
+    "difficulty": "easy",
+    "intent": "comparison",
+    "relevant_apis": [],
+    "framework": "pinia"
+  },
+  {
+    "expected_answer": "Pinia doesn't have mutations. All state changes are done via actions or direct assignment (optionally using `$patch`), making it less verbose than Vuex.",
+    "relevant_paths": [
+      "introduction.md",
+      "core-concepts/state.md"
+    ],
+    "question": "why did pinia get rid of mutations compared to vuex?",
+    "intent": "comparison",
+    "relevant_apis": [
+      "$patch"
+    ],
+    "difficulty": "medium",
+    "framework": "pinia"
+  },
+  {
+    "difficulty": "medium",
+    "intent": "comparison",
+    "relevant_apis": [
+      "mapState",
+      "mapWritableState"
+    ],
+    "question": "when should I use mapWritableState instead of mapState?",
+    "expected_answer": "`mapState()` is for reading state/getters, whereas `mapWritableState()` creates setters allowing you to modify the state directly from the component.",
+    "relevant_paths": [
+      "core-concepts/state.md"
+    ],
+    "framework": "pinia"
+  },
+  {
+    "difficulty": "hard",
+    "intent": "comparison",
+    "relevant_apis": [
+      "$reset"
+    ],
+    "question": "how does resetting state differ between option and setup stores?",
+    "relevant_paths": [
+      "core-concepts/state.md"
+    ],
+    "expected_answer": "In Option stores, you just call `$reset()`. In Setup stores, you must manually define and implement a `$reset()` function to reset your state variables.",
+    "framework": "pinia"
+  },
+  {
+    "intent": "migration",
+    "relevant_apis": [
+      "defineStore"
+    ],
+    "difficulty": "easy",
+    "expected_answer": "You need to replace `createStore` with `defineStore`, update `store.state.x` to `store.x`, and rename properties like `reset` to `$reset`.",
+    "relevant_paths": [
+      "cookbook/migration-0-0-7.md"
+    ],
+    "question": "how do i migrate from pinia 0.0.7 to newer versions?",
+    "framework": "pinia"
+  },
+  {
+    "intent": "migration",
+    "relevant_apis": [],
+    "difficulty": "easy",
+    "relevant_paths": [
+      "cookbook/migration-vuex.md"
+    ],
+    "expected_answer": "Each Vuex module now becomes its own Pinia store with a unique ID, and nested modules become separate stores that can import each other.",
+    "question": "how do i restructure my vuex modules into pinia stores?",
+    "framework": "pinia"
+  },
+  {
+    "difficulty": "medium",
+    "intent": "migration",
+    "relevant_apis": [
+      "StoreGeneric",
+      "PiniaPlugin"
+    ],
+    "question": "what are the main changes when migrating from pinia v1 to v2?",
+    "expected_answer": "Replace `GenericStore` with `StoreGeneric`. Also, update `PiniaStorePlugin` to `PiniaPlugin` and ensure your `@vue/composition-api` is at least version 1.1.0.",
+    "relevant_paths": [
+      "cookbook/migration-v1-v2.md"
+    ],
+    "framework": "pinia"
+  },
+  {
+    "difficulty": "medium",
+    "intent": "migration",
+    "relevant_apis": [
+      "defineStore"
+    ],
+    "question": "what should I change when migrating from pinia v2 to v3?",
+    "relevant_paths": [
+      "cookbook/migration-v2-v3.md"
+    ],
+    "expected_answer": "The `defineStore({ id })` signature is deprecated; you should now use `defineStore('storeName', { ... })`. Also, only Vue 3 is supported.",
+    "framework": "pinia"
+  },
+  {
+    "intent": "migration",
+    "relevant_apis": [],
+    "difficulty": "hard",
+    "expected_answer": "You need to remove the first `context` argument from actions and use `this` instead. You also need to remove mutation definitions and convert them to actions or direct assignments.",
+    "relevant_paths": [
+      "cookbook/migration-vuex.md"
+    ],
+    "question": "how do i convert vuex mutations and actions to pinia?",
+    "framework": "pinia"
+  },
+  {
+    "relevant_paths": [
+      "cookbook/composables.md"
+    ],
+    "expected_answer": "`useLocalStorage` exposes a writable ref, making it suitable for Option stores. `useMediaControls` exposes functions, which makes it unsuitable for the `state` property in Option stores.",
+    "question": "why can i use useLocalStorage in my option store but not useMediaControls?",
+    "intent": "api_lookup",
+    "relevant_apis": [
+      "useLocalStorage",
+      "useMediaControls"
+    ],
+    "difficulty": "easy",
+    "framework": "pinia"
+  },
+  {
+    "question": "why use patch instead of just setting state properties directly?",
+    "relevant_paths": [
+      "core-concepts/state.md"
+    ],
+    "expected_answer": "`$patch()` allows you to group multiple state changes into a single entry in devtools, making time travel easier to manage.",
+    "difficulty": "easy",
+    "intent": "conceptual",
+    "relevant_apis": [
+      "$patch"
+    ],
+    "framework": "pinia"
+  },
+  {
+    "question": "how to add hmr to my store file?",
+    "expected_answer": "You use `import.meta.hot.accept(acceptHMRUpdate(useStore, import.meta.hot))`.",
+    "relevant_paths": [
+      "cookbook/hot-module-replacement.md"
+    ],
+    "difficulty": "easy",
+    "intent": "howto",
+    "relevant_apis": [
+      "acceptHMRUpdate"
+    ],
+    "framework": "pinia"
+  },
+  {
+    "relevant_paths": [
+      "core-concepts/actions.md"
+    ],
+    "expected_answer": "You can use `mapActions(useStore, { customName: 'actionName' })` to rename it in the component.",
+    "question": "can i rename an action when mapping it to my component?",
+    "intent": "howto",
+    "relevant_apis": [
+      "mapActions"
+    ],
+    "difficulty": "easy",
+    "framework": "pinia"
+  },
+  {
+    "difficulty": "easy",
+    "intent": "howto",
+    "relevant_apis": [
+      "defineStore"
+    ],
+    "question": "how do I define a store in a separate file?",
+    "expected_answer": "You can define a store in a separate file, then import it in your component and call the `use...Store()` function.",
+    "relevant_paths": [
+      "core-concepts/index.md"
+    ],
+    "framework": "pinia"
+  },
+  {
+    "expected_answer": "You can use `store.$subscribe(callback, { detached: true })` to keep the subscription alive even if the component is unmounted.",
+    "relevant_paths": [
+      "core-concepts/state.md"
+    ],
+    "question": "how can I keep a store subscription active after a component is unmounted?",
+    "intent": "howto",
+    "relevant_apis": [
+      "$subscribe"
+    ],
+    "difficulty": "medium",
+    "framework": "pinia"
+  },
+  {
+    "relevant_paths": [
+      "core-concepts/plugins.md"
+    ],
+    "expected_answer": "You can return an object from the plugin to add properties or use `pinia.use(({ store }) => { store.prop = value })`. Using the return approach is better for devtools tracking.",
+    "question": "how do i add a global property to all stores via a plugin?",
+    "intent": "howto",
+    "relevant_apis": [
+      "pinia.use"
+    ],
+    "difficulty": "medium",
+    "framework": "pinia"
+  },
+  {
+    "difficulty": "medium",
+    "intent": "howto",
+    "relevant_apis": [],
+    "question": "how do i add types to properties added by a pinia plugin?",
+    "relevant_paths": [
+      "core-concepts/plugins.md"
+    ],
+    "expected_answer": "You should extend the `PiniaCustomProperties` interface in a declaration file to define the type of the property.",
+    "framework": "pinia"
+  },
+  {
+    "intent": "howto",
+    "relevant_apis": [
+      "createTestingPinia"
+    ],
+    "difficulty": "medium",
+    "relevant_paths": [
+      "cookbook/testing.md"
+    ],
+    "expected_answer": "You can pass `stubActions: false` to `createTestingPinia()` to execute the original implementation, or pass an array of action names to stub only specific ones.",
+    "question": "how can I selectively mock actions in my tests?",
+    "framework": "pinia"
+  },
+  {
+    "intent": "comparison",
+    "relevant_apis": [],
+    "difficulty": "hard",
+    "expected_answer": "Pinia stores are dynamic by design. There is no need to dynamically register modules; they are only registered when needed.",
+    "relevant_paths": [
+      "cookbook/migration-vuex.md"
+    ],
+    "question": "how do i achieve dynamic module registration like in vuex?",
+    "framework": "pinia"
+  },
+  {
+    "expected_answer": "When using Pinia with SSR, you must pass the pinia instance to `useStore(pinia)` outside of a setup context to ensure the correct instance is used.",
+    "relevant_paths": [
+      "ssr/index.md"
+    ],
+    "question": "how do i use pinia in an async data or server-side fetch?",
+    "intent": "howto",
+    "relevant_apis": [
+      "useStore"
+    ],
+    "difficulty": "hard",
+    "framework": "pinia"
+  },
+  {
+    "question": "can i use pinia in a legacy vue 2 project?",
+    "relevant_paths": [
+      "cookbook/options-api.md"
+    ],
+    "expected_answer": "Yes, provided your app is using Vue 2.7+ (or @vue/composition-api), you can use map helpers in the Options API.",
+    "difficulty": "medium",
+    "intent": "conceptual",
+    "relevant_apis": [
+      "mapStores"
+    ],
+    "framework": "pinia"
+  },
+  {
+    "difficulty": "easy",
+    "intent": "howto",
+    "relevant_apis": [
+      "storeToRefs"
+    ],
+    "question": "how do i destructure my store without losing reactivity?",
+    "expected_answer": "You should use `storeToRefs()` to destructure state properties to keep them reactive. Actions can be destructured directly.",
+    "relevant_paths": [
+      "core-concepts/index.md"
+    ],
+    "framework": "pinia"
+  },
+  {
+    "question": "how do i add a non-reactive property to my store?",
+    "expected_answer": "You should wrap non-reactive objects (like class instances) with `markRaw()` before adding them to the store to avoid unnecessary reactivity overhead.",
+    "relevant_paths": [
+      "core-concepts/plugins.md"
+    ],
+    "difficulty": "medium",
+    "intent": "howto",
+    "relevant_apis": [
+      "markRaw"
+    ],
+    "framework": "pinia"
+  },
+  {
+    "relevant_paths": [
+      "core-concepts/plugins.md"
+    ],
+    "expected_answer": "You need to extend `DefineStoreOptionsBase` and add your custom option to it. Then, your plugin can read `options.myCustomOption` from the context.",
+    "question": "how can i add a custom option to defineStore?",
+    "intent": "howto",
+    "relevant_apis": [
+      "defineStore"
+    ],
+    "difficulty": "hard",
+    "framework": "pinia"
+  },
+  {
+    "question": "why do store names start with \"use\" and end in \"Store\"?",
+    "relevant_paths": [
+      "core-concepts/index.md"
+    ],
+    "expected_answer": "It is a convention to make usage idiomatic, indicating the returned function is a composable store.",
+    "difficulty": "easy",
+    "intent": "conceptual",
+    "relevant_apis": [],
+    "framework": "pinia"
+  },
+  {
+    "relevant_paths": [
+      "ssr/index.md"
+    ],
+    "expected_answer": "In SSR, you must serialize the state server-side, place it in the HTML (e.g., as `window.__pinia`), and then parse and assign it to `pinia.state.value` on the client before calling any `useStore()` functions.",
+    "question": "how do i handle state hydration in ssr?",
+    "intent": "howto",
+    "relevant_apis": [
+      "createPinia"
+    ],
+    "difficulty": "medium",
+    "framework": "pinia"
+  },
+  {
+    "difficulty": "medium",
+    "intent": "howto",
+    "relevant_apis": [
+      "@pinia/nuxt"
+    ],
+    "question": "is there an easy way to use pinia with nuxt?",
+    "expected_answer": "Pinia supports Nuxt 3 and 4 with the `@pinia/nuxt` module. You just need to add it to your modules in `nuxt.config.js`.",
+    "relevant_paths": [
+      "ssr/nuxt.md"
+    ],
+    "framework": "pinia"
+  },
+  {
+    "relevant_paths": [
+      "cookbook/composables.md"
+    ],
+    "expected_answer": "The `hydrate` function allows you to manually re-initialize complex state (like custom refs or data that changes between server and client) when the store is created on the client.",
+    "question": "what is the hydrate function for in an option store?",
+    "intent": "api_lookup",
+    "relevant_apis": [
+      "hydrate"
+    ],
+    "difficulty": "hard",
+    "framework": "pinia"
+  }
+]

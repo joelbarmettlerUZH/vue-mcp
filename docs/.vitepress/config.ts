@@ -56,6 +56,7 @@ export default defineConfig({
           { text: "Vite", link: "/frameworks/vite" },
           { text: "Vitest", link: "/frameworks/vitest" },
           { text: "Nuxt", link: "/frameworks/nuxt" },
+          { text: "Pinia", link: "/frameworks/pinia" },
         ],
       },
       {
