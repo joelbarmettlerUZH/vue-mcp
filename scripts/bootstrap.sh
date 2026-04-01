@@ -42,6 +42,15 @@ else
     git -C "$PROJECT_ROOT/data/vite-docs" pull
 fi
 
+# Clone Nuxt docs if not present
+if [ ! -d "$PROJECT_ROOT/data/nuxt-docs" ]; then
+    echo "Cloning Nuxt documentation..."
+    git clone --depth 1 https://github.com/nuxt/nuxt.git "$PROJECT_ROOT/data/nuxt-docs"
+else
+    echo "Nuxt docs already cloned, pulling latest..."
+    git -C "$PROJECT_ROOT/data/nuxt-docs" pull
+fi
+
 # Clone Vitest docs if not present
 if [ ! -d "$PROJECT_ROOT/data/vitest-docs" ]; then
     echo "Cloning Vitest documentation..."

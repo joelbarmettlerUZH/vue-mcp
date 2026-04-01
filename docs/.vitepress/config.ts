@@ -55,6 +55,7 @@ export default defineConfig({
           { text: "VueUse", link: "/frameworks/vueuse" },
           { text: "Vite", link: "/frameworks/vite" },
           { text: "Vitest", link: "/frameworks/vitest" },
+          { text: "Nuxt", link: "/frameworks/nuxt" },
         ],
       },
       {

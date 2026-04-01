@@ -19,6 +19,7 @@ FRAMEWORK_TO_LIBRARY_ID: dict[str, str] = {
     "vueuse": "/vueuse/vueuse",
     "vite": "/vitejs/vite",
     "vitest": "/vitest-dev/vitest",
+    "nuxt": "/nuxt/nuxt",
 }
 
 

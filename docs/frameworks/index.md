@@ -11,6 +11,7 @@ Vue Docs MCP provides deep, structured access to the Vue ecosystem documentation
 | [VueUse](./vueuse) | [vueuse.org](https://vueuse.org) | 50 | **4.89 / 5** |
 | [Vite](./vite) | [vite.dev](https://vite.dev) | 49 | **4.95 / 5** |
 | [Vitest](./vitest) | [vitest.dev](https://vitest.dev) | 50 | **4.77 / 5** |
+| [Nuxt](./nuxt) | [nuxt.com](https://nuxt.com) | 49 | **4.80 / 5** |
 
 ## What Each Framework Provides
 
@@ -27,7 +28,7 @@ When two or more frameworks are active, a cross-framework `ecosystem_search` too
 Only **Vue.js** is enabled by default. Call `set_framework_preferences` to activate additional frameworks for the current session:
 
 ```
-set_framework_preferences(vue=true, vue_router=true, vueuse=true, vite=true, vitest=true)
+set_framework_preferences(vue=true, vue_router=true, vueuse=true, vite=true, vitest=true, nuxt=true)
 ```
 
 ### Parameters
@@ -39,6 +40,7 @@ set_framework_preferences(vue=true, vue_router=true, vueuse=true, vite=true, vit
 | `vueuse` | `boolean` | `false` | Enable VueUse documentation |
 | `vite` | `boolean` | `false` | Enable Vite documentation |
 | `vitest` | `boolean` | `false` | Enable Vitest documentation |
+| `nuxt` | `boolean` | `false` | Enable Nuxt documentation |
 
 After calling this, your AI assistant will have access to tools, resources, and prompts for all enabled frameworks. When more than one framework is active, an `ecosystem_search` tool becomes available that searches across all frameworks simultaneously.
 
@@ -53,7 +55,7 @@ Read `ecosystem://preferences` to check which frameworks are currently active. R
 | [VueUse](https://vueuse.org) | :white_check_mark: Available |
 | [Vite](https://vite.dev) | :white_check_mark: Available |
 | [Vitest](https://vitest.dev) | :white_check_mark: Available |
-| [Nuxt](https://nuxt.com) | :calendar: Planned |
+| [Nuxt](https://nuxt.com) | :white_check_mark: Available |
 | [Pinia](https://pinia.vuejs.org) | :calendar: Planned |
 | [Vue DevTools](https://devtools.vuejs.org) | :calendar: Planned |
 | [VitePress](https://vitepress.dev) | :calendar: Planned |

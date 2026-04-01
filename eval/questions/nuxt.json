@@ -1,0 +1,618 @@
+[
+  {
+    "relevant_paths": [
+      "2.directory-structure/0.nuxt.md"
+    ],
+    "question": "What is the purpose of the .nuxt directory and should I edit files inside it?",
+    "intent": "conceptual",
+    "expected_answer": "The .nuxt/ directory is used by Nuxt in development to generate your Vue application. You should not touch these files as they are re-created when running nuxt dev, and it should be added to .gitignore.",
+    "difficulty": "easy",
+    "relevant_apis": [],
+    "framework": "nuxt"
+  },
+  {
+    "expected_answer": "The .output/ directory is created when building your application for production. It should be added to .gitignore, and you should not modify its contents because it is re-created during nuxt build.",
+    "relevant_apis": [],
+    "difficulty": "easy",
+    "relevant_paths": [
+      "2.directory-structure/0.output.md"
+    ],
+    "intent": "conceptual",
+    "question": "I see an .output folder in my project. What is it for and can I edit it?",
+    "framework": "nuxt"
+  },
+  {
+    "intent": "comparison",
+    "question": "What is the difference between app.config.ts and runtimeConfig?",
+    "relevant_paths": [
+      "1.getting-started/03.configuration.md"
+    ],
+    "difficulty": "medium",
+    "relevant_apis": [
+      "useAppConfig",
+      "useRuntimeConfig"
+    ],
+    "expected_answer": "The app.config.ts file exposes public, non-sensitive variables that are determined at build time. Unlike runtimeConfig, these cannot be overridden by environment variables and support HMR.",
+    "framework": "nuxt"
+  },
+  {
+    "expected_answer": "You can use the runtimeConfig option in your nuxt.config to define variables. They are accessible in your app using the useRuntimeConfig() composable. Private keys are only available on the server, while keys inside public are available on both client and server.",
+    "relevant_apis": [
+      "useRuntimeConfig"
+    ],
+    "difficulty": "medium",
+    "relevant_paths": [
+      "1.getting-started/03.configuration.md"
+    ],
+    "question": "How can I define and access environment variables in my Nuxt app?",
+    "intent": "howto",
+    "framework": "nuxt"
+  },
+  {
+    "expected_answer": "The public/ directory is used for static assets like favicon.ico or robots.txt that should be served at the root URL and not processed by the build tool. The app/assets/ directory contains files like stylesheets and fonts that are processed by Vite or webpack.",
+    "difficulty": "easy",
+    "relevant_apis": [],
+    "relevant_paths": [
+      "1.getting-started/05.assets.md"
+    ],
+    "intent": "comparison",
+    "question": "What is the difference between the public/ and app/assets/ directories?",
+    "framework": "nuxt"
+  },
+  {
+    "expected_answer": "You can use the css property in nuxt.config.ts to register global stylesheets, or import them directly in your components/layouts using JavaScript or CSS @import.",
+    "relevant_apis": [],
+    "difficulty": "medium",
+    "relevant_paths": [
+      "1.getting-started/06.styling.md"
+    ],
+    "question": "How do I add global CSS to my Nuxt application?",
+    "intent": "howto",
+    "framework": "nuxt"
+  },
+  {
+    "difficulty": "hard",
+    "relevant_apis": [
+      "useHead"
+    ],
+    "expected_answer": "Use the useHead composable with a titleTemplate function. For example: useHead({ titleTemplate: (titleChunk) => titleChunk ? `${titleChunk} - Site Title` : 'Site Title' }).",
+    "question": "How can I set a dynamic page title that includes the site name?",
+    "intent": "howto",
+    "relevant_paths": [
+      "1.getting-started/08.seo-meta.md"
+    ],
+    "framework": "nuxt"
+  },
+  {
+    "relevant_paths": [
+      "1.getting-started/09.transitions.md"
+    ],
+    "question": "How do I add page transitions to my Nuxt app?",
+    "intent": "howto",
+    "expected_answer": "In your nuxt.config, set app.pageTransition. You then need to define the corresponding CSS classes (.page-enter-active, .page-leave-active, etc.) in your app.vue file.",
+    "relevant_apis": [],
+    "difficulty": "medium",
+    "framework": "nuxt"
+  },
+  {
+    "relevant_paths": [
+      "1.getting-started/10.data-fetching.md"
+    ],
+    "intent": "comparison",
+    "question": "When should I use useFetch vs $fetch?",
+    "expected_answer": "useFetch is a wrapper around $fetch that handles data fetching once in universal rendering. $fetch is a simple network request utility that should be used for client-side interactions or when combined with useAsyncData.",
+    "relevant_apis": [
+      "useFetch",
+      "$fetch",
+      "useAsyncData"
+    ],
+    "difficulty": "medium",
+    "framework": "nuxt"
+  },
+  {
+    "expected_answer": "useState is SSR-friendly and its value is preserved during hydration. Pinia is a state management library for global stores, better for complex state. Use useState for component-level or simple shared state, and Pinia for large-scale store management.",
+    "relevant_apis": [
+      "useState"
+    ],
+    "difficulty": "hard",
+    "relevant_paths": [
+      "1.getting-started/11.state-management.md"
+    ],
+    "intent": "comparison",
+    "question": "When should I use useState vs Pinia?",
+    "framework": "nuxt"
+  },
+  {
+    "relevant_apis": [
+      "clearError",
+      "useError"
+    ],
+    "difficulty": "medium",
+    "expected_answer": "Create an error.vue file in your source directory. It will be used to display custom error pages when Nuxt encounters a fatal error.",
+    "intent": "howto",
+    "question": "How do I create a custom error page?",
+    "relevant_paths": [
+      "1.getting-started/12.error-handling.md"
+    ],
+    "framework": "nuxt"
+  },
+  {
+    "intent": "comparison",
+    "question": "What is the difference between route middleware and server middleware?",
+    "relevant_paths": [
+      "1.getting-started/07.routing.md",
+      "1.getting-started/13.server.md"
+    ],
+    "relevant_apis": [],
+    "difficulty": "medium",
+    "expected_answer": "Route middleware runs in the Vue part of the app for navigation, while server middleware runs in the Nitro server part for every request (including API routes).",
+    "framework": "nuxt"
+  },
+  {
+    "relevant_paths": [
+      "1.getting-started/14.layers.md"
+    ],
+    "intent": "conceptual",
+    "question": "Explain how Nuxt layers work and how they override each other.",
+    "expected_answer": "Nuxt layers allow extending the default files, configs, and components from another project. You can add them in nuxt.config using the extends property, pointing to a local directory, git repo, or npm package. Higher priority layers override lower ones.",
+    "difficulty": "hard",
+    "relevant_apis": [],
+    "framework": "nuxt"
+  },
+  {
+    "intent": "howto",
+    "question": "How do I ensure a specific route is prerendered during build?",
+    "relevant_paths": [
+      "1.getting-started/15.prerendering.md"
+    ],
+    "difficulty": "medium",
+    "relevant_apis": [],
+    "expected_answer": "The Nitro crawler automatically crawls links in your HTML. You can manually add routes to the prerender.routes array in your nitro configuration or use routeRules to set prerender: true.",
+    "framework": "nuxt"
+  },
+  {
+    "question": "How do I set up testing for my Nuxt application?",
+    "intent": "howto",
+    "relevant_paths": [
+      "1.getting-started/17.testing.md"
+    ],
+    "difficulty": "hard",
+    "relevant_apis": [
+      "mountSuspended"
+    ],
+    "expected_answer": "The @nuxt/test-utils library provides utilities like mountSuspended and renderSuspended for component testing, and setup for E2E tests. You should use a vitest.config.ts file to configure your test environment as 'nuxt'.",
+    "framework": "nuxt"
+  },
+  {
+    "relevant_paths": [
+      "1.getting-started/18.upgrade.md"
+    ],
+    "question": "How can I upgrade Nuxt and how do I try out the nightly versions?",
+    "intent": "howto",
+    "expected_answer": "The nuxt upgrade command is used to upgrade to the latest release. Nightly builds can be accessed by changing the nuxt dependency to 'npm:nuxt-nightly@latest' in package.json.",
+    "relevant_apis": [],
+    "difficulty": "medium",
+    "framework": "nuxt"
+  },
+  {
+    "intent": "api_lookup",
+    "question": "What is addComponentsDir used for?",
+    "relevant_paths": [
+      "2.directory-structure/1.app/1.components.md"
+    ],
+    "relevant_apis": [
+      "addComponentsDir"
+    ],
+    "difficulty": "easy",
+    "expected_answer": "AddComponentsDir is a Nuxt Kit utility used in custom modules to register a directory of components automatically. It takes a path and an optional prefix.",
+    "framework": "nuxt"
+  },
+  {
+    "relevant_paths": [
+      "2.directory-structure/1.app/1.composables.md"
+    ],
+    "question": "Why aren't my composables in a nested folder being auto-imported?",
+    "intent": "conceptual",
+    "expected_answer": "The app/composables/ directory auto-imports functions into your application. Files are scanned only at the top level, so nested files aren't auto-imported unless re-exported or configured in imports.dirs.",
+    "difficulty": "medium",
+    "relevant_apis": [],
+    "framework": "nuxt"
+  },
+  {
+    "relevant_paths": [
+      "2.directory-structure/1.app/1.layouts.md"
+    ],
+    "intent": "api_lookup",
+    "question": "How do I change the layout of a page programmatically?",
+    "expected_answer": "The setPageLayout composable allows you to change the layout dynamically from within your middleware or page logic.",
+    "difficulty": "easy",
+    "relevant_apis": [
+      "setPageLayout"
+    ],
+    "framework": "nuxt"
+  },
+  {
+    "relevant_paths": [
+      "1.getting-started/07.routing.md",
+      "2.directory-structure/1.app/1.middleware.md"
+    ],
+    "intent": "conceptual",
+    "question": "What are the three types of route middleware and how do they differ?",
+    "expected_answer": "If you define a named middleware, it's placed in app/middleware/ and loaded via async import. Anonymous middleware is defined inline in the page using definePageMeta. Global middleware has a .global suffix and runs on every route change.",
+    "relevant_apis": [
+      "defineNuxtRouteMiddleware"
+    ],
+    "difficulty": "medium",
+    "framework": "nuxt"
+  },
+  {
+    "difficulty": "easy",
+    "relevant_apis": [],
+    "expected_answer": "The error.vue file should be placed in the source directory, not in the pages/ directory. It is not a route and should not use definePageMeta.",
+    "intent": "debugging",
+    "question": "My error.vue page isn't working when I put it in the pages/ folder. Why?",
+    "relevant_paths": [
+      "2.directory-structure/1.app/3.error.md"
+    ],
+    "framework": "nuxt"
+  },
+  {
+    "difficulty": "hard",
+    "relevant_apis": [],
+    "expected_answer": "In Nuxt 5, the Vite Environment API is always enabled. You should migrate from extendViteConfig to Vite plugins using the applyToEnvironment hook to target specific environments.",
+    "question": "What do I need to know about migrating to the Vite Environment API in Nuxt 5?",
+    "intent": "migration",
+    "relevant_paths": [
+      "1.getting-started/18.upgrade.md"
+    ],
+    "framework": "nuxt"
+  },
+  {
+    "question": "What is the purpose of the shared/ directory?",
+    "intent": "conceptual",
+    "relevant_paths": [
+      "2.directory-structure/1.shared.md"
+    ],
+    "relevant_apis": [],
+    "difficulty": "medium",
+    "expected_answer": "The shared/ directory allows you to share utility functions and types between the Vue app and the Nitro server. Code here cannot import Vue or Nitro code.",
+    "framework": "nuxt"
+  },
+  {
+    "relevant_paths": [
+      "2.directory-structure/2.env.md"
+    ],
+    "intent": "conceptual",
+    "question": "Why isn't my .env file being read in production?",
+    "expected_answer": "The .env file is used for environment variables during dev, build, and generate. It is not read in production; instead, you must set environment variables via your hosting provider.",
+    "relevant_apis": [],
+    "difficulty": "easy",
+    "framework": "nuxt"
+  },
+  {
+    "difficulty": "medium",
+    "relevant_apis": [
+      "defineEventHandler"
+    ],
+    "expected_answer": "Use the defineEventHandler utility in your server/api or server/routes files to create API endpoints. You can return objects, promises, or streams.",
+    "intent": "howto",
+    "question": "How do I create a simple API endpoint in Nuxt?",
+    "relevant_paths": [
+      "1.getting-started/13.server.md",
+      "2.directory-structure/1.server.md"
+    ],
+    "framework": "nuxt"
+  },
+  {
+    "difficulty": "hard",
+    "relevant_apis": [],
+    "expected_answer": "Nuxt uses project references for better type-checking performance. Each context (app, server, node) gets its own tsconfig.json generated in .nuxt/. You should extend these via nuxt.config.ts instead of editing them.",
+    "question": "How does Nuxt handle TypeScript configuration and why are there so many tsconfig files?",
+    "intent": "conceptual",
+    "relevant_paths": [
+      "2.directory-structure/3.tsconfig.md"
+    ],
+    "framework": "nuxt"
+  },
+  {
+    "expected_answer": "Universal rendering (SSR + Hydration) is best for SEO and performance. Client-side rendering (CSR) is best for highly interactive apps where SEO is less critical. Hybrid rendering allows per-route rendering strategies.",
+    "relevant_apis": [],
+    "difficulty": "medium",
+    "relevant_paths": [
+      "3.guide/1.concepts/1.rendering.md"
+    ],
+    "intent": "comparison",
+    "question": "What are the main differences between universal, client-side, and hybrid rendering?",
+    "framework": "nuxt"
+  },
+  {
+    "relevant_paths": [
+      "4.api/2.composables/use-runtime-config.md"
+    ],
+    "question": "What does useRuntimeConfig() return?",
+    "intent": "api_lookup",
+    "expected_answer": "The useRuntimeConfig composable allows you to access private and public runtime configuration variables, which can be overridden by environment variables.",
+    "relevant_apis": [
+      "useRuntimeConfig"
+    ],
+    "difficulty": "easy",
+    "framework": "nuxt"
+  },
+  {
+    "expected_answer": "useFetch is a wrapper that combines useAsyncData and $fetch. It handles de-duplication, state transfer from server to client, and is SSR-safe.",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "useFetch",
+      "useAsyncData",
+      "$fetch"
+    ],
+    "relevant_paths": [
+      "4.api/2.composables/use-fetch.md"
+    ],
+    "intent": "api_lookup",
+    "question": "What does the useFetch composable do under the hood?",
+    "framework": "nuxt"
+  },
+  {
+    "expected_answer": "You should use useHeadSafe to sanitize user input for head tags, as it strips out dangerous attributes like innerHTML. useHead is for trusted data only.",
+    "relevant_apis": [
+      "useHeadSafe",
+      "useHead"
+    ],
+    "difficulty": "medium",
+    "relevant_paths": [
+      "4.api/2.composables/use-head-safe.md"
+    ],
+    "intent": "comparison",
+    "question": "Why should I use useHeadSafe instead of useHead for user-generated content?",
+    "framework": "nuxt"
+  },
+  {
+    "relevant_apis": [
+      "useNuxtApp"
+    ],
+    "difficulty": "medium",
+    "expected_answer": "The useNuxtApp composable provides access to the shared runtime context (nuxtApp), including the Vue app instance, hooks, and internal state like payload and ssrContext.",
+    "question": "What is the purpose of useNuxtApp()?",
+    "intent": "api_lookup",
+    "relevant_paths": [
+      "4.api/2.composables/use-nuxt-app.md"
+    ],
+    "framework": "nuxt"
+  },
+  {
+    "relevant_apis": [
+      "useLazyFetch",
+      "useFetch"
+    ],
+    "difficulty": "medium",
+    "expected_answer": "useLazyFetch performs the same logic as useFetch but does not block navigation until the data is fetched. You must handle the pending state in your template.",
+    "question": "How does useLazyFetch differ from useFetch?",
+    "intent": "comparison",
+    "relevant_paths": [
+      "4.api/2.composables/use-lazy-fetch.md"
+    ],
+    "framework": "nuxt"
+  },
+  {
+    "relevant_paths": [
+      "4.api/3.utils/$fetch.md"
+    ],
+    "intent": "api_lookup",
+    "question": "What is the $fetch helper used for?",
+    "expected_answer": "You can use $fetch to make HTTP requests. During SSR, it optimizes internal API calls by calling the function directly instead of making an HTTP request.",
+    "relevant_apis": [
+      "$fetch"
+    ],
+    "difficulty": "easy",
+    "framework": "nuxt"
+  },
+  {
+    "relevant_apis": [
+      "navigateTo"
+    ],
+    "difficulty": "medium",
+    "expected_answer": "Use navigateTo inside route middleware and return its result. If you don't return the result, the middleware flow might not behave as expected.",
+    "question": "My navigateTo in middleware isn't working properly. What am I doing wrong?",
+    "intent": "debugging",
+    "relevant_paths": [
+      "4.api/3.utils/navigate-to.md"
+    ],
+    "framework": "nuxt"
+  },
+  {
+    "expected_answer": "The Nuxt context is only available during specific lifecycle stages like plugins, middleware, and setup functions. useNuxtApp() throws if called outside these stages. Use tryUseNuxtApp() to check for context availability.",
+    "difficulty": "hard",
+    "relevant_apis": [
+      "useNuxtApp",
+      "tryUseNuxtApp"
+    ],
+    "relevant_paths": [
+      "4.api/2.composables/use-nuxt-app.md"
+    ],
+    "intent": "debugging",
+    "question": "I'm getting 'Nuxt instance is unavailable' errors. How can I fix this?",
+    "framework": "nuxt"
+  },
+  {
+    "expected_answer": "You can use the pick option to select only specific fields from the response, which prevents unnecessary data from being transferred in the payload.",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "useFetch"
+    ],
+    "relevant_paths": [
+      "1.getting-started/10.data-fetching.md"
+    ],
+    "intent": "howto",
+    "question": "How can I reduce the payload size when fetching data with useFetch?",
+    "framework": "nuxt"
+  },
+  {
+    "relevant_paths": [
+      "2.directory-structure/2.nuxtignore.md"
+    ],
+    "intent": "conceptual",
+    "question": "How do I tell Nuxt to ignore certain files during the build?",
+    "expected_answer": "The .nuxtignore file uses glob patterns to specify which files or directories in the project root should be ignored during the build process.",
+    "relevant_apis": [],
+    "difficulty": "easy",
+    "framework": "nuxt"
+  },
+  {
+    "relevant_paths": [
+      "4.api/2.composables/create-use-fetch.md",
+      "4.api/2.composables/create-use-async-data.md"
+    ],
+    "intent": "howto",
+    "question": "How can I create a reusable fetch composable with default options?",
+    "expected_answer": "You can create a custom composable with createUseFetch or createUseAsyncData to define defaults like baseURL or specific auth headers.",
+    "relevant_apis": [
+      "createUseFetch",
+      "createUseAsyncData"
+    ],
+    "difficulty": "medium",
+    "framework": "nuxt"
+  },
+  {
+    "intent": "debugging",
+    "question": "I have hydration mismatch errors. What are the common causes and how do I fix them?",
+    "relevant_paths": [
+      "3.guide/2.best-practices/hydration.md"
+    ],
+    "relevant_apis": [],
+    "difficulty": "medium",
+    "expected_answer": "Hydration mismatches happen when the server and client render different content for the same component. Fix them by using SSR-friendly composables (useCookie, useState), moving side effects to onMounted, and ensuring data consistency.",
+    "framework": "nuxt"
+  },
+  {
+    "expected_answer": "Server components render on the server to static HTML without client-side JS. They can be standalone islands or paired with a client component for partial hydration, useful for performance.",
+    "difficulty": "hard",
+    "relevant_apis": [
+      "NuxtIsland"
+    ],
+    "relevant_paths": [
+      "2.directory-structure/1.app/1.components.md"
+    ],
+    "question": "What are server components and when should I use them?",
+    "intent": "conceptual",
+    "framework": "nuxt"
+  },
+  {
+    "expected_answer": "Use the addServerHandler utility in your module's setup function to register a custom API route.",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "addServerHandler"
+    ],
+    "relevant_paths": [
+      "2.directory-structure/1.modules.md",
+      "3.guide/4.modules/3.recipes-basics.md"
+    ],
+    "question": "How can I add a new API route from a custom Nuxt module?",
+    "intent": "howto",
+    "framework": "nuxt"
+  },
+  {
+    "question": "How do I inject a plugin from a Nuxt module?",
+    "intent": "howto",
+    "relevant_paths": [
+      "3.guide/4.modules/3.recipes-basics.md"
+    ],
+    "relevant_apis": [
+      "addPlugin"
+    ],
+    "difficulty": "medium",
+    "expected_answer": "Use the addPlugin utility in your module's setup function to register a runtime plugin.",
+    "framework": "nuxt"
+  },
+  {
+    "question": "How can I add virtual files from a module?",
+    "intent": "howto",
+    "relevant_paths": [
+      "3.guide/4.modules/4.recipes-advanced.md"
+    ],
+    "relevant_apis": [
+      "addTemplate",
+      "addServerTemplate"
+    ],
+    "difficulty": "hard",
+    "expected_answer": "Use addTemplate and addServerTemplate to add virtual files to the Nuxt/Nitro file system. You can then import these files using the #build/ or #server alias.",
+    "framework": "nuxt"
+  },
+  {
+    "intent": "howto",
+    "question": "How do I listen to Nuxt lifecycle hooks from a module?",
+    "relevant_paths": [
+      "3.guide/4.modules/4.recipes-advanced.md"
+    ],
+    "difficulty": "medium",
+    "relevant_apis": [
+      "defineNuxtModule"
+    ],
+    "expected_answer": "Use the hooks map in defineNuxtModule or nuxt.hook() in the setup function. Modules can listen to lifecycle events like 'pages:extend' or 'app:error'.",
+    "framework": "nuxt"
+  },
+  {
+    "expected_answer": "Named middleware is defined in app/middleware/ and loaded via async import. Anonymous middleware is defined inline using definePageMeta, and global middleware has a .global suffix.",
+    "relevant_apis": [],
+    "difficulty": "easy",
+    "relevant_paths": [
+      "2.directory-structure/1.app/1.middleware.md"
+    ],
+    "question": "What is the difference between named, global, and anonymous route middleware?",
+    "intent": "conceptual",
+    "framework": "nuxt"
+  },
+  {
+    "expected_answer": "Use the refreshNuxtData composable to trigger a refetch of cached data from useAsyncData or useFetch. You can pass keys to refresh only specific data.",
+    "relevant_apis": [
+      "refreshNuxtData"
+    ],
+    "difficulty": "medium",
+    "relevant_paths": [
+      "4.api/3.utils/refresh-nuxt-data.md"
+    ],
+    "question": "How do I manually trigger a refresh of cached data?",
+    "intent": "api_lookup",
+    "framework": "nuxt"
+  },
+  {
+    "question": "How can I invalidate all cached data in my Nuxt app?",
+    "intent": "api_lookup",
+    "relevant_paths": [
+      "4.api/3.utils/clear-nuxt-data.md"
+    ],
+    "difficulty": "medium",
+    "relevant_apis": [
+      "clearNuxtData"
+    ],
+    "expected_answer": "Use the clearNuxtData composable to invalidate cached data. If you pass a key, only that data is cleared; otherwise, all cached data is cleared.",
+    "framework": "nuxt"
+  },
+  {
+    "intent": "howto",
+    "question": "Why are my cookies not being sent when fetching in SSR?",
+    "relevant_paths": [
+      "1.getting-started/10.data-fetching.md",
+      "4.api/2.composables/use-request-fetch.md"
+    ],
+    "relevant_apis": [
+      "useRequestFetch"
+    ],
+    "difficulty": "medium",
+    "expected_answer": "You should use the useRequestFetch composable to forward headers and cookies when making isomorphic fetch requests on the server, as $fetch does not do this automatically for security reasons.",
+    "framework": "nuxt"
+  },
+  {
+    "intent": "howto",
+    "question": "How can I perform background tasks in a server route without waiting for them to finish?",
+    "relevant_paths": [
+      "1.getting-started/13.server.md"
+    ],
+    "difficulty": "hard",
+    "relevant_apis": [
+      "event.waitUntil"
+    ],
+    "expected_answer": "Use the events.waitUntil utility in your server route handler to schedule a background task without blocking the response to the client.",
+    "framework": "nuxt"
+  }
+]
