@@ -1,6 +1,6 @@
 # Vite
 
-<span style="color: var(--vp-c-brand-1); font-weight: 600;">4.94 / 5 composite score</span> &middot; 87.8% API recall &middot; 49 questions evaluated
+<span style="color: var(--vp-c-brand-1); font-weight: 600;">4.95 / 5 composite score</span> &middot; 87.8% API recall &middot; 49 questions evaluated
 
 Vue Docs MCP provides deep access to the official [Vite documentation](https://vite.dev), covering the build tool's configuration reference, plugin API, HMR API, JavaScript API, Environment API, and migration guides.
 
@@ -61,42 +61,54 @@ Find related APIs, concepts, and documentation pages for a given API or topic.
 | `compare_vite_apis` | `items` (comma-separated) | Side-by-side comparison of APIs or patterns (e.g. `server.proxy, server.middlewareMode`) |
 | `migrate_vite_pattern` | `from_pattern`, `to_pattern` | Migration guide between patterns (e.g. Vite 5 to Vite 6) |
 
-## Benchmarks
+## Benchmarks vs Context7
 
 Evaluated on 49 Vite questions scored by an LLM judge (Gemini, temperature 0) across 5 dimensions on a 1-5 scale.
 
 ::: info Methodology
-Each question has a ground-truth answer with expected API names and documentation paths. The provider receives the question and returns documentation context. The judge scores the retrieved context on relevance, completeness, correctness, API coverage, and conciseness. See the `eval/` directory in the repository for the full evaluation framework.
+Each question has a ground-truth answer with expected API names and documentation paths. Both providers receive the same question and return documentation context. The judge scores the retrieved context on relevance, completeness, correctness, API coverage, and conciseness. See the `eval/` directory in the repository for the full evaluation framework.
 :::
 
 ### Overall Scores
 
-| Metric | Score |
-|---|---|
-| Relevance | **5.00** |
-| Completeness | **4.88** |
-| Correctness | **4.92** |
-| API Coverage | **4.88** |
-| Conciseness | **4.98** |
-| **Composite** | **4.94** |
+<ClientOnly>
+<ApexChart
+  type="radar"
+  height="400"
+  :options="{
+    chart: { toolbar: { show: false } },
+    xaxis: { categories: ['Relevance', 'Completeness', 'Correctness', 'API Coverage', 'Conciseness'] },
+    yaxis: { min: 0, max: 5, tickAmount: 5 },
+    colors: ['#42b883', '#f97316'],
+    legend: { position: 'bottom' },
+    markers: { size: 4 },
+  }"
+  :series="[
+    { name: 'Vue Docs MCP', data: [5.00, 4.92, 4.96, 4.86, 5.00] },
+    { name: 'Context7', data: [4.94, 4.53, 4.80, 4.31, 4.78] },
+  ]"
+/>
+</ClientOnly>
+
+| Metric | Vue Docs MCP | Context7 |
+|---|---|---|
+| Relevance | **5.00** | 4.94 |
+| Completeness | **4.92** | 4.53 |
+| Correctness | **4.96** | 4.80 |
+| API Coverage | **4.86** | 4.31 |
+| Conciseness | **5.00** | 4.78 |
+| **Composite** | **4.95** | **4.67** |
 
 ### Retrieval and Cost
 
-| Metric | Value |
-|---|---|
-| Path Recall | **100%** |
-| API Recall | **87.8%** |
-| Avg Response Tokens | 4,115 |
-| Avg Latency | **0.91s** |
-| Cost per Query (user-facing) | **Free** |
+| Metric | Vue Docs MCP | Context7 |
+|---|---|---|
+| API Recall | **87.8%** | 84.7% |
+| Avg Response Tokens | 4,103 | 943 |
+| Avg Latency | **0.91s** | 1.84s |
+| Cost per Query (user-facing) | **Free** | $0.002 |
 
-### Pass Rates
+### Notes on Fairness
 
-Percentage of questions where **all** judge dimensions scored at or above the threshold:
-
-| Threshold | Pass Rate |
-|---|---|
-| All dimensions >= 5 | **96%** |
-| All dimensions >= 4 | **96%** |
-| All dimensions >= 3 | **96%** |
-| All dimensions >= 2 | **96%** |
+- Context7 is a general-purpose service covering 9000+ libraries. Vue Docs MCP is purpose-built for the Vue ecosystem.
+- The evaluation framework is open source in the `eval/` directory. Run `make eval-compare` to reproduce.

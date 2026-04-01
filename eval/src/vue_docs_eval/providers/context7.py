@@ -17,6 +17,8 @@ FRAMEWORK_TO_LIBRARY_ID: dict[str, str] = {
     "vue": "/vuejs/vue",
     "vue-router": "/vuejs/vue-router",
     "vueuse": "/vueuse/vueuse",
+    "vite": "/vitejs/vite",
+    "vitest": "/vitest-dev/vitest",
 }
 
 
