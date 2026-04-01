@@ -42,6 +42,15 @@ else
     git -C "$PROJECT_ROOT/data/vite-docs" pull
 fi
 
+# Clone Vue DevTools docs if not present
+if [ ! -d "$PROJECT_ROOT/data/vue-devtools-docs" ]; then
+    echo "Cloning Vue DevTools documentation..."
+    git clone --depth 1 https://github.com/vuejs/devtools.git "$PROJECT_ROOT/data/vue-devtools-docs"
+else
+    echo "Vue DevTools docs already cloned, pulling latest..."
+    git -C "$PROJECT_ROOT/data/vue-devtools-docs" pull
+fi
+
 # Clone Pinia docs if not present
 if [ ! -d "$PROJECT_ROOT/data/pinia-docs" ]; then
     echo "Cloning Pinia documentation..."

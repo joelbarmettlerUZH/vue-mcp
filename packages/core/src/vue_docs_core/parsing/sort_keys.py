@@ -8,7 +8,7 @@ receive a fallback alphabetical sort key that sorts after all sidebar entries.
 import re
 from pathlib import Path
 
-_SECTION_RE = re.compile(r"'(\/[\w-]+\/?)'\s*:\s*\[")
+_SECTION_RE = re.compile(r"'(\/[\w-]*\/?)'\s*:\s*\[")
 _ITEMS_RE = re.compile(r"items\s*:\s*\[")
 _LINK_RE = re.compile(r"link:\s*'(/[^']+)'")
 

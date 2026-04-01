@@ -450,6 +450,7 @@ async def set_framework_preferences(
     vitest: bool = False,
     nuxt: bool = False,
     pinia: bool = False,
+    vue_devtools: bool = False,
     ctx: Context = None,
 ) -> str:
     """Activate or deactivate Vue ecosystem framework documentation.
@@ -467,6 +468,7 @@ async def set_framework_preferences(
         "vitest": vitest,
         "nuxt": nuxt,
         "pinia": pinia,
+        "vue-devtools": vue_devtools,
     }
 
     # Map param names to source registry names

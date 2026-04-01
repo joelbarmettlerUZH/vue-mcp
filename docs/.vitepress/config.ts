@@ -57,6 +57,7 @@ export default defineConfig({
           { text: "Vitest", link: "/frameworks/vitest" },
           { text: "Nuxt", link: "/frameworks/nuxt" },
           { text: "Pinia", link: "/frameworks/pinia" },
+          { text: "Vue DevTools", link: "/frameworks/vue-devtools" },
         ],
       },
       {

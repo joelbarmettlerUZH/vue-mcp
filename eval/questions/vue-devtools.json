@@ -1,0 +1,579 @@
+[
+  {
+    "question": "Can I use Vue DevTools v7 with a Vue 2 project?",
+    "expected_answer": "The v7 version of Vue DevTools only supports Vue 3. If you are using Vue 2, you should install the v6 version of the extension.",
+    "intent": "conceptual",
+    "relevant_paths": [
+      "guide/browser-extension.md",
+      "getting-started/installation.md"
+    ],
+    "difficulty": "easy",
+    "relevant_apis": [],
+    "framework": "vue-devtools"
+  },
+  {
+    "relevant_paths": [
+      "plugins/api.md"
+    ],
+    "difficulty": "medium",
+    "relevant_apis": [
+      "addCustomTab"
+    ],
+    "question": "How do I add a new custom tab to the Vue DevTools interface?",
+    "expected_answer": "The `addCustomTab` function is used to add a new tab to the devtools, allowing you to define a view (either an iframe or an SFC) and a category for that tab.",
+    "intent": "api_lookup",
+    "framework": "vue-devtools"
+  },
+  {
+    "expected_answer": "You can use the standalone application, which is a package installed globally or locally that provides a devtools middleware server. You then connect your application by adding a script tag or using the devtools.connect() function to point to the server's host and port.",
+    "intent": "howto",
+    "question": "I'm developing an Electron app and can't use browser extensions. How can I still use Vue DevTools?",
+    "relevant_apis": [
+      "devtools.connect"
+    ],
+    "relevant_paths": [
+      "guide/standalone.md"
+    ],
+    "difficulty": "hard",
+    "framework": "vue-devtools"
+  },
+  {
+    "relevant_apis": [],
+    "relevant_paths": [
+      "guide/vite-plugin.md"
+    ],
+    "difficulty": "medium",
+    "intent": "comparison",
+    "expected_answer": "The Vite plugin is the recommended option for projects using Vite because it offers more powerful features, such as the Assets tab, Inspector, and the ability to run DevTools in a separate window.",
+    "question": "Why should I prefer the Vite plugin over other installation methods for my Vite project?",
+    "framework": "vue-devtools"
+  },
+  {
+    "difficulty": "hard",
+    "relevant_paths": [
+      "help/troubleshooting.md"
+    ],
+    "relevant_apis": [],
+    "question": "My devtools UI looks broken and nested strangely. How can I fix this?",
+    "intent": "debugging",
+    "expected_answer": "If the DevTools UI is rendering incorrectly (e.g., nested issues), ensure that `vite-plugin-vue-devtools` is registered before `vite-plugin-html` in your vite.config.ts file.",
+    "framework": "vue-devtools"
+  },
+  {
+    "expected_answer": "You can open the Command Palette by pressing Ctrl+K or Cmd+K.",
+    "intent": "howto",
+    "question": "Whats the shortcut to open the command palette?",
+    "relevant_apis": [],
+    "relevant_paths": [
+      "getting-started/features.md"
+    ],
+    "difficulty": "easy",
+    "framework": "vue-devtools"
+  },
+  {
+    "difficulty": "medium",
+    "relevant_paths": [
+      "plugins/api.md"
+    ],
+    "relevant_apis": [
+      "addCustomCommand",
+      "removeCustomCommand"
+    ],
+    "question": "How do I programmatically add and remove commands in the devtools menu?",
+    "intent": "api_lookup",
+    "expected_answer": "The `addCustomCommand` API allows you to create custom commands with icons, titles, and actions (either a URL or a submenu of children). You can also use `removeCustomCommand` to remove them by their unique ID.",
+    "framework": "vue-devtools"
+  },
+  {
+    "intent": "migration",
+    "expected_answer": "The v7 plugin API is fully compatible with the v6 plugin API (except for type definitions), and new plugin APIs have been introduced in v7 for enhanced functionality.",
+    "question": "Are plugins built for v6 compatible with v7 DevTools?",
+    "relevant_apis": [],
+    "difficulty": "medium",
+    "relevant_paths": [
+      "guide/migration.md",
+      "plugins/api.md"
+    ],
+    "framework": "vue-devtools"
+  },
+  {
+    "relevant_paths": [
+      "getting-started/open-in-editor.md"
+    ],
+    "difficulty": "hard",
+    "relevant_apis": [],
+    "question": "How do I setup 'open in editor' for a legacy Webpack project?",
+    "expected_answer": "To use the open-in-editor feature with Webpack, you need to install `launch-editor-middleware`, import it, and register the `/__open-in-editor` route within your `devServer.before` configuration.",
+    "intent": "howto",
+    "framework": "vue-devtools"
+  },
+  {
+    "expected_answer": "The Inspector feature (Vite only) allows you to inspect your app's DOM tree to identify which component is rendering a specific element, making it easier to find where to make changes.",
+    "intent": "conceptual",
+    "question": "What does the Inspector feature actually do?",
+    "relevant_apis": [],
+    "relevant_paths": [
+      "getting-started/features.md"
+    ],
+    "difficulty": "easy",
+    "framework": "vue-devtools"
+  },
+  {
+    "difficulty": "medium",
+    "relevant_paths": [
+      "guide/vite-plugin.md",
+      "help/faq.md"
+    ],
+    "relevant_apis": [],
+    "question": "How can I change the default editor used by the 'open in editor' feature in my Vite project?",
+    "intent": "api_lookup",
+    "expected_answer": "The `launchEditor` option in the Vite plugin configuration allows you to specify your preferred code editor, such as 'webstorm', 'code', or 'atom', among others.",
+    "framework": "vue-devtools"
+  },
+  {
+    "expected_answer": "You need to use `ngrok` to proxy the DevTools server (default port 8098), then call `devtools.connect()` in your app, passing the ngrok URL as the host and `null` as the port to avoid appending the port to the URL.",
+    "intent": "howto",
+    "question": "I need to inspect a page served over HTTPS. How do I configure the connection?",
+    "relevant_apis": [
+      "devtools.connect"
+    ],
+    "relevant_paths": [
+      "guide/standalone.md"
+    ],
+    "difficulty": "hard",
+    "framework": "vue-devtools"
+  },
+  {
+    "expected_answer": "The v7 DevTools moved the plugin timeline tab from a global position to be managed within each individual plugin's menu.",
+    "intent": "migration",
+    "question": "I can't find the plugin timeline tab in v7, where did it go?",
+    "relevant_apis": [],
+    "relevant_paths": [
+      "guide/migration.md"
+    ],
+    "difficulty": "medium",
+    "framework": "vue-devtools"
+  },
+  {
+    "expected_answer": "You can switch between multiple Vue instances using the dropdown in the top-left corner of the DevTools interface.",
+    "intent": "howto",
+    "question": "How do I handle multiple Vue apps in the same browser tab?",
+    "relevant_apis": [],
+    "difficulty": "easy",
+    "relevant_paths": [
+      "getting-started/features.md"
+    ],
+    "framework": "vue-devtools"
+  },
+  {
+    "difficulty": "medium",
+    "relevant_paths": [
+      "guide/vite-plugin.md"
+    ],
+    "relevant_apis": [],
+    "question": "What is the `appendTo` option for in the Vite plugin configuration?",
+    "expected_answer": "The `appendTo` option in the Vite plugin is used to append an import to a specific module ID instead of injecting a script into the body, which is necessary for projects that don't use a standard HTML entry file.",
+    "intent": "api_lookup",
+    "framework": "vue-devtools"
+  },
+  {
+    "question": "I'm trying to debug a Cordova app, but it's not connecting to the devtools. Any tips?",
+    "expected_answer": "In Cordova, you must ensure the devtools server is reachable at your IP, then call `devtools.connect()` with your local IP address, ideally inside a `deviceready` event listener.",
+    "intent": "debugging",
+    "difficulty": "hard",
+    "relevant_paths": [
+      "guide/standalone.md"
+    ],
+    "relevant_apis": [
+      "devtools.connect"
+    ],
+    "framework": "vue-devtools"
+  },
+  {
+    "relevant_apis": [],
+    "relevant_paths": [
+      "getting-started/features.md"
+    ],
+    "difficulty": "easy",
+    "intent": "conceptual",
+    "expected_answer": "The Timeline tab tracks the performance of your application, specifically monitoring time spent on rendering and updates.",
+    "question": "What's the purpose of the Timeline tab?",
+    "framework": "vue-devtools"
+  },
+  {
+    "expected_answer": "You should use `nuxt-devtools` for a more powerful developer experience if you are working with Nuxt. However, if you use the Vue DevTools plugin, you should configure the `appendTo` option to target the entry file.",
+    "intent": "comparison",
+    "question": "Is it better to use Nuxt DevTools or standard Vue DevTools for Nuxt projects?",
+    "relevant_apis": [],
+    "difficulty": "medium",
+    "relevant_paths": [
+      "getting-started/installation.md",
+      "help/faq.md"
+    ],
+    "framework": "vue-devtools"
+  },
+  {
+    "relevant_apis": [
+      "onDevToolsClientConnected"
+    ],
+    "relevant_paths": [
+      "plugins/api.md"
+    ],
+    "difficulty": "hard",
+    "intent": "api_lookup",
+    "expected_answer": "The `onDevToolsClientConnected` API allows you to execute a callback function as soon as the DevTools client establishes a connection to your application.",
+    "question": "Is there a way to run code when the devtools client successfully connects?",
+    "framework": "vue-devtools"
+  },
+  {
+    "question": "How do I enable the split screen mode?",
+    "expected_answer": "You can open the split screen view via the Command Palette or by clicking the Vue icon in the top left corner of the DevTools.",
+    "intent": "howto",
+    "relevant_paths": [
+      "getting-started/features.md"
+    ],
+    "difficulty": "easy",
+    "relevant_apis": [],
+    "framework": "vue-devtools"
+  },
+  {
+    "question": "What is the 'Inspect' tab for?",
+    "expected_answer": "The `inspect` tab provides an integration with `vite-plugin-inspect`, allowing you to see the transformation steps of your files during the Vite build process.",
+    "intent": "conceptual",
+    "difficulty": "medium",
+    "relevant_paths": [
+      "getting-started/features.md"
+    ],
+    "relevant_apis": [],
+    "framework": "vue-devtools"
+  },
+  {
+    "intent": "howto",
+    "expected_answer": "If you are using Vite, you should install `vite-plugin-vue-devtools` and register it in your `vite.config.ts`. If you are using a non-Vite project, you can use the browser extension or the standalone app, depending on your environment.",
+    "question": "What's the best way to add devtools to my project, Vite vs standard?",
+    "relevant_apis": [],
+    "relevant_paths": [
+      "guide/vite-plugin.md",
+      "getting-started/installation.md"
+    ],
+    "difficulty": "hard",
+    "framework": "vue-devtools"
+  },
+  {
+    "difficulty": "easy",
+    "relevant_paths": [
+      "getting-started/features.md"
+    ],
+    "relevant_apis": [],
+    "question": "What can the Pages tab do for me?",
+    "expected_answer": "The 'Pages' tab shows current routes, provides navigation, and includes a textbox to test route matching.",
+    "intent": "conceptual",
+    "framework": "vue-devtools"
+  },
+  {
+    "relevant_apis": [
+      "devtools.connect"
+    ],
+    "difficulty": "medium",
+    "relevant_paths": [
+      "guide/standalone.md"
+    ],
+    "intent": "debugging",
+    "expected_answer": "The `devtools.connect()` function should be invoked before your Vue app is created to ensure the connection is established properly.",
+    "question": "My standalone devtools isn't showing any data. Does the order of initialization matter?",
+    "framework": "vue-devtools"
+  },
+  {
+    "relevant_apis": [],
+    "relevant_paths": [
+      "getting-started/open-in-editor.md",
+      "help/faq.md"
+    ],
+    "difficulty": "hard",
+    "expected_answer": "You can use the `launchEditor` option in the Vite plugin config. For browsers, ensure `launch-editor-middleware` is configured correctly, or use the `openInEditorHost` global configuration in your frontend code.",
+    "intent": "howto",
+    "question": "I'm having trouble with the 'open in editor' feature. How do I debug the configuration?",
+    "framework": "vue-devtools"
+  },
+  {
+    "difficulty": "easy",
+    "relevant_paths": [
+      "guide/standalone.md"
+    ],
+    "relevant_apis": [],
+    "question": "When would I ever need the standalone app?",
+    "intent": "conceptual",
+    "expected_answer": "You can use the standalone app if you are on an unsupported browser or need to debug an Electron application.",
+    "framework": "vue-devtools"
+  },
+  {
+    "relevant_paths": [
+      "getting-started/features.md"
+    ],
+    "difficulty": "medium",
+    "relevant_apis": [],
+    "question": "What's the difference between the 'Graph' tab and the 'Components' tab?",
+    "intent": "conceptual",
+    "expected_answer": "The `Graph` tab displays the relationship between your modules.",
+    "framework": "vue-devtools"
+  },
+  {
+    "intent": "howto",
+    "expected_answer": "You need to update your `vite.config.ts` to include `VueDevTools` in the plugins list, setting `appendTo` to the path of your main entry file (e.g., `app/frontend/entrypoints/application.js`).",
+    "question": "How can I integrate Vue DevTools with Vite Ruby?",
+    "relevant_apis": [],
+    "relevant_paths": [
+      "help/faq.md"
+    ],
+    "difficulty": "hard",
+    "framework": "vue-devtools"
+  },
+  {
+    "intent": "conceptual",
+    "expected_answer": "The components tab allows you to see the node tree, inspect and live-edit component state, and scroll to specific components.",
+    "question": "What can I do inside the Components tab?",
+    "relevant_apis": [],
+    "relevant_paths": [
+      "getting-started/features.md"
+    ],
+    "difficulty": "easy",
+    "framework": "vue-devtools"
+  },
+  {
+    "relevant_apis": [
+      "devtools.connect"
+    ],
+    "difficulty": "medium",
+    "relevant_paths": [
+      "guide/standalone.md"
+    ],
+    "intent": "api_lookup",
+    "expected_answer": "The `devtools.connect(host, port)` method accepts a host URL and a port number. If you are debugging remotely, you should pass your local IP address as the host. If using a proxy like ngrok, you might set the port to `null`.",
+    "question": "What parameters does the devtools.connect function accept?",
+    "framework": "vue-devtools"
+  },
+  {
+    "question": "Why don't I see the 'Assets' tab in my browser extension?",
+    "expected_answer": "The `Assets` tab is only available when using the Vite plugin, as it directly inspects files from the project directory.",
+    "intent": "comparison",
+    "relevant_paths": [
+      "getting-started/features.md"
+    ],
+    "difficulty": "hard",
+    "relevant_apis": [],
+    "framework": "vue-devtools"
+  },
+  {
+    "relevant_paths": [
+      "getting-started/installation.md"
+    ],
+    "difficulty": "easy",
+    "relevant_apis": [],
+    "question": "Wait, is this tool compatible with Vue 2 at all?",
+    "intent": "conceptual",
+    "expected_answer": "Yes, the DevTools is only compatible with Vue 3. If you have a legacy Vue 2 project, you must use the older v6 version of the extension.",
+    "framework": "vue-devtools"
+  },
+  {
+    "intent": "howto",
+    "expected_answer": "You can change the devtools server port by setting the `PORT` environment variable before running the `vue-devtools` command. You must then update your application's `window.__VUE_DEVTOOLS_PORT__` or the `devtools.connect()` call to match the new port.",
+    "question": "How do I change the port the standalone devtools server uses?",
+    "relevant_apis": [],
+    "relevant_paths": [
+      "guide/standalone.md"
+    ],
+    "difficulty": "medium",
+    "framework": "vue-devtools"
+  },
+  {
+    "question": "What version of Vite is required for the Vite plugin?",
+    "intent": "api_lookup",
+    "expected_answer": "`vite-plugin-vue-devtools` requires Vite v6 or higher.",
+    "relevant_paths": [
+      "guide/vite-plugin.md"
+    ],
+    "difficulty": "hard",
+    "relevant_apis": [],
+    "framework": "vue-devtools"
+  },
+  {
+    "question": "What is the Pinia tab used for?",
+    "intent": "conceptual",
+    "expected_answer": "The Pinia tab allows you to view your store list, inspect store details, and live-edit the state.",
+    "difficulty": "easy",
+    "relevant_paths": [
+      "getting-started/features.md"
+    ],
+    "relevant_apis": [],
+    "framework": "vue-devtools"
+  },
+  {
+    "expected_answer": "The `separate window` feature is useful for debugging applications on small screens, allowing you to move the DevTools into its own window.",
+    "intent": "howto",
+    "question": "How can I debug an app if my screen is too small for the DevTools overlay?",
+    "relevant_apis": [],
+    "difficulty": "medium",
+    "relevant_paths": [
+      "getting-started/features.md"
+    ],
+    "framework": "vue-devtools"
+  },
+  {
+    "relevant_apis": [],
+    "relevant_paths": [
+      "help/faq.md"
+    ],
+    "difficulty": "hard",
+    "expected_answer": "You should set `appendTo` in the `VueDevTools` plugin configuration to `/\\/entry\\.m?js$/` within your `nuxt.config.ts`.",
+    "intent": "howto",
+    "question": "How do I configure Vue DevTools for Nuxt 3 projects?",
+    "framework": "vue-devtools"
+  },
+  {
+    "question": "Where do I get the browser extension?",
+    "intent": "howto",
+    "expected_answer": "You can install the extension from the Chrome Web Store for Chrome, Edge, and other Chromium-based browsers, or from the Firefox Add-ons store for Firefox.",
+    "difficulty": "easy",
+    "relevant_paths": [
+      "guide/browser-extension.md"
+    ],
+    "relevant_apis": [],
+    "framework": "vue-devtools"
+  },
+  {
+    "question": "What are the possible types for the view property in addCustomTab?",
+    "intent": "api_lookup",
+    "expected_answer": "The `view` property in `addCustomTab` can be set to `type: 'iframe'` with a `src` URL, or `type: 'sfc'` with an SFC code string.",
+    "relevant_paths": [
+      "plugins/api.md"
+    ],
+    "difficulty": "medium",
+    "relevant_apis": [
+      "addCustomTab"
+    ],
+    "framework": "vue-devtools"
+  },
+  {
+    "expected_answer": "If you are using Vite Ruby, set `appendTo` to the path of your application's entry point file (e.g., `app/frontend/entrypoints/application.js`) where `createApp()` is called.",
+    "intent": "howto",
+    "question": "How do I fix the 'dev tools not showing' in Vite Ruby?",
+    "relevant_apis": [],
+    "difficulty": "hard",
+    "relevant_paths": [
+      "help/faq.md"
+    ],
+    "framework": "vue-devtools"
+  },
+  {
+    "relevant_apis": [],
+    "relevant_paths": [
+      "getting-started/features.md"
+    ],
+    "difficulty": "easy",
+    "expected_answer": "The 'Overview' tab shows the Vue version, pages, and components in your application.",
+    "intent": "conceptual",
+    "question": "What information does the Overview tab provide?",
+    "framework": "vue-devtools"
+  },
+  {
+    "relevant_paths": [
+      "help/contributing.md"
+    ],
+    "difficulty": "medium",
+    "relevant_apis": [],
+    "question": "My dependency installation keeps failing for the DevTools project. What should I do?",
+    "intent": "debugging",
+    "expected_answer": "You should use `pnpm config set ELECTRON_MIRROR https://npmmirror.com/mirrors/electron/` if you have network issues while installing dependencies for the DevTools project.",
+    "framework": "vue-devtools"
+  },
+  {
+    "relevant_apis": [],
+    "difficulty": "hard",
+    "relevant_paths": [
+      "guide/vite-plugin.md"
+    ],
+    "intent": "api_lookup",
+    "expected_answer": "The `componentInspector` option in the Vite plugin allows you to enable or disable the Vue component inspector, and you can also pass `VitePluginInspectorOptions` to further customize it.",
+    "question": "What configuration options are available for the component inspector in the Vite plugin?",
+    "framework": "vue-devtools"
+  },
+  {
+    "relevant_apis": [],
+    "difficulty": "easy",
+    "relevant_paths": [
+      "getting-started/features.md"
+    ],
+    "expected_answer": "You can use the 'Router' tab to view your route list and detailed information about each route.",
+    "intent": "howto",
+    "question": "How do I see my current routes and their details?",
+    "framework": "vue-devtools"
+  },
+  {
+    "relevant_apis": [],
+    "difficulty": "medium",
+    "relevant_paths": [
+      "getting-started/open-in-editor.md"
+    ],
+    "intent": "api_lookup",
+    "expected_answer": "The `openInEditorHost` global variable allows you to change the host URL used for the open-in-editor feature, for example to `http://localhost:3000/`.",
+    "question": "How do I change the host for the 'open in editor' request?",
+    "framework": "vue-devtools"
+  },
+  {
+    "question": "How can I use Vue DevTools with WXT?",
+    "expected_answer": "To inspect a page with WXT, add the `devtools` plugin to your `wxt.config.ts` and set the `appendTo` option to the path of your entrypoint file (e.g., `/entrypoints/popup/main.ts`).",
+    "intent": "howto",
+    "relevant_paths": [
+      "help/faq.md"
+    ],
+    "difficulty": "hard",
+    "relevant_apis": [],
+    "framework": "vue-devtools"
+  },
+  {
+    "question": "Why is Vue DevTools considered essential for productivity?",
+    "expected_answer": "The DevTools allows live editing of properties, time travel debugging, and integration with Vue Router and Pinia.",
+    "intent": "conceptual",
+    "relevant_paths": [
+      "getting-started/introduction.md"
+    ],
+    "difficulty": "easy",
+    "relevant_apis": [],
+    "framework": "vue-devtools"
+  },
+  {
+    "difficulty": "medium",
+    "relevant_paths": [
+      "plugins/api.md"
+    ],
+    "relevant_apis": [
+      "addCustomTab"
+    ],
+    "question": "What does the category property do in addCustomTab?",
+    "expected_answer": "The `category` property in `addCustomTab` allows you to group your custom tab under specific categories like 'advanced' or 'app' in the DevTools UI.",
+    "intent": "api_lookup",
+    "framework": "vue-devtools"
+  },
+  {
+    "difficulty": "hard",
+    "relevant_paths": [
+      "guide/standalone.md"
+    ],
+    "relevant_apis": [],
+    "question": "How do I get the standalone app running on my machine?",
+    "expected_answer": "You can use the `npm add -g @vue/devtools` (or pnpm/yarn/bun equivalent) to install the standalone package globally, then run `vue-devtools` to start the server.",
+    "intent": "howto",
+    "framework": "vue-devtools"
+  },
+  {
+    "relevant_apis": [],
+    "relevant_paths": [
+      "guide/browser-extension.md"
+    ],
+    "difficulty": "easy",
+    "intent": "howto",
+    "expected_answer": "You should remove or disable any existing versions of the extension before installing the new one from the store.",
+    "question": "Do I need to delete my old devtools extension before installing the new one?",
+    "framework": "vue-devtools"
+  }
+]

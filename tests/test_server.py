@@ -1602,6 +1602,7 @@ class TestFrameworkPreferences:
         ctx.disable_components.assert_any_call(tags={"vitest"})
         ctx.disable_components.assert_any_call(tags={"nuxt"})
         ctx.disable_components.assert_any_call(tags={"pinia"})
+        ctx.disable_components.assert_any_call(tags={"vue-devtools"})
 
     @pytest.mark.asyncio
     async def test_preferences_stores_state(self):
@@ -1624,6 +1625,7 @@ class TestFrameworkPreferences:
                 "vitest": False,
                 "nuxt": False,
                 "pinia": False,
+                "vue-devtools": False,
             },
         )
 

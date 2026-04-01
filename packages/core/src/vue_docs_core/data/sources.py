@@ -432,6 +432,31 @@ VITE_SYNONYMS: dict[str, list[str]] = {
 }
 
 # ---------------------------------------------------------------------------
+# Vue DevTools synonyms
+# ---------------------------------------------------------------------------
+
+VUE_DEVTOOLS_SYNONYMS: dict[str, list[str]] = {
+    "devtools": ["vueDevTools", "devtools"],
+    "vue devtools": ["vueDevTools", "devtools"],
+    "plugin api": ["addCustomTab", "addCustomCommand", "onDevToolsClientConnected"],
+    "custom tab": ["addCustomTab"],
+    "custom command": ["addCustomCommand", "removeCustomCommand"],
+    "vite plugin": ["vueDevTools"],
+    "browser extension": ["browser-extension"],
+    "chrome extension": ["browser-extension"],
+    "standalone": ["standalone"],
+    "components inspector": ["features"],
+    "timeline": ["features"],
+    "pinia inspector": ["features"],
+    "router inspector": ["features"],
+    "open in editor": ["open-in-editor"],
+    "command palette": ["features"],
+    "migration": ["migration"],
+    "troubleshooting": ["troubleshooting"],
+    "faq": ["faq"],
+}
+
+# ---------------------------------------------------------------------------
 # Pinia synonyms
 # ---------------------------------------------------------------------------
 
@@ -623,6 +648,17 @@ SOURCE_REGISTRY: dict[str, SourceDefinition] = {
         import_packages=["vitest", "vitest/config"],
         synonyms=VITEST_SYNONYMS,
         gemini_context="Vitest",
+        sidebar_config_path=".vitepress/config.ts",
+    ),
+    "vue-devtools": SourceDefinition(
+        name="vue-devtools",
+        display_name="Vue DevTools",
+        git_url="https://github.com/vuejs/devtools.git",
+        docs_subpath="docs",
+        base_url="https://devtools.vuejs.org",
+        import_packages=["@vue/devtools-api", "@vue/devtools", "vite-plugin-vue-devtools"],
+        synonyms=VUE_DEVTOOLS_SYNONYMS,
+        gemini_context="Vue DevTools",
         sidebar_config_path=".vitepress/config.ts",
     ),
     "pinia": SourceDefinition(

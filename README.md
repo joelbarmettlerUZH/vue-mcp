@@ -53,7 +53,8 @@ The hosted server at **`mcp.vue-mcp.org`** is free. No API keys, no setup requir
 | [Vitest](https://vitest.dev) | Available |
 | [Nuxt](https://nuxt.com) | Available |
 | [Pinia](https://pinia.vuejs.org) | Available |
-| [9 more](https://vue-mcp.org/frameworks/) | Planned |
+| [Vue DevTools](https://devtools.vuejs.org) | Available |
+| [8 more](https://vue-mcp.org/frameworks/) | Planned |
 
 Each framework gets its own tools, resources, and prompts. [See all frameworks](https://vue-mcp.org/frameworks/).
 

@@ -21,6 +21,7 @@ FRAMEWORK_TO_LIBRARY_ID: dict[str, str] = {
     "vitest": "/vitest-dev/vitest",
     "nuxt": "/nuxt/nuxt",
     "pinia": "/vuejs/pinia",
+    "vue-devtools": "/vuejs/devtools",
 }
 
 

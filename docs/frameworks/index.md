@@ -13,6 +13,7 @@ Vue Docs MCP provides deep, structured access to the Vue ecosystem documentation
 | [Vitest](./vitest) | [vitest.dev](https://vitest.dev) | 50 | **4.77 / 5** |
 | [Nuxt](./nuxt) | [nuxt.com](https://nuxt.com) | 49 | **4.80 / 5** |
 | [Pinia](./pinia) | [pinia.vuejs.org](https://pinia.vuejs.org) | 49 | **4.81 / 5** |
+| [Vue DevTools](./vue-devtools) | [devtools.vuejs.org](https://devtools.vuejs.org) | 50 | **4.37 / 5** |
 
 ## What Each Framework Provides
 
@@ -43,6 +44,7 @@ set_framework_preferences(vue=true, vue_router=true, vueuse=true, vite=true, vit
 | `vitest` | `boolean` | `false` | Enable Vitest documentation |
 | `nuxt` | `boolean` | `false` | Enable Nuxt documentation |
 | `pinia` | `boolean` | `false` | Enable Pinia documentation |
+| `vue_devtools` | `boolean` | `false` | Enable Vue DevTools documentation |
 
 After calling this, your AI assistant will have access to tools, resources, and prompts for all enabled frameworks. When more than one framework is active, an `ecosystem_search` tool becomes available that searches across all frameworks simultaneously.
 
@@ -59,7 +61,7 @@ Read `ecosystem://preferences` to check which frameworks are currently active. R
 | [Vitest](https://vitest.dev) | :white_check_mark: Available |
 | [Nuxt](https://nuxt.com) | :white_check_mark: Available |
 | [Pinia](https://pinia.vuejs.org) | :white_check_mark: Available |
-| [Vue DevTools](https://devtools.vuejs.org) | :calendar: Planned |
+| [Vue DevTools](https://devtools.vuejs.org) | :white_check_mark: Available |
 | [VitePress](https://vitepress.dev) | :calendar: Planned |
 | [Pinia Colada](https://pinia-colada.esm.dev) | :calendar: Planned |
 | [VeeValidate](https://vee-validate.logaretm.com/v4/) | :calendar: Planned |
