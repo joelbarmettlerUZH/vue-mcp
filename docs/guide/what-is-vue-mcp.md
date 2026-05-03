@@ -37,7 +37,8 @@ All results include source references so you can verify them.
 | [Nuxt](https://nuxt.com) | :white_check_mark: Available | Full-stack Vue framework |
 | [Pinia](https://pinia.vuejs.org) | :white_check_mark: Available | Official state management |
 | [Vue DevTools](https://devtools.vuejs.org) | :white_check_mark: Available | Debugging and inspection tools |
-| 8 more frameworks | :calendar: Planned | |
+| [VitePress](https://vitepress.dev) | :white_check_mark: Available | Vite-powered static site generator |
+| 10 more frameworks | :calendar: Planned | |
 
 See the full list on the [Supported Frameworks](/frameworks/) page. Each framework gets its own tools, resources, prompts, and benchmarks.
 

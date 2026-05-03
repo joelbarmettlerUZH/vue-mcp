@@ -54,7 +54,8 @@ The hosted server at **`mcp.vue-mcp.org`** is free. No API keys, no setup requir
 | [Nuxt](https://nuxt.com) | Available |
 | [Pinia](https://pinia.vuejs.org) | Available |
 | [Vue DevTools](https://devtools.vuejs.org) | Available |
-| [8 more](https://vue-mcp.org/frameworks/) | Planned |
+| [VitePress](https://vitepress.dev) | Available |
+| [10 more](https://vue-mcp.org/frameworks/) | Planned |
 
 Each framework gets its own tools, resources, and prompts. [See all frameworks](https://vue-mcp.org/frameworks/).
 
@@ -130,12 +131,20 @@ Evaluated by an LLM judge (Gemini, temperature 0) scoring retrieved documentatio
 | Vue.js | 173 | **4.82** | 2.41 |
 | Vue Router | 49 | **4.78** | 3.33 |
 | VueUse | 50 | **4.89** | 4.04 |
+| Vite | 49 | **4.95** | 4.67 |
+| Vitest | 50 | 4.77 | **4.80** |
+| Nuxt | 49 | **4.80** | 4.62 |
+| Pinia | 49 | **4.81** | 4.68 |
+| Vue DevTools | 50 | **4.37** | 3.32 |
+| VitePress | 50 | **4.68** | 4.44 |
+| **Weighted average** | **569** | **4.78** | — |
 
 | Metric | Vue Docs MCP | Context7 |
 |---|---|---|
 | API Recall (Vue.js) | **98.7%** | 53.1% |
 | API Recall (Vue Router) | **88.8%** | 34.4% |
 | API Recall (VueUse) | **100.0%** | 92.0% |
+| API Recall (VitePress) | **92.7%** | 91.0% |
 | Cost per query | Free | $0.002 |
 
 <details>

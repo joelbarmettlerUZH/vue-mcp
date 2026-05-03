@@ -1,5 +1,6 @@
 """Context7 MCP server provider - connects via streamable-http transport."""
 
+import json
 import logging
 import os
 import time
@@ -22,6 +23,7 @@ FRAMEWORK_TO_LIBRARY_ID: dict[str, str] = {
     "nuxt": "/nuxt/nuxt",
     "pinia": "/vuejs/pinia",
     "vue-devtools": "/vuejs/devtools",
+    "vitepress": "/vuejs/vitepress",
 }
 
 
@@ -69,7 +71,7 @@ class Context7Provider:
         }
         response = await self._client.post(CONTEXT7_URL, json=payload, headers=headers)
         response.raise_for_status()
-        data = response.json()
+        data = _parse_mcp_response(response)
 
         if "error" in data:
             raise RuntimeError(f"Context7 error: {data['error']}")
@@ -100,3 +102,29 @@ class Context7Provider:
             text=text,
             latency_s=round(latency, 3),
         )
+
+
+def _parse_mcp_response(response: httpx.Response) -> dict:
+    """Decode an MCP HTTP response that may be plain JSON or SSE.
+
+    Streamable-HTTP MCP servers content-negotiate per request: simple replies
+    come back as ``application/json``, larger ones as ``text/event-stream``
+    where each ``data: {...}`` line carries one JSON-RPC message. We accept
+    both — the message we want is the first frame whose body parses as JSON.
+    """
+    body = response.text
+    ct = response.headers.get("content-type", "").lower()
+
+    if "text/event-stream" in ct or body.lstrip().startswith("event:"):
+        for line in body.splitlines():
+            if line.startswith("data: "):
+                payload = line[6:].strip()
+                if not payload:
+                    continue
+                try:
+                    return json.loads(payload)
+                except json.JSONDecodeError:
+                    continue
+        raise RuntimeError(f"Context7 SSE response had no JSON frames: {body[:200]!r}")
+
+    return response.json()

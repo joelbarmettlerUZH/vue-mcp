@@ -78,6 +78,15 @@ else
     git -C "$PROJECT_ROOT/data/vitest-docs" pull
 fi
 
+# Clone VitePress docs if not present
+if [ ! -d "$PROJECT_ROOT/data/vitepress-docs" ]; then
+    echo "Cloning VitePress documentation..."
+    git clone --depth 1 https://github.com/vuejs/vitepress.git "$PROJECT_ROOT/data/vitepress-docs"
+else
+    echo "VitePress docs already cloned, pulling latest..."
+    git -C "$PROJECT_ROOT/data/vitepress-docs" pull
+fi
+
 # Install dependencies
 echo "Installing dependencies with uv..."
 cd "$PROJECT_ROOT"

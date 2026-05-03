@@ -1626,6 +1626,7 @@ class TestFrameworkPreferences:
                 "nuxt": False,
                 "pinia": False,
                 "vue-devtools": False,
+                "vitepress": False,
             },
         )
 

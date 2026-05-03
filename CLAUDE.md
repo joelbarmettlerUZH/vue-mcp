@@ -89,6 +89,12 @@ Each adapter (in `packages/core/src/vue_docs_core/parsing/adapters/`) implements
 | `vue` | `VueAdapter` | Strips `<div class="options-api">` wrappers, Playground links. Single `config.ts` sidebar. |
 | `vue-router` | `VueRouterAdapter` | Strips `<VueSchoolLink>`, `<RuleKitLink>`, `<script setup>` blocks. Excludes `zh/`. Split sidebar config (`config/en.ts`). Optional TypeDoc API generation (graceful skip if no npm). |
 | `vueuse` | `VueUseAdapter` | Strips `<CourseLink>`, `<script setup>` blocks, TwoSlash cut markers. Frontmatter-based category sorting (no static sidebar config). Directory-name entity extraction. |
+| `vite` | `ViteAdapter` | Strips `<ScrimbaLink>`, `<audio>` elements, `<!-- prettier-ignore -->`, `<script setup>` blocks. Excludes `blog/` and meta pages. Standard `.vitepress/config.ts` sidebar. |
+| `vitest` | `VitestAdapter` | Strips Vitest-specific banners and educational components, fence-aware `<script setup>` removal. Standard VitePress sidebar. |
+| `vue-devtools` | `VueDevToolsAdapter` | Strips devtools-specific custom components and asset shortcodes. Standard VitePress sidebar. |
+| `pinia` | `PiniaAdapter` | Strips `<RuleKitLink>`, `<MasteringPiniaLink>`, `<VueSchoolLink>`, `<script setup>` blocks. Excludes `zh/`. Split VitePress config with catch-all `'/'` sidebar key. Optional TypeDoc API generation. |
+| `nuxt` | `NuxtAdapter` | Nuxt Content sidebar (frontmatter-based ordering). Strips Nuxt-specific custom components. Numeric-prefix file ordering. |
+| `vitepress` | `VitePressAdapter` | Multi-locale repo: `docs_subpath="docs/en"` excludes other languages. Custom sidebar parser for `defineAdditionalConfig` shape with per-section `base` re-applied to bare `link` values. Strips `<Badge>`, `<script setup>`, `<script client>`, `<VPTeam*>` blocks. |
 
 ### Adding a New Framework
 

@@ -5,6 +5,7 @@ from vue_docs_core.parsing.extractors.generic import GenericEntityExtractor
 from vue_docs_core.parsing.extractors.nuxt import NuxtEntityExtractor
 from vue_docs_core.parsing.extractors.pinia import PiniaEntityExtractor
 from vue_docs_core.parsing.extractors.vite import ViteEntityExtractor
+from vue_docs_core.parsing.extractors.vitepress import VitePressEntityExtractor
 from vue_docs_core.parsing.extractors.vitest import VitestEntityExtractor
 from vue_docs_core.parsing.extractors.vue import VueEntityExtractor
 from vue_docs_core.parsing.extractors.vue_devtools import VueDevToolsEntityExtractor
@@ -21,6 +22,7 @@ EXTRACTOR_REGISTRY: dict[str, type[EntityExtractor]] = {
     "nuxt": NuxtEntityExtractor,
     "pinia": PiniaEntityExtractor,
     "vue-devtools": VueDevToolsEntityExtractor,
+    "vitepress": VitePressEntityExtractor,
 }
 
 
@@ -37,6 +39,7 @@ __all__ = [
     "NuxtEntityExtractor",
     "PiniaEntityExtractor",
     "ViteEntityExtractor",
+    "VitePressEntityExtractor",
     "VitestEntityExtractor",
     "VueDevToolsEntityExtractor",
     "VueEntityExtractor",
