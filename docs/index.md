@@ -4,7 +4,7 @@ layout: home
 hero:
   name: Vue Docs MCP
   text: Vue ecosystem docs for your AI assistant
-  tagline: "4.72/5 retrieval quality across 10 frameworks. Free. Purpose-built for the Vue ecosystem."
+  tagline: "4.69/5 retrieval quality across 11 frameworks. Free. Purpose-built for the Vue ecosystem."
   actions:
     - theme: brand
       text: Get Started
@@ -18,13 +18,13 @@ hero:
 
 features:
   - icon: "\U0001F3C6"
-    title: "4.72/5 Quality Score"
-    details: "Scored by an independent LLM judge across 618 questions spanning 10 frameworks on relevance, completeness, correctness, and API coverage. Outperforms general-purpose alternatives on every dimension."
+    title: "4.69/5 Quality Score"
+    details: "Scored by an independent LLM judge across 667 questions spanning 11 frameworks on relevance, completeness, correctness, and API coverage. Outperforms general-purpose alternatives on every dimension."
     link: /frameworks/
     linkText: See benchmarks
   - icon: "\U0001F4DA"
     title: Vue Ecosystem Coverage
-    details: "Vue.js, Vue Router, VueUse, Vite, Vitest, Nuxt, Pinia, Vue DevTools, VitePress, and Pinia Colada. Every page indexed, every API searchable, automatically refreshed every 24 hours."
+    details: "Vue.js, Vue Router, VueUse, Vite, Vitest, Nuxt, Pinia, Vue DevTools, VitePress, Pinia Colada, and VeeValidate. Every page indexed, every API searchable, automatically refreshed every 24 hours."
     link: /frameworks/
     linkText: View frameworks
   - icon: "\U0001F4B0"

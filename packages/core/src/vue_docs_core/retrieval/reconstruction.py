@@ -13,18 +13,23 @@ def _get_base_url(source: str) -> str:
     return "https://vuejs.org"  # fallback
 
 
+def _strip_doc_ext(path: str) -> str:
+    """Strip ``.md`` or ``.mdx`` extension from a doc path."""
+    return path.removesuffix(".mdx").removesuffix(".md")
+
+
 def _file_path_to_url(file_path: str, source: str = "vue") -> str:
     """Convert a file path like 'guide/essentials/computed.md' to a docs URL."""
     base_url = _get_base_url(source)
-    path = file_path.removeprefix("/").removesuffix(".md")
+    path = _strip_doc_ext(file_path.removeprefix("/"))
     return f"{base_url}/{path}"
 
 
 def _ref_to_link(ref: str, source: str = "vue") -> str:
     """Convert a cross-reference path to a named markdown link."""
-    if ref.endswith(".md"):
+    if ref.endswith((".md", ".mdx")):
         url = _file_path_to_url(ref, source)
-        name = ref.rsplit("/", 1)[-1].removesuffix(".md").replace("-", " ").title()
+        name = _strip_doc_ext(ref.rsplit("/", 1)[-1]).replace("-", " ").title()
         return f"[{name}]({url})"
     return ref
 

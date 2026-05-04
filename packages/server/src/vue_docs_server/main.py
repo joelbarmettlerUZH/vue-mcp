@@ -136,7 +136,7 @@ def _register_concrete_resources(app: FastMCP):
 
         # --- Concrete page resources ---
         for page_path in state.page_paths_by_source.get(sn, []):
-            uri_path = page_path.removesuffix(".md")
+            uri_path = page_path.removesuffix(".mdx").removesuffix(".md")
             uri = f"{sn}://pages/{uri_path}"
             current_uris.add(uri)
             added += _register_page(app, sn, display, page_path, uri_path)
@@ -215,7 +215,7 @@ def _register_entity(app: FastMCP, sn: str, display: str, entity_name: str) -> i
         lines.append(f"| **Type** | {type_label} |")
         if entity.page_path:
             url = _page_path_to_url(entity.page_path, source=_source)
-            page_uri = entity.page_path.removesuffix(".md")
+            page_uri = entity.page_path.removesuffix(".mdx").removesuffix(".md")
             lines.append(f"| **Documentation** | [{url}]({url}) |")
             lines.append(f"| **Page resource** | `{_source}://pages/{page_uri}` |")
         if entity.section:
@@ -453,6 +453,7 @@ async def set_framework_preferences(
     vue_devtools: bool = False,
     vitepress: bool = False,
     pinia_colada: bool = False,
+    vee_validate: bool = False,
     ctx: Context = None,
 ) -> str:
     """Activate or deactivate Vue ecosystem framework documentation.
@@ -473,6 +474,7 @@ async def set_framework_preferences(
         "vue-devtools": vue_devtools,
         "vitepress": vitepress,
         "pinia-colada": pinia_colada,
+        "vee-validate": vee_validate,
     }
 
     # Map param names to source registry names

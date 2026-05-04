@@ -32,7 +32,7 @@ def _page_path_to_url(page_path: str, source: str = "vue") -> str:
     """Convert a page_path to a docs URL using the source's base_url."""
     source_def = SOURCE_REGISTRY.get(source)
     base_url = source_def.base_url if source_def else "https://vuejs.org"
-    path = page_path.removeprefix("/").removesuffix(".md")
+    path = page_path.removeprefix("/").removesuffix(".mdx").removesuffix(".md")
     return f"{base_url}/{path}"
 
 

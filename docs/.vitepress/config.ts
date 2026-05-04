@@ -60,6 +60,7 @@ export default defineConfig({
           { text: "Vue DevTools", link: "/frameworks/vue-devtools" },
           { text: "VitePress", link: "/frameworks/vitepress" },
           { text: "Pinia Colada", link: "/frameworks/pinia-colada" },
+          { text: "VeeValidate", link: "/frameworks/vee-validate" },
         ],
       },
       {

@@ -96,6 +96,15 @@ else
     git -C "$PROJECT_ROOT/data/pinia-colada-docs" pull
 fi
 
+# Clone VeeValidate docs if not present
+if [ ! -d "$PROJECT_ROOT/data/vee-validate-docs" ]; then
+    echo "Cloning VeeValidate documentation..."
+    git clone --depth 1 https://github.com/logaretm/vee-validate.git "$PROJECT_ROOT/data/vee-validate-docs"
+else
+    echo "VeeValidate docs already cloned, pulling latest..."
+    git -C "$PROJECT_ROOT/data/vee-validate-docs" pull
+fi
+
 # Install dependencies
 echo "Installing dependencies with uv..."
 cd "$PROJECT_ROOT"

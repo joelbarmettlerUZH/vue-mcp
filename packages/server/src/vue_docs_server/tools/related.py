@@ -61,7 +61,7 @@ async def _do_get_related(
         lines.append(f"> **{type_label}**")
 
         if entity.page_path:
-            page = entity.page_path.removeprefix("/").removesuffix(".md")
+            page = entity.page_path.removeprefix("/").removesuffix(".mdx").removesuffix(".md")
             lines[-1] += f" — [{page}]({base_url}/{page})"
 
         lines.append("")
@@ -84,7 +84,11 @@ async def _do_get_related(
                 rel_def = SOURCE_REGISTRY.get(rel_source)
                 rel_base = rel_def.base_url if rel_def else "https://vuejs.org"
                 if rel_entity.page_path:
-                    page = rel_entity.page_path.removeprefix("/").removesuffix(".md")
+                    page = (
+                        rel_entity.page_path.removeprefix("/")
+                        .removesuffix(".mdx")
+                        .removesuffix(".md")
+                    )
                     doc_link = f"[{page}]({rel_base}/{page})"
                 else:
                     doc_link = "—"

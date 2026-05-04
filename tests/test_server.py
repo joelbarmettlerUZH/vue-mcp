@@ -1628,6 +1628,7 @@ class TestFrameworkPreferences:
                 "vue-devtools": False,
                 "vitepress": False,
                 "pinia-colada": False,
+                "vee-validate": False,
             },
         )
 

@@ -8,7 +8,7 @@ from vue_docs_server.startup import state
 
 def _page_title(file_path: str) -> str:
     """Derive a human-readable title from a file path."""
-    name = file_path.rsplit("/", 1)[-1].removesuffix(".md")
+    name = file_path.rsplit("/", 1)[-1].removesuffix(".mdx").removesuffix(".md")
     return name.replace("-", " ").title()
 
 
@@ -34,7 +34,7 @@ def _build_toc(
         lines.append(f"## {folder_display}\n")
         for page_path in sorted(pages):
             title = _page_title(page_path)
-            uri_path = page_path.removesuffix(".md")
+            uri_path = page_path.removesuffix(".mdx").removesuffix(".md")
             lines.append(f"- [{title}]({source_name}://pages/{uri_path})")
         lines.append("")
 

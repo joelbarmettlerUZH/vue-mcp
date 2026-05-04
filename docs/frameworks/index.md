@@ -16,6 +16,7 @@ Vue Docs MCP provides deep, structured access to the Vue ecosystem documentation
 | [Vue DevTools](./vue-devtools) | [devtools.vuejs.org](https://devtools.vuejs.org) | 50 | **4.37 / 5** |
 | [VitePress](./vitepress) | [vitepress.dev](https://vitepress.dev) | 50 | **4.68 / 5** |
 | [Pinia Colada](./pinia-colada) | [pinia-colada.esm.dev](https://pinia-colada.esm.dev) | 49 | **4.14 / 5** |
+| [VeeValidate](./vee-validate) | [vee-validate.logaretm.com](https://vee-validate.logaretm.com/v4) | 49 | **4.26 / 5** |
 
 ## What Each Framework Provides
 
@@ -32,7 +33,7 @@ When two or more frameworks are active, a cross-framework `ecosystem_search` too
 Only **Vue.js** is enabled by default. Call `set_framework_preferences` to activate additional frameworks for the current session:
 
 ```
-set_framework_preferences(vue=true, vue_router=true, vueuse=true, vite=true, vitest=true, nuxt=true, pinia=true, vitepress=true, pinia_colada=true)
+set_framework_preferences(vue=true, vue_router=true, vueuse=true, vite=true, vitest=true, nuxt=true, pinia=true, vitepress=true, pinia_colada=true, vee_validate=true)
 ```
 
 ### Parameters
@@ -49,6 +50,7 @@ set_framework_preferences(vue=true, vue_router=true, vueuse=true, vite=true, vit
 | `vue_devtools` | `boolean` | `false` | Enable Vue DevTools documentation |
 | `vitepress` | `boolean` | `false` | Enable VitePress documentation |
 | `pinia_colada` | `boolean` | `false` | Enable Pinia Colada documentation |
+| `vee_validate` | `boolean` | `false` | Enable VeeValidate documentation |
 
 After calling this, your AI assistant will have access to tools, resources, and prompts for all enabled frameworks. When more than one framework is active, an `ecosystem_search` tool becomes available that searches across all frameworks simultaneously.
 
@@ -68,7 +70,7 @@ Read `ecosystem://preferences` to check which frameworks are currently active. R
 | [Vue DevTools](https://devtools.vuejs.org) | :white_check_mark: Available |
 | [VitePress](https://vitepress.dev) | :white_check_mark: Available |
 | [Pinia Colada](https://pinia-colada.esm.dev) | :white_check_mark: Available |
-| [VeeValidate](https://vee-validate.logaretm.com/v4/) | :calendar: Planned |
+| [VeeValidate](https://vee-validate.logaretm.com/v4/) | :white_check_mark: Available |
 | [FormKit](https://formkit.com) | :calendar: Planned |
 | [shadcn-vue](https://www.shadcn-vue.com) | :calendar: Planned |
 | [Nuxt UI](https://ui.nuxt.com) | :calendar: Planned |

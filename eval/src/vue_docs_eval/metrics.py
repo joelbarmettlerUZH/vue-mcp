@@ -24,7 +24,7 @@ def compute_recall(
     # Path recall
     paths_found = 0
     for path in relevant_paths:
-        slug = path.removeprefix("/").removesuffix(".md")
+        slug = path.removeprefix("/").removesuffix(".mdx").removesuffix(".md")
         if slug.lower() in context_lower:
             paths_found += 1
 
@@ -43,7 +43,10 @@ def compute_recall(
     path_precision = None
     f1 = None
     if retrieved_paths and relevant_paths:
-        expected_slugs = {p.removeprefix("/").removesuffix(".md").lower() for p in relevant_paths}
+        expected_slugs = {
+            p.removeprefix("/").removesuffix(".mdx").removesuffix(".md").lower()
+            for p in relevant_paths
+        }
         matching = sum(1 for rp in retrieved_paths if rp.lower() in expected_slugs)
         path_precision = round(matching / len(retrieved_paths), 3)
         if path_recall + path_precision > 0:

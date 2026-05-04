@@ -39,7 +39,8 @@ All results include source references so you can verify them.
 | [Vue DevTools](https://devtools.vuejs.org) | :white_check_mark: Available | Debugging and inspection tools |
 | [VitePress](https://vitepress.dev) | :white_check_mark: Available | Vite-powered static site generator |
 | [Pinia Colada](https://pinia-colada.esm.dev) | :white_check_mark: Available | Smart data-fetching layer for Pinia |
-| 9 more frameworks | :calendar: Planned | |
+| [VeeValidate](https://vee-validate.logaretm.com/v4/) | :white_check_mark: Available | Form validation library |
+| 8 more frameworks | :calendar: Planned | |
 
 See the full list on the [Supported Frameworks](/frameworks/) page. Each framework gets its own tools, resources, prompts, and benchmarks.
 

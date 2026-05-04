@@ -4,6 +4,7 @@ from vue_docs_core.parsing.adapters.base import SourceAdapter
 from vue_docs_core.parsing.adapters.nuxt import NuxtAdapter
 from vue_docs_core.parsing.adapters.pinia import PiniaAdapter
 from vue_docs_core.parsing.adapters.pinia_colada import PiniaColadaAdapter
+from vue_docs_core.parsing.adapters.vee_validate import VeeValidateAdapter
 from vue_docs_core.parsing.adapters.vite import ViteAdapter
 from vue_docs_core.parsing.adapters.vitepress import VitePressAdapter
 from vue_docs_core.parsing.adapters.vitest import VitestAdapter
@@ -24,6 +25,7 @@ ADAPTER_REGISTRY: dict[str, type[SourceAdapter]] = {
     "vue-devtools": VueDevToolsAdapter,
     "vitepress": VitePressAdapter,
     "pinia-colada": PiniaColadaAdapter,
+    "vee-validate": VeeValidateAdapter,
 }
 
 
@@ -44,6 +46,7 @@ __all__ = [
     "PiniaAdapter",
     "PiniaColadaAdapter",
     "SourceAdapter",
+    "VeeValidateAdapter",
     "ViteAdapter",
     "VitePressAdapter",
     "VitestAdapter",

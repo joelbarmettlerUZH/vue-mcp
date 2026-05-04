@@ -298,7 +298,7 @@ async def generate_page_summaries(
                 return None
 
         # Build chunk ID: strip .md and append #page_summary
-        chunk_id = file_path.removesuffix(".md") + "#page_summary"
+        chunk_id = file_path.removesuffix(".mdx").removesuffix(".md") + "#page_summary"
         return Chunk(
             chunk_id=chunk_id,
             chunk_type=ChunkType.PAGE_SUMMARY,
