@@ -455,6 +455,7 @@ async def set_framework_preferences(
     pinia_colada: bool = False,
     vee_validate: bool = False,
     formkit: bool = False,
+    shadcn_vue: bool = False,
     ctx: Context = None,
 ) -> str:
     """Activate or deactivate Vue ecosystem framework documentation.
@@ -477,6 +478,7 @@ async def set_framework_preferences(
         "pinia-colada": pinia_colada,
         "vee-validate": vee_validate,
         "formkit": formkit,
+        "shadcn-vue": shadcn_vue,
     }
 
     # Map param names to source registry names

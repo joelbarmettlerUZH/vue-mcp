@@ -5,6 +5,7 @@ from vue_docs_core.parsing.adapters.formkit import FormKitAdapter
 from vue_docs_core.parsing.adapters.nuxt import NuxtAdapter
 from vue_docs_core.parsing.adapters.pinia import PiniaAdapter
 from vue_docs_core.parsing.adapters.pinia_colada import PiniaColadaAdapter
+from vue_docs_core.parsing.adapters.shadcn_vue import ShadcnVueAdapter
 from vue_docs_core.parsing.adapters.vee_validate import VeeValidateAdapter
 from vue_docs_core.parsing.adapters.vite import ViteAdapter
 from vue_docs_core.parsing.adapters.vitepress import VitePressAdapter
@@ -28,6 +29,7 @@ ADAPTER_REGISTRY: dict[str, type[SourceAdapter]] = {
     "pinia-colada": PiniaColadaAdapter,
     "vee-validate": VeeValidateAdapter,
     "formkit": FormKitAdapter,
+    "shadcn-vue": ShadcnVueAdapter,
 }
 
 
@@ -48,6 +50,7 @@ __all__ = [
     "NuxtAdapter",
     "PiniaAdapter",
     "PiniaColadaAdapter",
+    "ShadcnVueAdapter",
     "SourceAdapter",
     "VeeValidateAdapter",
     "ViteAdapter",

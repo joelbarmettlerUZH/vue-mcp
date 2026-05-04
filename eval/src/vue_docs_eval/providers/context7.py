@@ -27,6 +27,7 @@ FRAMEWORK_TO_LIBRARY_ID: dict[str, str] = {
     "pinia-colada": "/posva/pinia-colada",
     "vee-validate": "/logaretm/vee-validate",
     "formkit": "/formkit/docs-content",
+    "shadcn-vue": "/unovue/shadcn-vue",
 }
 
 

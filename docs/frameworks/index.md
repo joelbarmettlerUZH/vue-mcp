@@ -18,6 +18,7 @@ Vue Docs MCP provides deep, structured access to the Vue ecosystem documentation
 | [Pinia Colada](./pinia-colada) | [pinia-colada.esm.dev](https://pinia-colada.esm.dev) | 49 | **4.14 / 5** |
 | [VeeValidate](./vee-validate) | [vee-validate.logaretm.com](https://vee-validate.logaretm.com/v4) | 49 | **4.26 / 5** |
 | [FormKit](./formkit) | [formkit.com](https://formkit.com) | 50 | **3.92 / 5** |
+| [shadcn-vue](./shadcn-vue) | [shadcn-vue.com](https://www.shadcn-vue.com) | 50 | **3.82 / 5** |
 
 ## What Each Framework Provides
 
@@ -34,7 +35,7 @@ When two or more frameworks are active, a cross-framework `ecosystem_search` too
 Only **Vue.js** is enabled by default. Call `set_framework_preferences` to activate additional frameworks for the current session:
 
 ```
-set_framework_preferences(vue=true, vue_router=true, vueuse=true, vite=true, vitest=true, nuxt=true, pinia=true, vitepress=true, pinia_colada=true, vee_validate=true, formkit=true)
+set_framework_preferences(vue=true, vue_router=true, vueuse=true, vite=true, vitest=true, nuxt=true, pinia=true, vitepress=true, pinia_colada=true, vee_validate=true, formkit=true, shadcn_vue=true)
 ```
 
 ### Parameters
@@ -53,6 +54,7 @@ set_framework_preferences(vue=true, vue_router=true, vueuse=true, vite=true, vit
 | `pinia_colada` | `boolean` | `false` | Enable Pinia Colada documentation |
 | `vee_validate` | `boolean` | `false` | Enable VeeValidate documentation |
 | `formkit` | `boolean` | `false` | Enable FormKit documentation |
+| `shadcn_vue` | `boolean` | `false` | Enable shadcn-vue documentation |
 
 After calling this, your AI assistant will have access to tools, resources, and prompts for all enabled frameworks. When more than one framework is active, an `ecosystem_search` tool becomes available that searches across all frameworks simultaneously.
 
@@ -74,7 +76,7 @@ Read `ecosystem://preferences` to check which frameworks are currently active. R
 | [Pinia Colada](https://pinia-colada.esm.dev) | :white_check_mark: Available |
 | [VeeValidate](https://vee-validate.logaretm.com/v4/) | :white_check_mark: Available |
 | [FormKit](https://formkit.com) | :white_check_mark: Available |
-| [shadcn-vue](https://www.shadcn-vue.com) | :calendar: Planned |
+| [shadcn-vue](https://www.shadcn-vue.com) | :white_check_mark: Available |
 | [Nuxt UI](https://ui.nuxt.com) | :calendar: Planned |
 | [TanStack Query](https://tanstack.com/query/latest/docs/framework/vue/overview) | :calendar: Planned |
 | [PrimeVue](https://primevue.org) | :calendar: Planned |

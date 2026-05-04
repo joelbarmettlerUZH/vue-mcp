@@ -1630,6 +1630,7 @@ class TestFrameworkPreferences:
                 "pinia-colada": False,
                 "vee-validate": False,
                 "formkit": False,
+                "shadcn-vue": False,
             },
         )
 

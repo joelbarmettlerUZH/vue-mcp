@@ -114,6 +114,15 @@ else
     git -C "$PROJECT_ROOT/data/formkit-docs" pull
 fi
 
+# Clone shadcn-vue docs if not present
+if [ ! -d "$PROJECT_ROOT/data/shadcn-vue-docs" ]; then
+    echo "Cloning shadcn-vue documentation..."
+    git clone --depth 1 https://github.com/unovue/shadcn-vue.git "$PROJECT_ROOT/data/shadcn-vue-docs"
+else
+    echo "shadcn-vue docs already cloned, pulling latest..."
+    git -C "$PROJECT_ROOT/data/shadcn-vue-docs" pull
+fi
+
 # Install dependencies
 echo "Installing dependencies with uv..."
 cd "$PROJECT_ROOT"

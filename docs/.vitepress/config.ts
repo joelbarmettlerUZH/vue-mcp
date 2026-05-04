@@ -62,6 +62,7 @@ export default defineConfig({
           { text: "Pinia Colada", link: "/frameworks/pinia-colada" },
           { text: "VeeValidate", link: "/frameworks/vee-validate" },
           { text: "FormKit", link: "/frameworks/formkit" },
+          { text: "shadcn-vue", link: "/frameworks/shadcn-vue" },
         ],
       },
       {
