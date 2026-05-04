@@ -61,6 +61,7 @@ export default defineConfig({
           { text: "VitePress", link: "/frameworks/vitepress" },
           { text: "Pinia Colada", link: "/frameworks/pinia-colada" },
           { text: "VeeValidate", link: "/frameworks/vee-validate" },
+          { text: "FormKit", link: "/frameworks/formkit" },
         ],
       },
       {

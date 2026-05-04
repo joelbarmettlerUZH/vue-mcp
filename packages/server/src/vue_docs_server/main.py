@@ -454,6 +454,7 @@ async def set_framework_preferences(
     vitepress: bool = False,
     pinia_colada: bool = False,
     vee_validate: bool = False,
+    formkit: bool = False,
     ctx: Context = None,
 ) -> str:
     """Activate or deactivate Vue ecosystem framework documentation.
@@ -475,6 +476,7 @@ async def set_framework_preferences(
         "vitepress": vitepress,
         "pinia-colada": pinia_colada,
         "vee-validate": vee_validate,
+        "formkit": formkit,
     }
 
     # Map param names to source registry names

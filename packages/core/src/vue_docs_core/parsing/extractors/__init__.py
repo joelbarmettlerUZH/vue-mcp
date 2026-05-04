@@ -1,6 +1,7 @@
 """Pluggable entity extractors for different documentation sources."""
 
 from vue_docs_core.parsing.extractors.base import EntityExtractor
+from vue_docs_core.parsing.extractors.formkit import FormKitEntityExtractor
 from vue_docs_core.parsing.extractors.generic import GenericEntityExtractor
 from vue_docs_core.parsing.extractors.nuxt import NuxtEntityExtractor
 from vue_docs_core.parsing.extractors.pinia import PiniaEntityExtractor
@@ -27,6 +28,7 @@ EXTRACTOR_REGISTRY: dict[str, type[EntityExtractor]] = {
     "vitepress": VitePressEntityExtractor,
     "pinia-colada": PiniaColadaEntityExtractor,
     "vee-validate": VeeValidateEntityExtractor,
+    "formkit": FormKitEntityExtractor,
 }
 
 
@@ -39,6 +41,7 @@ def get_extractor(source_name: str) -> EntityExtractor:
 __all__ = [
     "EXTRACTOR_REGISTRY",
     "EntityExtractor",
+    "FormKitEntityExtractor",
     "GenericEntityExtractor",
     "NuxtEntityExtractor",
     "PiniaColadaEntityExtractor",

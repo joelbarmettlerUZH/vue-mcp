@@ -40,7 +40,8 @@ All results include source references so you can verify them.
 | [VitePress](https://vitepress.dev) | :white_check_mark: Available | Vite-powered static site generator |
 | [Pinia Colada](https://pinia-colada.esm.dev) | :white_check_mark: Available | Smart data-fetching layer for Pinia |
 | [VeeValidate](https://vee-validate.logaretm.com/v4/) | :white_check_mark: Available | Form validation library |
-| 8 more frameworks | :calendar: Planned | |
+| [FormKit](https://formkit.com) | :white_check_mark: Available | Form framework with schema-driven inputs |
+| 7 more frameworks | :calendar: Planned | |
 
 See the full list on the [Supported Frameworks](/frameworks/) page. Each framework gets its own tools, resources, prompts, and benchmarks.
 

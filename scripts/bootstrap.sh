@@ -105,6 +105,15 @@ else
     git -C "$PROJECT_ROOT/data/vee-validate-docs" pull
 fi
 
+# Clone FormKit docs (separate docs-content repo) if not present
+if [ ! -d "$PROJECT_ROOT/data/formkit-docs" ]; then
+    echo "Cloning FormKit documentation..."
+    git clone --depth 1 https://github.com/formkit/docs-content.git "$PROJECT_ROOT/data/formkit-docs"
+else
+    echo "FormKit docs already cloned, pulling latest..."
+    git -C "$PROJECT_ROOT/data/formkit-docs" pull
+fi
+
 # Install dependencies
 echo "Installing dependencies with uv..."
 cd "$PROJECT_ROOT"

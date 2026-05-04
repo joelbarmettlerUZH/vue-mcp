@@ -1629,6 +1629,7 @@ class TestFrameworkPreferences:
                 "vitepress": False,
                 "pinia-colada": False,
                 "vee-validate": False,
+                "formkit": False,
             },
         )
 

@@ -1,6 +1,7 @@
 """Pluggable source adapters for different documentation sources."""
 
 from vue_docs_core.parsing.adapters.base import SourceAdapter
+from vue_docs_core.parsing.adapters.formkit import FormKitAdapter
 from vue_docs_core.parsing.adapters.nuxt import NuxtAdapter
 from vue_docs_core.parsing.adapters.pinia import PiniaAdapter
 from vue_docs_core.parsing.adapters.pinia_colada import PiniaColadaAdapter
@@ -26,6 +27,7 @@ ADAPTER_REGISTRY: dict[str, type[SourceAdapter]] = {
     "vitepress": VitePressAdapter,
     "pinia-colada": PiniaColadaAdapter,
     "vee-validate": VeeValidateAdapter,
+    "formkit": FormKitAdapter,
 }
 
 
@@ -42,6 +44,7 @@ def get_adapter(source_name: str) -> SourceAdapter:
 
 __all__ = [
     "ADAPTER_REGISTRY",
+    "FormKitAdapter",
     "NuxtAdapter",
     "PiniaAdapter",
     "PiniaColadaAdapter",
