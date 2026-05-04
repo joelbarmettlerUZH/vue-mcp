@@ -59,6 +59,7 @@ export default defineConfig({
           { text: "Pinia", link: "/frameworks/pinia" },
           { text: "Vue DevTools", link: "/frameworks/vue-devtools" },
           { text: "VitePress", link: "/frameworks/vitepress" },
+          { text: "Pinia Colada", link: "/frameworks/pinia-colada" },
         ],
       },
       {

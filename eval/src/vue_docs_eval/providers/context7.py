@@ -24,6 +24,7 @@ FRAMEWORK_TO_LIBRARY_ID: dict[str, str] = {
     "pinia": "/vuejs/pinia",
     "vue-devtools": "/vuejs/devtools",
     "vitepress": "/vuejs/vitepress",
+    "pinia-colada": "/posva/pinia-colada",
 }
 
 

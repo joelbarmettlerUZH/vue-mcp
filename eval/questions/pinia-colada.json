@@ -1,0 +1,675 @@
+[
+  {
+    "question": "How do I install Pinia Colada and register the plugin?",
+    "expected_answer": "Install with `npm install @pinia/colada`, then register the `PiniaColada` plugin after Pinia: `app.use(createPinia()); app.use(PiniaColada);`. The plugin accepts global query/mutation defaults and a list of plugins via `PiniaColadaOptions`.",
+    "relevant_paths": [
+      "guide/installation.md",
+      "guide/setup.md"
+    ],
+    "relevant_apis": [
+      "PiniaColada",
+      "PiniaColadaOptions"
+    ],
+    "intent": "how_to",
+    "difficulty": "easy",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I fetch data with useQuery?",
+    "expected_answer": "Call `useQuery({ key, query })` where `key` is a reactive array and `query` is an async function. It returns refs `data`, `error`, `state`, `status`, `asyncStatus`, and helpers like `refresh()`, `refetch()`, and `isLoading`. The query runs automatically and is cached and deduplicated by key.",
+    "relevant_paths": [
+      "guide/queries.md",
+      "quick-start.md"
+    ],
+    "relevant_apis": [
+      "useQuery",
+      "UseQueryOptions"
+    ],
+    "intent": "how_to",
+    "difficulty": "easy",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "What is the difference between useQuery and defineQuery?",
+    "expected_answer": "`useQuery` is called inside a component to consume a query. `defineQuery` defines a reusable query factory once and returns a composable that can be called from multiple components, sharing state across them. Use `defineQuery` for queries shared between components.",
+    "relevant_paths": [
+      "guide/queries.md",
+      "advanced/reusable-queries.md"
+    ],
+    "relevant_apis": [
+      "useQuery",
+      "defineQuery"
+    ],
+    "intent": "comparison",
+    "difficulty": "medium",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I write a mutation that submits a form?",
+    "expected_answer": "Use `useMutation({ mutation })` where `mutation` is an async function that performs the write. Call `mutate(args)` or `mutateAsync(args)` to invoke it. Returns `data`, `error`, `state`, `status`, `asyncStatus`, plus `mutate`, `mutateAsync`, `reset`. Combine with `onSuccess`/`onError` callbacks for side effects.",
+    "relevant_paths": [
+      "guide/mutations.md"
+    ],
+    "relevant_apis": [
+      "useMutation",
+      "UseMutationOptions"
+    ],
+    "intent": "how_to",
+    "difficulty": "easy",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I invalidate a query after a mutation succeeds?",
+    "expected_answer": "Inject `useQueryCache()` and call `queryCache.invalidateQueries({ key })` inside the mutation's `onSuccess` callback. This marks matching queries as stale and triggers a refetch for any active consumers.",
+    "relevant_paths": [
+      "guide/query-invalidation.md"
+    ],
+    "relevant_apis": [
+      "useQueryCache",
+      "useMutation"
+    ],
+    "intent": "how_to",
+    "difficulty": "easy",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I implement optimistic updates?",
+    "expected_answer": "In `useMutation`, supply an `onMutate` callback that snapshots the current cache via `queryCache.getQueryData(key)`, then writes the optimistic value with `queryCache.setQueryData(key, newValue)`. On `onError`, restore the snapshot. On `onSettled`, invalidate to reconcile with the server.",
+    "relevant_paths": [
+      "guide/optimistic-updates.md"
+    ],
+    "relevant_apis": [
+      "useMutation",
+      "useQueryCache"
+    ],
+    "intent": "how_to",
+    "difficulty": "hard",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I implement infinite scrolling or load-more pagination?",
+    "expected_answer": "Use `useInfiniteQuery({ key, query, initialPage, merge })`. The `merge` function combines pages into the final `data` ref. Call `loadMore({ direction })` to fetch the next page. Pages are cached per key and resumable.",
+    "relevant_paths": [
+      "guide/infinite-queries.md"
+    ],
+    "relevant_apis": [
+      "useInfiniteQuery"
+    ],
+    "intent": "how_to",
+    "difficulty": "medium",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I implement page-based pagination?",
+    "expected_answer": "Pass a reactive `page` ref into the query key array (`key: () => ['posts', page.value]`). The query refetches when the key changes. Combine with `placeholderData: previousData` (or `keepPreviousData`) to keep the old page visible while loading the new one.",
+    "relevant_paths": [
+      "guide/paginated-queries.md",
+      "guide/placeholder-data.md"
+    ],
+    "relevant_apis": [
+      "useQuery"
+    ],
+    "intent": "how_to",
+    "difficulty": "medium",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I show old data while a refetch is in flight?",
+    "expected_answer": "Set `placeholderData: previousData` in `useQuery` options. The previous page's data is shown while the new query runs, instead of returning to a loading state.",
+    "relevant_paths": [
+      "guide/placeholder-data.md"
+    ],
+    "relevant_apis": [
+      "useQuery",
+      "UseQueryOptions"
+    ],
+    "intent": "how_to",
+    "difficulty": "easy",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I cancel an in-flight query?",
+    "expected_answer": "Pass the `signal` from the query function arguments to your fetch implementation: `query: ({ signal }) => fetch(url, { signal })`. Pinia Colada automatically aborts the AbortController when the component unmounts or the key changes. You can also call `queryCache.cancelQueries({ key })` to cancel manually.",
+    "relevant_paths": [
+      "guide/cancelling-queries.md"
+    ],
+    "relevant_apis": [
+      "useQuery",
+      "useQueryCache"
+    ],
+    "intent": "how_to",
+    "difficulty": "medium",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I structure query keys correctly?",
+    "expected_answer": "Use array form: `['users', userId]` \u2014 Pinia Colada normalizes via `toCacheKey` to a stable string. Hierarchical keys (`['users', userId, 'posts']`) enable wildcard invalidation: `queryCache.invalidateQueries({ key: ['users', userId] })` invalidates all child queries.",
+    "relevant_paths": [
+      "guide/query-keys.md"
+    ],
+    "relevant_apis": [
+      "toCacheKey",
+      "useQueryCache"
+    ],
+    "intent": "how_to",
+    "difficulty": "medium",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I attach metadata to a query?",
+    "expected_answer": "Set `meta: { ... }` in the `useQuery` options. Plugins can read it via `entry.options.meta`. Use module augmentation on `QueryMeta` to give it a typed shape across the codebase.",
+    "relevant_paths": [
+      "guide/query-meta.md"
+    ],
+    "relevant_apis": [
+      "useQuery",
+      "useMutation",
+      "TypesConfig"
+    ],
+    "intent": "how_to",
+    "difficulty": "medium",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I handle errors raised by a query?",
+    "expected_answer": "Read the `error` ref from `useQuery`. The `state` ref carries the `DataState` discriminated union. Pass an `onError` global option or per-query callback for side effects. Use module augmentation on `TypesConfig['Error']` to type the error globally.",
+    "relevant_paths": [
+      "guide/error-handling.md"
+    ],
+    "relevant_apis": [
+      "useQuery",
+      "TypesConfig"
+    ],
+    "intent": "how_to",
+    "difficulty": "medium",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I read or write the cache directly?",
+    "expected_answer": "Inject `useQueryCache()` and use `getQueryData(key)`, `setQueryData(key, data)`, `invalidateQueries({ key })`, `cancelQueries({ key })`, and `refetchQueries({ key })`. The cache is a Pinia store and reactive.",
+    "relevant_paths": [
+      "advanced/query-cache.md"
+    ],
+    "relevant_apis": [
+      "useQueryCache",
+      "QueryCache"
+    ],
+    "intent": "api_lookup",
+    "difficulty": "medium",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I prefetch data before the user navigates?",
+    "expected_answer": "Inject `useQueryCache()` and call `queryCache.prefetchQuery({ key, query })` (or `ensureQuery({ key, query })` to await it). Useful in router guards or hover handlers.",
+    "relevant_paths": [
+      "cookbook/prefetching.md",
+      "advanced/query-cache.md"
+    ],
+    "relevant_apis": [
+      "useQueryCache"
+    ],
+    "intent": "how_to",
+    "difficulty": "medium",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I persist the query cache to localStorage between page reloads?",
+    "expected_answer": "Register the official `PiniaColadaCachePersister` plugin: `app.use(PiniaColada, { plugins: [PiniaColadaCachePersister({ storage: localStorage })] })`. It serializes the cache on changes and restores it on startup. Configure `gcTime` and `staleTime` to control rehydration freshness.",
+    "relevant_paths": [
+      "cookbook/cache-persistence.md",
+      "plugins/official/cache-persister.md"
+    ],
+    "relevant_apis": [
+      "PiniaColadaCachePersister"
+    ],
+    "intent": "how_to",
+    "difficulty": "medium",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I add automatic retry on query failure?",
+    "expected_answer": "Register `PiniaColadaRetry` plugin in `PiniaColada` options. Configure max retries and the delay strategy globally or per-query via the `retry` option. By default retries failed queries with exponential backoff.",
+    "relevant_paths": [
+      "plugins/official/retry.md"
+    ],
+    "relevant_apis": [
+      "PiniaColadaRetry"
+    ],
+    "intent": "how_to",
+    "difficulty": "easy",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I refetch queries automatically when the user switches back to the tab?",
+    "expected_answer": "Register `PiniaColadaAutoRefetchPlugin` in the plugin list. By default it refetches on window focus and reconnect. Configure `refetchOnFocus`, `refetchOnReconnect`, and `refetchOnMount` per query or globally.",
+    "relevant_paths": [
+      "plugins/official/auto-refetch.md"
+    ],
+    "relevant_apis": [
+      "PiniaColada"
+    ],
+    "intent": "how_to",
+    "difficulty": "easy",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I delay or debounce queries to avoid spamming the server?",
+    "expected_answer": "Register the official `PiniaColadaDelay` plugin and pass `delay` (debounce interval in ms) globally or per query. Useful for search-as-you-type, where queries triggered by reactive key changes should wait for the user to stop typing.",
+    "relevant_paths": [
+      "plugins/official/delay.md"
+    ],
+    "relevant_apis": [
+      "PiniaColadaDelay"
+    ],
+    "intent": "how_to",
+    "difficulty": "medium",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I run code before/after every query, like logging?",
+    "expected_answer": "Register `PiniaColadaQueryHooksPlugin` and pass hook functions: `onBeforeFetch`, `onSuccess`, `onError`, `onSettled`. They receive the query entry and run for every query.",
+    "relevant_paths": [
+      "plugins/official/query-hooks.md",
+      "cookbook/query-hooks.md"
+    ],
+    "relevant_apis": [
+      "PiniaColadaQueryHooksPlugin"
+    ],
+    "intent": "how_to",
+    "difficulty": "medium",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I write my own Pinia Colada plugin?",
+    "expected_answer": "A plugin is a function `(context: PiniaColadaPluginContext) => void`. The context exposes the query and mutation caches, options, and lifecycle hook registration. Register the plugin in the `plugins: [...]` array of `PiniaColadaOptions`.",
+    "relevant_paths": [
+      "plugins/writing-plugins.md"
+    ],
+    "relevant_apis": [
+      "PiniaColadaPlugin"
+    ],
+    "intent": "how_to",
+    "difficulty": "hard",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I use Pinia Colada with Nuxt?",
+    "expected_answer": "Install `@pinia/colada-nuxt` and add it to `modules` in `nuxt.config.ts`. The module auto-imports composables and wires up SSR cache hydration. Configure plugins via `piniaColada.plugins` in nuxt config.",
+    "relevant_paths": [
+      "nuxt.md"
+    ],
+    "relevant_apis": [
+      "@pinia/colada-nuxt"
+    ],
+    "intent": "how_to",
+    "difficulty": "easy",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I hydrate the cache during SSR?",
+    "expected_answer": "On the server, after rendering, call `serializeQueryCache(queryCache)` to get the serialized state. Send it to the client. On the client during app setup, call `hydrateQueryCache(queryCache, serializedState)` before mounting. With Nuxt, the official module handles this automatically.",
+    "relevant_paths": [
+      "guide/ssr.md"
+    ],
+    "relevant_apis": [
+      "serializeQueryCache",
+      "hydrateQueryCache",
+      "useQueryCache"
+    ],
+    "intent": "how_to",
+    "difficulty": "hard",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I migrate from TanStack Query (Vue Query)?",
+    "expected_answer": "Two paths: (1) Use `PiniaColadaTanstackCompatPlugin` for a compatibility shim that maps TanStack APIs onto Pinia Colada. (2) Run the migration codemods (`npx @pinia/colada-codemods migrate`) to rewrite imports and call sites. The migration guide lists option-name differences (e.g. `queryKey` \u2192 `key`, `queryFn` \u2192 `query`).",
+    "relevant_paths": [
+      "cookbook/migration-tvq.md",
+      "cookbook/tanstack-compat.md",
+      "cookbook/migrations.md"
+    ],
+    "relevant_apis": [
+      "PiniaColada"
+    ],
+    "intent": "migration",
+    "difficulty": "hard",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I test components that use queries?",
+    "expected_answer": "Mount with a fresh Pinia + PiniaColada in each test. Use `queryCache.setQueryData(key, data)` to seed cached state. Mock the query function or stub `fetch`/network. The testing guide shows patterns for waiting on async transitions and snapshotting cache state.",
+    "relevant_paths": [
+      "cookbook/testing.md"
+    ],
+    "relevant_apis": [
+      "useQueryCache",
+      "createTestingPinia"
+    ],
+    "intent": "how_to",
+    "difficulty": "medium",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I share a query across multiple components without recomputing?",
+    "expected_answer": "Define it once with `defineQuery({ key, query })` and import the resulting composable. Pinia Colada deduplicates the underlying request and shares the cache entry, so all consumers see the same `data`/`error`/`status` refs.",
+    "relevant_paths": [
+      "advanced/reusable-queries.md",
+      "guide/queries.md"
+    ],
+    "relevant_apis": [
+      "defineQuery"
+    ],
+    "intent": "how_to",
+    "difficulty": "easy",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I get TypeScript inference for typed query keys?",
+    "expected_answer": "Use `defineQueryOptions({ key, query })` to define typed options. The returned options are `DefineQueryOptionsTagged`, which propagates the data type when passed to `useQuery`. `EntryKeyTagged<T>` lets you create branded keys that carry the data type.",
+    "relevant_paths": [
+      "guide/query-keys.md",
+      "guide/typescript.md"
+    ],
+    "relevant_apis": [
+      "defineQueryOptions"
+    ],
+    "intent": "how_to",
+    "difficulty": "hard",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I globally type the Error type used by all queries?",
+    "expected_answer": "Use module augmentation on `TypesConfig` from `@pinia/colada`: `declare module '@pinia/colada' { interface TypesConfig { Error: MyAppError } }`. All queries and mutations now infer `error: Ref<MyAppError | null>`.",
+    "relevant_paths": [
+      "guide/typescript.md"
+    ],
+    "relevant_apis": [
+      "TypesConfig"
+    ],
+    "intent": "how_to",
+    "difficulty": "hard",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I refetch a query manually?",
+    "expected_answer": "Call `refresh()` (refetch only if stale) or `refetch()` (always refetch) from the `useQuery` return value. From outside the component, call `queryCache.refetchQueries({ key })`.",
+    "relevant_paths": [
+      "guide/queries.md",
+      "advanced/query-cache.md"
+    ],
+    "relevant_apis": [
+      "useQuery",
+      "useQueryCache"
+    ],
+    "intent": "api_lookup",
+    "difficulty": "easy",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I configure stale and garbage collection times?",
+    "expected_answer": "Pass `staleTime` (ms before a query is considered stale and refetch on next access) and `gcTime` (ms after which inactive queries are evicted from the cache) in the `useQuery` options or as global defaults in `PiniaColada` setup.",
+    "relevant_paths": [
+      "guide/queries.md"
+    ],
+    "relevant_apis": [
+      "UseQueryOptions",
+      "UseQueryOptionsGlobal"
+    ],
+    "intent": "api_lookup",
+    "difficulty": "medium",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I disable a query conditionally?",
+    "expected_answer": "Set `enabled: () => condition` (a getter or boolean ref). When `enabled` evaluates to false, the query won't run. Useful for queries that depend on a user being logged in or an ID being present.",
+    "relevant_paths": [
+      "guide/queries.md"
+    ],
+    "relevant_apis": [
+      "UseQueryOptions"
+    ],
+    "intent": "how_to",
+    "difficulty": "easy",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I transform the data before it's stored in the cache?",
+    "expected_answer": "Use `transform` in `useQuery` options: `transform: (data) => data.items`. The transformed value is stored and exposed via `data`. Do this for shape normalization or for picking a subset of the response.",
+    "relevant_paths": [
+      "guide/queries.md"
+    ],
+    "relevant_apis": [
+      "UseQueryOptions"
+    ],
+    "intent": "how_to",
+    "difficulty": "medium",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I poll a query at a fixed interval?",
+    "expected_answer": "Set `refetchInterval` in `useQuery` options to a number of milliseconds, or a function that returns a number based on the current entry. Set to `false` to stop polling.",
+    "relevant_paths": [
+      "guide/queries.md"
+    ],
+    "relevant_apis": [
+      "UseQueryOptions"
+    ],
+    "intent": "how_to",
+    "difficulty": "easy",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "What is the DataState discriminated union and how do I use it?",
+    "expected_answer": "`state` is a discriminated union with `status: 'pending' | 'success' | 'error'`. TypeScript narrows `data` and `error` based on `status`. Use `v-if=\"state.status === 'success'\"` in templates for type-safe access.",
+    "relevant_paths": [
+      "guide/queries.md"
+    ],
+    "relevant_apis": [
+      "useQuery"
+    ],
+    "intent": "api_lookup",
+    "difficulty": "medium",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "Why use Pinia Colada instead of TanStack Query (Vue Query)?",
+    "expected_answer": "Pinia Colada is a thin layer on top of Pinia, so the cache is just a Pinia store: smaller bundle, native devtools, simpler mental model. It's smartly integrated with Vue's reactivity, has Vue-first defaults, and pairs naturally with Pinia for shared state. TanStack Query's strengths are cross-framework portability and a larger plugin ecosystem.",
+    "relevant_paths": [
+      "why.md",
+      "cookbook/migration-tvq.md"
+    ],
+    "relevant_apis": [],
+    "intent": "comparison",
+    "difficulty": "easy",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I subscribe to mutation lifecycle events globally?",
+    "expected_answer": "Pass `onMutate`, `onSuccess`, `onError`, `onSettled` to `PiniaColada` options as global mutation defaults. They run for every `useMutation` call. Per-mutation overrides take precedence.",
+    "relevant_paths": [
+      "guide/mutations.md"
+    ],
+    "relevant_apis": [
+      "UseMutationOptionsGlobal"
+    ],
+    "intent": "how_to",
+    "difficulty": "medium",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I access the underlying mutation cache?",
+    "expected_answer": "Inject `useMutationCache()`. Exposes `getMutations({ key })`, `cancelMutations({ key })`, `setMutationData`, etc. Useful for tracking pending mutations across the app.",
+    "relevant_paths": [
+      "guide/mutations.md"
+    ],
+    "relevant_apis": [
+      "useMutationCache",
+      "MutationCache"
+    ],
+    "intent": "api_lookup",
+    "difficulty": "medium",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I set query data manually after a mutation?",
+    "expected_answer": "In `onSuccess`, call `queryCache.setQueryData(key, newData)` or `queryCache.setQueryData(key, (old) => ({ ...old, ... }))`. This skips a network refetch and updates the UI immediately.",
+    "relevant_paths": [
+      "guide/optimistic-updates.md",
+      "advanced/query-cache.md"
+    ],
+    "relevant_apis": [
+      "useQueryCache"
+    ],
+    "intent": "how_to",
+    "difficulty": "medium",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I run codemods to migrate from TanStack Query?",
+    "expected_answer": "Run `npx @pinia/colada-codemods migrate` against the project. The codemods rewrite imports, rename options (`queryKey` \u2192 `key`, `queryFn` \u2192 `query`), and adjust shape mismatches. Review the diff manually before committing.",
+    "relevant_paths": [
+      "cookbook/migrations.md"
+    ],
+    "relevant_apis": [],
+    "intent": "migration",
+    "difficulty": "medium",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I detect if a query has ever loaded?",
+    "expected_answer": "Use `asyncStatus` (the load state of the in-flight request) vs `status` (the result state). After the first load, `status` flips from `pending` to `success`/`error` and stays. `asyncStatus` reflects each subsequent refetch independently.",
+    "relevant_paths": [
+      "guide/queries.md"
+    ],
+    "relevant_apis": [
+      "useQuery"
+    ],
+    "intent": "api_lookup",
+    "difficulty": "medium",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I get a typed cache entry from the query cache?",
+    "expected_answer": "Use `queryCache.get({ key })` returning `UseQueryEntry`. Filter active queries with `queryCache.getEntries({ key, exact, predicate })`. Each entry exposes `state`, `options`, `extensions` set by plugins.",
+    "relevant_paths": [
+      "advanced/query-cache.md"
+    ],
+    "relevant_apis": [
+      "UseQueryEntry",
+      "UseQueryEntryFilter",
+      "useQueryCache"
+    ],
+    "intent": "api_lookup",
+    "difficulty": "hard",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I show different UI for the very first load vs background refetches?",
+    "expected_answer": "Check `asyncStatus.value === 'loading' && !data.value` for the first load (no cached data yet). Check `asyncStatus.value === 'loading' && data.value !== undefined` for a background refetch (cached data is shown while a new fetch runs).",
+    "relevant_paths": [
+      "guide/queries.md"
+    ],
+    "relevant_apis": [
+      "useQuery"
+    ],
+    "intent": "how_to",
+    "difficulty": "medium",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I share dependent queries (one query depends on another)?",
+    "expected_answer": "Make the dependent query's `enabled` reactive on the first query's data: `enabled: () => !!user.value`. The second query waits for the first to resolve before running. The first query's `data` ref is referenced inside `key` for cache correctness.",
+    "relevant_paths": [
+      "guide/queries.md"
+    ],
+    "relevant_apis": [
+      "useQuery",
+      "UseQueryOptions"
+    ],
+    "intent": "how_to",
+    "difficulty": "medium",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "What's the recommended file structure for queries?",
+    "expected_answer": "Group queries by domain in a `queries/` folder. Each file uses `defineQuery` to export reusable composables. Co-locate mutations using `defineMutation`. Import the composables wherever needed \u2014 Pinia Colada deduplicates calls automatically.",
+    "relevant_paths": [
+      "advanced/reusable-queries.md",
+      "guide/queries.md"
+    ],
+    "relevant_apis": [
+      "defineQuery",
+      "defineMutation"
+    ],
+    "intent": "how_to",
+    "difficulty": "easy",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I clear the entire cache (e.g. after logout)?",
+    "expected_answer": "Inject `useQueryCache()` and call `queryCache.$reset()` to clear all entries. For granular control, call `removeQueries({ key })` to remove only matching entries.",
+    "relevant_paths": [
+      "advanced/query-cache.md"
+    ],
+    "relevant_apis": [
+      "useQueryCache"
+    ],
+    "intent": "how_to",
+    "difficulty": "easy",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I propagate AbortSignal from useQuery to my fetch call?",
+    "expected_answer": "The query function receives `{ signal, key }` as its argument. Pass `signal` into `fetch(url, { signal })`. Pinia Colada aborts the signal automatically when the query is cancelled, the component unmounts, or a newer fetch supersedes the current one.",
+    "relevant_paths": [
+      "guide/cancelling-queries.md"
+    ],
+    "relevant_apis": [
+      "useQuery"
+    ],
+    "intent": "how_to",
+    "difficulty": "medium",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I structure mutations with rollback for failed optimistic updates?",
+    "expected_answer": "In `onMutate`, snapshot via `queryCache.getQueryData(key)` and apply the optimistic write with `setQueryData`. Return the snapshot from `onMutate` (it's passed to `onError` as the third argument). In `onError`, restore using `setQueryData(key, snapshot)`. In `onSettled`, invalidate to reconcile.",
+    "relevant_paths": [
+      "guide/optimistic-updates.md"
+    ],
+    "relevant_apis": [
+      "useMutation",
+      "useQueryCache"
+    ],
+    "intent": "how_to",
+    "difficulty": "hard",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "What does the PiniaColadaPluginContext expose?",
+    "expected_answer": "The context exposes `queryCache` (the Pinia store), `mutationCache`, `pinia`, the `globalOptions`, and helpers to register hooks like `onActionHook`. Plugins use it to extend cache entries (`entry.extensions`), inject middleware around fetches, or react to cache events.",
+    "relevant_paths": [
+      "plugins/writing-plugins.md"
+    ],
+    "relevant_apis": [
+      "PiniaColadaPlugin"
+    ],
+    "intent": "api_lookup",
+    "difficulty": "hard",
+    "framework": "pinia-colada"
+  },
+  {
+    "question": "How do I attach typed extension data to a cache entry from a plugin?",
+    "expected_answer": "Mutate `entry.extensions` inside the plugin and augment `UseQueryEntryExtensions` via module augmentation on `@pinia/colada` to type the field globally. Other code can then read `entry.extensions.myField` with full type safety.",
+    "relevant_paths": [
+      "plugins/writing-plugins.md"
+    ],
+    "relevant_apis": [
+      "UseQueryEntryExtensions",
+      "PiniaColadaPlugin"
+    ],
+    "intent": "how_to",
+    "difficulty": "hard",
+    "framework": "pinia-colada"
+  }
+]

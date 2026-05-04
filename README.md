@@ -55,7 +55,8 @@ The hosted server at **`mcp.vue-mcp.org`** is free. No API keys, no setup requir
 | [Pinia](https://pinia.vuejs.org) | Available |
 | [Vue DevTools](https://devtools.vuejs.org) | Available |
 | [VitePress](https://vitepress.dev) | Available |
-| [10 more](https://vue-mcp.org/frameworks/) | Planned |
+| [Pinia Colada](https://pinia-colada.esm.dev) | Available |
+| [9 more](https://vue-mcp.org/frameworks/) | Planned |
 
 Each framework gets its own tools, resources, and prompts. [See all frameworks](https://vue-mcp.org/frameworks/).
 
@@ -137,7 +138,8 @@ Evaluated by an LLM judge (Gemini, temperature 0) scoring retrieved documentatio
 | Pinia | 49 | **4.81** | 4.68 |
 | Vue DevTools | 50 | **4.37** | 3.32 |
 | VitePress | 50 | **4.68** | 4.44 |
-| **Weighted average** | **569** | **4.78** | — |
+| Pinia Colada | 49 | **4.14** | 4.00 |
+| **Weighted average** | **618** | **4.72** | — |
 
 | Metric | Vue Docs MCP | Context7 |
 |---|---|---|

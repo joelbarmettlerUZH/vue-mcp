@@ -87,6 +87,15 @@ else
     git -C "$PROJECT_ROOT/data/vitepress-docs" pull
 fi
 
+# Clone Pinia Colada docs if not present
+if [ ! -d "$PROJECT_ROOT/data/pinia-colada-docs" ]; then
+    echo "Cloning Pinia Colada documentation..."
+    git clone --depth 1 https://github.com/posva/pinia-colada.git "$PROJECT_ROOT/data/pinia-colada-docs"
+else
+    echo "Pinia Colada docs already cloned, pulling latest..."
+    git -C "$PROJECT_ROOT/data/pinia-colada-docs" pull
+fi
+
 # Install dependencies
 echo "Installing dependencies with uv..."
 cd "$PROJECT_ROOT"

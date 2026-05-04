@@ -95,6 +95,7 @@ Each adapter (in `packages/core/src/vue_docs_core/parsing/adapters/`) implements
 | `pinia` | `PiniaAdapter` | Strips `<RuleKitLink>`, `<MasteringPiniaLink>`, `<VueSchoolLink>`, `<script setup>` blocks. Excludes `zh/`. Split VitePress config with catch-all `'/'` sidebar key. Optional TypeDoc API generation. |
 | `nuxt` | `NuxtAdapter` | Nuxt Content sidebar (frontmatter-based ordering). Strips Nuxt-specific custom components. Numeric-prefix file ordering. |
 | `vitepress` | `VitePressAdapter` | Multi-locale repo: `docs_subpath="docs/en"` excludes other languages. Custom sidebar parser for `defineAdditionalConfig` shape with per-section `base` re-applied to bare `link` values. Strips `<Badge>`, `<script setup>`, `<script client>`, `<VPTeam*>` blocks. |
+| `pinia-colada` | `PiniaColadaAdapter` | Standard VitePress sidebar at `.vitepress/config/index.ts`. Comprehensive TwoSlash cleanup inside code fences (`---cut-start/end/before/after`, `// @errors`/`@filename`/`@moduleResolution` directives, `// ^?` hover queries, `twoslash` fence tag). Strips `<HomeSponsors>`, `<FeaturePluginOptions>`, `<PiniaColada(Prod)?Devtools>`. Skips auto-generated `api/` folder; entity coverage seeded from `src/index.ts` exports. |
 
 ### Adding a New Framework
 
