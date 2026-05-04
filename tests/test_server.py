@@ -1631,6 +1631,7 @@ class TestFrameworkPreferences:
                 "vee-validate": False,
                 "formkit": False,
                 "shadcn-vue": False,
+                "vue-flow": False,
             },
         )
 

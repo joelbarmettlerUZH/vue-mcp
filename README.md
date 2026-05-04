@@ -59,6 +59,7 @@ The hosted server at **`mcp.vue-mcp.org`** is free. No API keys, no setup requir
 | [VeeValidate](https://vee-validate.logaretm.com/v4/) | Available |
 | [FormKit](https://formkit.com) | Available |
 | [shadcn-vue](https://www.shadcn-vue.com) | Available |
+| [Vue Flow](https://vueflow.dev) | Available |
 | [6 more](https://vue-mcp.org/frameworks/) | Planned |
 
 Each framework gets its own tools, resources, and prompts. [See all frameworks](https://vue-mcp.org/frameworks/).
@@ -145,7 +146,8 @@ Evaluated by an LLM judge (Gemini, temperature 0) scoring retrieved documentatio
 | VeeValidate | 49 | **4.26** | 3.95 |
 | FormKit | 50 | 3.92 | **3.99** |
 | shadcn-vue | 50 | **3.82** | 3.65 |
-| **Weighted average** | **767** | **4.58** | — |
+| Vue Flow | 49 | **3.88** | 3.76 |
+| **Weighted average** | **816** | **4.54** | — |
 
 | Metric | Vue Docs MCP | Context7 |
 |---|---|---|

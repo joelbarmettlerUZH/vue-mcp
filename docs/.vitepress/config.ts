@@ -63,6 +63,7 @@ export default defineConfig({
           { text: "VeeValidate", link: "/frameworks/vee-validate" },
           { text: "FormKit", link: "/frameworks/formkit" },
           { text: "shadcn-vue", link: "/frameworks/shadcn-vue" },
+          { text: "Vue Flow", link: "/frameworks/vue-flow" },
         ],
       },
       {

@@ -456,6 +456,7 @@ async def set_framework_preferences(
     vee_validate: bool = False,
     formkit: bool = False,
     shadcn_vue: bool = False,
+    vue_flow: bool = False,
     ctx: Context = None,
 ) -> str:
     """Activate or deactivate Vue ecosystem framework documentation.
@@ -479,6 +480,7 @@ async def set_framework_preferences(
         "vee-validate": vee_validate,
         "formkit": formkit,
         "shadcn-vue": shadcn_vue,
+        "vue-flow": vue_flow,
     }
 
     # Map param names to source registry names

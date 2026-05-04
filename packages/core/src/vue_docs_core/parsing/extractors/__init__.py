@@ -13,6 +13,7 @@ from vue_docs_core.parsing.extractors.vitepress import VitePressEntityExtractor
 from vue_docs_core.parsing.extractors.vitest import VitestEntityExtractor
 from vue_docs_core.parsing.extractors.vue import VueEntityExtractor
 from vue_docs_core.parsing.extractors.vue_devtools import VueDevToolsEntityExtractor
+from vue_docs_core.parsing.extractors.vue_flow import VueFlowEntityExtractor
 from vue_docs_core.parsing.extractors.vue_router import VueRouterEntityExtractor
 from vue_docs_core.parsing.extractors.vueuse import VueUseEntityExtractor
 
@@ -31,6 +32,7 @@ EXTRACTOR_REGISTRY: dict[str, type[EntityExtractor]] = {
     "vee-validate": VeeValidateEntityExtractor,
     "formkit": FormKitEntityExtractor,
     "shadcn-vue": ShadcnVueEntityExtractor,
+    "vue-flow": VueFlowEntityExtractor,
 }
 
 
@@ -55,6 +57,7 @@ __all__ = [
     "VitestEntityExtractor",
     "VueDevToolsEntityExtractor",
     "VueEntityExtractor",
+    "VueFlowEntityExtractor",
     "VueRouterEntityExtractor",
     "VueUseEntityExtractor",
     "get_extractor",

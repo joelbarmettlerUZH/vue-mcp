@@ -28,6 +28,7 @@ FRAMEWORK_TO_LIBRARY_ID: dict[str, str] = {
     "vee-validate": "/logaretm/vee-validate",
     "formkit": "/formkit/docs-content",
     "shadcn-vue": "/unovue/shadcn-vue",
+    "vue-flow": "/bcakmakoglu/vue-flow",
 }
 
 

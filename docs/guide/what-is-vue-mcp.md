@@ -42,6 +42,7 @@ All results include source references so you can verify them.
 | [VeeValidate](https://vee-validate.logaretm.com/v4/) | :white_check_mark: Available | Form validation library |
 | [FormKit](https://formkit.com) | :white_check_mark: Available | Form framework with schema-driven inputs |
 | [shadcn-vue](https://www.shadcn-vue.com) | :white_check_mark: Available | Copy-paste components on reka-ui primitives |
+| [Vue Flow](https://vueflow.dev) | :white_check_mark: Available | Node-based interactive diagrams and graphs |
 | 6 more frameworks | :calendar: Planned | |
 
 See the full list on the [Supported Frameworks](/frameworks/) page. Each framework gets its own tools, resources, prompts, and benchmarks.

@@ -12,6 +12,7 @@ from vue_docs_core.parsing.adapters.vitepress import VitePressAdapter
 from vue_docs_core.parsing.adapters.vitest import VitestAdapter
 from vue_docs_core.parsing.adapters.vue import VueAdapter
 from vue_docs_core.parsing.adapters.vue_devtools import VueDevToolsAdapter
+from vue_docs_core.parsing.adapters.vue_flow import VueFlowAdapter
 from vue_docs_core.parsing.adapters.vue_router import VueRouterAdapter
 from vue_docs_core.parsing.adapters.vueuse import VueUseAdapter
 
@@ -30,6 +31,7 @@ ADAPTER_REGISTRY: dict[str, type[SourceAdapter]] = {
     "vee-validate": VeeValidateAdapter,
     "formkit": FormKitAdapter,
     "shadcn-vue": ShadcnVueAdapter,
+    "vue-flow": VueFlowAdapter,
 }
 
 
@@ -58,6 +60,7 @@ __all__ = [
     "VitestAdapter",
     "VueAdapter",
     "VueDevToolsAdapter",
+    "VueFlowAdapter",
     "VueRouterAdapter",
     "VueUseAdapter",
     "get_adapter",

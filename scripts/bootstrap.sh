@@ -123,6 +123,15 @@ else
     git -C "$PROJECT_ROOT/data/shadcn-vue-docs" pull
 fi
 
+# Clone Vue Flow docs if not present
+if [ ! -d "$PROJECT_ROOT/data/vue-flow-docs" ]; then
+    echo "Cloning Vue Flow documentation..."
+    git clone --depth 1 https://github.com/bcakmakoglu/vue-flow.git "$PROJECT_ROOT/data/vue-flow-docs"
+else
+    echo "Vue Flow docs already cloned, pulling latest..."
+    git -C "$PROJECT_ROOT/data/vue-flow-docs" pull
+fi
+
 # Install dependencies
 echo "Installing dependencies with uv..."
 cd "$PROJECT_ROOT"
