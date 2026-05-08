@@ -1,12 +1,8 @@
 # Pinia Colada
 
-<span style="color: var(--vp-c-brand-1); font-weight: 600;">4.14 / 5 composite score</span> &middot; 77.9% API recall &middot; 49 questions evaluated
+<span style="color: var(--vp-c-brand-1); font-weight: 600;">4.83 / 5 composite score</span> &middot; 93.9% API recall &middot; 49 questions evaluated
 
 Vue Docs MCP provides deep access to the official [Pinia Colada documentation](https://pinia-colada.esm.dev), covering the smart data-fetching layer for Vue: queries, mutations, infinite queries, the query/mutation cache, the `defineQuery` factory pattern, the official plugin set, and migration paths from TanStack Query (Vue Query).
-
-::: warning Upstream docs in active development
-Pinia Colada is a young library and several pages in its documentation (`setup`, `placeholder-data`, `typescript`, `cancelling-queries`, `query-cache`) are currently TODO stubs. The benchmark below reflects what's *currently indexable* — both providers are working from the same incomplete source. Coverage will improve automatically as the upstream docs grow, since the ingestion pipeline re-indexes every 24 hours.
-:::
 
 ::: tip Pairs with Pinia
 Pinia Colada is built on Pinia and shares its devtools and reactivity. Activate both frameworks together for the best experience: `set_framework_preferences(pinia=true, pinia_colada=true)`.
@@ -107,40 +103,31 @@ Each question has a ground-truth answer with expected API names and documentatio
     markers: { size: 4 },
   }"
   :series="[
-    { name: 'Vue Docs MCP', data: [4.53, 3.78, 4.08, 3.45, 4.86] },
-    { name: 'Context7', data: [4.57, 3.45, 4.02, 3.27, 4.67] },
+    { name: 'Vue Docs MCP', data: [4.82, 4.80, 4.80, 4.78, 4.96] },
+    { name: 'Context7', data: [4.88, 4.73, 4.82, 4.78, 4.88] },
   ]"
 />
 </ClientOnly>
 
 | Metric | Vue Docs MCP | Context7 |
 |---|---|---|
-| Relevance | 4.53 | **4.57** |
-| Completeness | **3.78** | 3.45 |
-| Correctness | **4.08** | 4.02 |
-| API Coverage | **3.45** | 3.27 |
-| Conciseness | **4.86** | 4.67 |
-| **Composite** | **4.14** | **4.00** |
+| Relevance | 4.82 | **4.88** |
+| Completeness | **4.80** | 4.73 |
+| Correctness | 4.80 | **4.82** |
+| API Coverage | 4.78 | 4.78 |
+| Conciseness | **4.96** | 4.88 |
+| **Composite** | **4.83** | 4.82 |
 
 ### Retrieval and Cost
 
 | Metric | Vue Docs MCP | Context7 |
 |---|---|---|
-| Path Recall | **81.6%** | 68.7% |
-| API Recall | **77.9%** | 72.8% |
-| Avg Response Tokens | 3,877 | 953 |
-| Avg Latency | **1.13s** | 1.81s |
-| P95 Latency | **1.26s** | 2.24s |
+| Path Recall | **98.0%** | 91.8% |
+| API Recall | **93.9%** | 92.9% |
+| Avg Response Tokens | 3,849 | **980** |
+| Avg Latency | **1.64s** | 1.73s |
+| P95 Latency | 6.88s | **2.15s** |
 | Cost per Query (user-facing) | **Free** | $0.002 |
-
-### Why these numbers are lower than other frameworks
-
-Pinia Colada's documentation has the lowest absolute scores in the suite (most other frameworks land at 4.7-4.95 composite). Two reasons:
-
-1. **Upstream stubs.** Several core pages are currently 1-73 word TODO outlines. When the eval expects content from `cancelling-queries.md` (31 words) or `placeholder-data.md` (8 words), retrieval correctly falls back to the broader `queries.md` page where the topic is actually covered. This counts as a path recall miss in the eval, but the surfaced content is still the right answer.
-2. **TwoSlash-heavy code blocks.** Pinia Colada's docs lean on type-aware code samples with embedded directives. After cleaning, chunks tilt toward code over prose, which is harder for embedding-based retrieval to match against natural-language questions.
-
-Both providers face the same source material, so the head-to-head numbers are the meaningful comparison. The pipeline re-indexes upstream every 24 hours, so coverage will lift automatically as the docs grow.
 
 ### Notes on Fairness
 

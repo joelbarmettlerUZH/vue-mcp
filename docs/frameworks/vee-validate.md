@@ -1,6 +1,6 @@
 # VeeValidate
 
-<span style="color: var(--vp-c-brand-1); font-weight: 600;">4.26 / 5 composite score</span> &middot; 78.8% API recall &middot; 49 questions evaluated
+<span style="color: var(--vp-c-brand-1); font-weight: 600;">4.21 / 5 composite score</span> &middot; 98.1% API recall &middot; 54 questions evaluated
 
 Vue Docs MCP provides deep access to the official [VeeValidate documentation](https://vee-validate.logaretm.com/v4), covering Vue's leading form-validation library: the components API (`<Form>`, `<Field>`, `<FieldArray>`, `<ErrorMessage>`), the composition API (`useForm`, `useField`, `useFieldArray`, plus 20+ granular helpers), schema integrations (yup, zod, valibot, joi), the `defineRule` / `configure` global helpers, the i18n package, the Nuxt module, and migration paths from v3.
 
@@ -101,30 +101,30 @@ Each question has a ground-truth answer with expected API names and documentatio
     markers: { size: 4 },
   }"
   :series="[
-    { name: 'Vue Docs MCP', data: [4.71, 3.90, 4.29, 3.90, 4.51] },
-    { name: 'Context7', data: [4.43, 3.55, 4.06, 3.31, 4.39] },
+    { name: 'Vue Docs MCP', data: [4.30, 3.78, 4.02, 4.15, 4.80] },
+    { name: 'Context7', data: [4.00, 3.41, 3.80, 3.57, 4.48] },
   ]"
 />
 </ClientOnly>
 
 | Metric | Vue Docs MCP | Context7 |
 |---|---|---|
-| Relevance | **4.71** | 4.43 |
-| Completeness | **3.90** | 3.55 |
-| Correctness | **4.29** | 4.06 |
-| API Coverage | **3.90** | 3.31 |
-| Conciseness | **4.51** | 4.39 |
-| **Composite** | **4.26** | **3.95** |
+| Relevance | **4.30** | 4.00 |
+| Completeness | **3.78** | 3.41 |
+| Correctness | **4.02** | 3.80 |
+| API Coverage | **4.15** | 3.57 |
+| Conciseness | **4.80** | 4.48 |
+| **Composite** | **4.21** | 3.85 |
 
 ### Retrieval and Cost
 
 | Metric | Vue Docs MCP | Context7 |
 |---|---|---|
-| Path Recall | **81.3%** | 61.2% |
-| API Recall | **78.8%** | 69.6% |
-| Avg Response Tokens | 6,590 | 1,266 |
-| Avg Latency | **1.18s** | 1.73s |
-| P95 Latency | 2.47s | **2.12s** |
+| Path Recall | **42.6%** | 39.8% |
+| API Recall | **98.1%** | 82.3% |
+| Avg Response Tokens | 7,269 | **1,086** |
+| Avg Latency | **1.08s** | 1.66s |
+| P95 Latency | **1.75s** | 2.05s |
 | Cost per Query (user-facing) | **Free** | $0.002 |
 
 ### Notes on Fairness

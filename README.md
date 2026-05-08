@@ -141,13 +141,13 @@ Evaluated by an LLM judge (Gemini, temperature 0) scoring retrieved documentatio
 | Nuxt | 49 | **4.80** | 4.62 |
 | Pinia | 49 | **4.81** | 4.68 |
 | Vue DevTools | 50 | **4.37** | 3.32 |
-| VitePress | 50 | **4.68** | 4.44 |
-| Pinia Colada | 49 | **4.14** | 4.00 |
-| VeeValidate | 49 | **4.26** | 3.95 |
-| FormKit | 50 | 3.92 | **3.99** |
-| shadcn-vue | 50 | **3.82** | 3.65 |
-| Vue Flow | 49 | **3.88** | 3.76 |
-| **Weighted average** | **816** | **4.54** | — |
+| VitePress | 45 | 4.58 | **4.62** |
+| Pinia Colada | 49 | **4.83** | 4.82 |
+| VeeValidate | 54 | **4.21** | 3.85 |
+| FormKit | 55 | **4.59** | 4.52 |
+| shadcn-vue | 50 | 4.30 | **4.87** |
+| Vue Flow | 50 | **4.82** | 4.74 |
+| **Weighted average** | **822** | **4.70** | — |
 
 | Metric | Vue Docs MCP | Context7 |
 |---|---|---|

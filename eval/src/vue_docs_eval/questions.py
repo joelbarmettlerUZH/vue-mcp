@@ -15,18 +15,56 @@ generate challenging, realistic developer questions that the {display_name} docu
 should be able to answer.
 
 Requirements for the questions:
+
 1. Each question must be answerable from the documentation content provided.
-2. Questions MUST cover ALL of these intent types with roughly equal distribution:
-   - api_lookup: Questions about specific API signatures, parameters, return values
-   - conceptual: Questions about {display_name} principles, architecture, core concepts
-   - howto: Questions about how to accomplish specific tasks
-   - debugging: Questions describing a symptom or unexpected behavior
-   - comparison: Questions asking about differences between approaches
-   - migration: Questions about converting between patterns
-3. Include varying difficulty levels (easy, medium, hard) - aim for ~30% each.
-4. Include some questions with typos or informal phrasing.
-5. Include some multi-faceted questions that span multiple documentation sections.
-6. Include some questions using synonyms or informal language.
+
+2. **Intent distribution — TARGET ROUGHLY EQUAL COUNTS across these six categories.**
+   This is the most-violated rule. Do NOT default to 'howto' for everything. If you are
+   about to write another 'How do I X' question, ask yourself which of the following
+   categories it really belongs to and use that intent label:
+     - api_lookup    — about a specific API's signature, parameters, return value, or option name
+     - conceptual    — about why/how the framework works, its mental model, or design rationale
+     - howto         — practical "how do I accomplish task X" recipes
+     - debugging     — phrased as a symptom or "why isn't X working" / "X is broken because…"
+     - comparison    — about differences between two APIs, patterns, or alternatives
+     - migration     — about converting from an older version, an alternative library, or a
+                       deprecated pattern
+
+3. **Difficulty distribution — TARGET ~25% easy / 25% medium / 25% hard / 25% extreme.**
+   Use the SPECIFIC documented APIs, concepts, file paths, and terminology of {display_name}
+   in your questions. DO NOT borrow vocabulary or examples from other frameworks; only refer
+   to APIs that actually appear in the documentation provided below.
+
+   - easy:    surface-level. User knows the right keyword. Answer is on one page.
+              Example shape: "What does the `<prop name>` option do on the `<component>`?"
+   - medium:  combines two or three docs sections, or requires knowing a non-obvious flag.
+              Example shape: "How do I configure X to behave like Y when Z changes?"
+   - hard:    requires understanding the framework's internals, lifecycle, or how features
+              interact. May be phrased as a real production-grade task.
+              Example shape: "How do I implement <feature> while keeping <constraint> intact?"
+   - extreme: THE DEVELOPER DOES NOT KNOW THE NAME OF THE API. They describe a symptom or
+              an outcome in plain non-technical language using only words a beginner would
+              know. They write like a frustrated junior on Stack Overflow, NOT like someone
+              who has read the docs.
+
+              Rules for extreme questions:
+                a) DO NOT mention any API name, function name, component name, prop name,
+                   option name, or other framework-specific identifier in the question text.
+                b) DO NOT use framework jargon or domain terminology. Replace it with
+                   everyday language: "screen" instead of "DOM", "thing" instead of
+                   "component", "save it for later" instead of "persist", "make it sticky"
+                   instead of "pin", "send to" instead of "emit", and so on.
+                c) Phrase the question as the user's GOAL or SYMPTOM, not the solution.
+                d) The `relevant_apis` field for these questions should still list the
+                   actual APIs the docs answer the question with — that's how we measure
+                   whether retrieval bridged the vocab gap.
+
+              Generate AT LEAST 10 extreme questions following these rules. They should
+              cover a range of {display_name}'s capabilities — not all about the same topic.
+
+4. Vary phrasing across the set. Some questions should have typos or informal grammar.
+   Some should be multi-sentence with extra context ("I'm trying to ... and I keep getting
+   ... what's wrong?"). Some should span multiple docs sections.
 """
 
 QUESTION_FUNCTION_SCHEMA = {
@@ -56,8 +94,12 @@ QUESTION_FUNCTION_SCHEMA = {
                     },
                     "difficulty": {
                         "type": "string",
-                        "enum": ["easy", "medium", "hard"],
-                        "description": "The difficulty level of the question.",
+                        "enum": ["easy", "medium", "hard", "extreme"],
+                        "description": (
+                            "The difficulty level. 'extreme' means the developer does not "
+                            "know the API name and describes the symptom/goal in plain "
+                            "non-technical language."
+                        ),
                     },
                     "expected_answer": {
                         "type": "string",
@@ -152,14 +194,28 @@ def generate_questions(
     docs_content = build_docs_content(files)
 
     per_intent = max(count // 6, 5)
-    min_per_intent = max(count // 10, 3)
+    min_per_intent = max(count // 10, 4)
+    min_extreme = max(count // 5, 10)
+    min_easy = max(count // 5, 10)
+    min_medium = max(count // 5, 10)
+    min_hard = max(count // 5, 10)
 
     system_instruction = GENERATION_SYSTEM_INSTRUCTION.format(display_name=display_name)
 
     prompt = (
-        f"Study the documentation below, then generate exactly {count} test questions.\n"
-        f"Aim for ~{per_intent} questions per intent type. "
-        f"You MUST generate at least {min_per_intent} questions for EACH intent type.\n\n"
+        f"Study the {display_name} documentation below, then generate exactly {count} "
+        f"test questions about {display_name}'s actual documented APIs.\n\n"
+        f"HARD QUOTAS — the question set must satisfy ALL of these:\n"
+        f"  • At least {min_per_intent} questions for EACH intent type:\n"
+        f"    api_lookup, conceptual, howto, debugging, comparison, migration\n"
+        f"    (target ~{per_intent} of each)\n"
+        f"  • At least {min_easy} questions with difficulty='easy'\n"
+        f"  • At least {min_medium} questions with difficulty='medium'\n"
+        f"  • At least {min_hard} questions with difficulty='hard'\n"
+        f"  • At least {min_extreme} questions with difficulty='extreme' "
+        f"(vague non-technical phrasing, NO API names mentioned in the question)\n\n"
+        f"Self-check before returning: count the questions per intent and per difficulty. "
+        f"If any quota is violated, replace some questions to satisfy it.\n\n"
         f"DOCUMENTATION CONTENT:\n{docs_content}"
     )
 
@@ -198,8 +254,11 @@ def generate_questions(
     logger.info("Generated %d valid questions (requested %d)", len(valid), count)
 
     intent_counts: dict[str, int] = {}
+    diff_counts: dict[str, int] = {}
     for q in valid:
         intent_counts[q["intent"]] = intent_counts.get(q["intent"], 0) + 1
+        diff_counts[q["difficulty"]] = diff_counts.get(q["difficulty"], 0) + 1
     logger.info("Intent distribution: %s", intent_counts)
+    logger.info("Difficulty distribution: %s", diff_counts)
 
     return valid

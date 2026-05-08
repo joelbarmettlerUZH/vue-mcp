@@ -1,452 +1,656 @@
 [
   {
-    "question": "What is shadcn-vue and how is it different from a typical component library?",
-    "expected_answer": "shadcn-vue is a collection of unstyled, accessible Vue components built on `reka-ui` primitives, distributed as copy-paste source code via the CLI. Unlike npm-installed component libraries, you own the component code in your repo and customize it freely. The CLI runs `npx shadcn-vue@latest add <component>` to add components to your project.",
-    "relevant_paths": ["01.introduction.md"],
-    "relevant_apis": ["shadcn-vue", "reka-ui"],
-    "intent": "how_to",
+    "expected_answer": "You can use the `as-child` prop on the `<Button />` component to render it as another element, such as a link.",
+    "question": "How do I make a Button component look like a link or another element?",
+    "relevant_apis": [
+      "Button"
+    ],
+    "relevant_paths": [
+      "components/button.md"
+    ],
     "difficulty": "easy",
+    "intent": "howto",
     "framework": "shadcn-vue"
   },
   {
-    "question": "How do I install shadcn-vue in a Vite project?",
-    "expected_answer": "Run `npx shadcn-vue@latest init` to scaffold `components.json` and the base styles. Configure Tailwind, then add components individually with `npx shadcn-vue@latest add <component>`. The Vite installation guide walks through the full setup including path aliases and `tailwind.config`.",
-    "relevant_paths": ["installation/01.vite.md", "02.installation.md"],
-    "relevant_apis": ["shadcn-vue", "components.json"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I install shadcn-vue in a Nuxt project?",
-    "expected_answer": "Run `npx shadcn-vue@latest init` from the Nuxt project root. Add `@nuxtjs/tailwindcss` to modules, configure `components.json` with the Nuxt path alias, and set up the `auto-imports` exclusion for the `~/components/ui` directory so the CLI-added components aren't double-registered.",
-    "relevant_paths": ["installation/02.nuxt.md"],
-    "relevant_apis": ["shadcn-vue", "components.json"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "What's in components.json and what does each field do?",
-    "expected_answer": "`components.json` configures the CLI: `style` (default theme), `tailwind` (config path, css path, base color, prefix), `aliases` (`components`, `utils`, `ui`, `lib`, `hooks` paths), `iconLibrary` (lucide / etc), `framework` (vite / nuxt / astro / laravel). The CLI uses these when adding components.",
-    "relevant_paths": ["03.components-json.md"],
-    "relevant_apis": ["components.json"],
-    "intent": "api_lookup",
-    "difficulty": "medium",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I add a button to my project?",
-    "expected_answer": "Run `npx shadcn-vue@latest add button` to copy the Button component into your project. Then `import { Button } from '@/components/ui/button'` and use `<Button variant=\"outline\">` in templates. Variants: default, secondary, destructive, outline, ghost, link.",
-    "relevant_paths": ["components/button.md"],
-    "relevant_apis": ["Button", "button"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I build a form with shadcn-vue and vee-validate?",
-    "expected_answer": "Use the form components (`Form`, `FormField`, `FormItem`, `FormLabel`, `FormControl`, `FormMessage`) which wrap vee-validate. Define a yup or zod schema, pass it via `validationSchema` to `useForm`, and bind fields with `<FormField v-slot=\"{ componentField }\" name=\"...\">`. The forms guide shows the full pattern.",
-    "relevant_paths": ["forms/01.vee-validate.md", "forms.md"],
-    "relevant_apis": ["form", "Form", "vee-validate"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I integrate TanStack Form with shadcn-vue components?",
-    "expected_answer": "Use `@tanstack/vue-form` to manage form state and pair it with shadcn-vue inputs. The TanStack Form integration page documents the wrapper components and shows how to wire `field` props into `<Input>`, `<Select>`, and other shadcn-vue components.",
-    "relevant_paths": ["forms/02.tanstack-form.md"],
-    "relevant_apis": ["tanstack-form", "form"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I configure dark mode?",
-    "expected_answer": "shadcn-vue uses CSS variables. Toggle dark mode by adding the `dark` class to the `<html>` element. The dark-mode pages document Vite, Nuxt, and Astro patterns — typically using `useColorMode` (or `@vueuse/core`) and respecting the user's system preference.",
-    "relevant_paths": ["05.dark-mode.md", "dark-mode"],
-    "relevant_apis": ["dark-mode", "useColorMode"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I customize the theme colors?",
-    "expected_answer": "Edit the CSS variables in `src/assets/css/main.css` (or wherever the shadcn theme is installed). Variables follow the OKLCH palette: `--background`, `--foreground`, `--primary`, `--secondary`, `--muted`, `--accent`, `--destructive`, `--border`, `--input`, `--ring`. Change them to override the default theme.",
-    "relevant_paths": ["04.theming.md"],
-    "relevant_apis": ["theming"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I create a modal dialog?",
-    "expected_answer": "Add the `dialog` component (`npx shadcn-vue@latest add dialog`). Use `<Dialog>` with `<DialogTrigger>`, `<DialogContent>`, `<DialogHeader>`, `<DialogTitle>`, `<DialogDescription>`, `<DialogFooter>`. Open state is controlled via `v-model:open` on `<Dialog>`. For confirmation dialogs use `<AlertDialog>` instead.",
-    "relevant_paths": ["components/dialog.md", "components/alert-dialog.md"],
-    "relevant_apis": ["Dialog", "dialog", "AlertDialog", "alert-dialog"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "What's the difference between Dialog, AlertDialog, Sheet, and Drawer?",
-    "expected_answer": "`Dialog` is a centered modal. `AlertDialog` is a Dialog variant for confirmations (no escape-to-close). `Sheet` slides in from a side (top/right/bottom/left). `Drawer` is the mobile-first slide-up panel. Pick based on the interaction: confirmations → AlertDialog, inline edit → Sheet, mobile gestures → Drawer.",
-    "relevant_paths": ["components/dialog.md", "components/alert-dialog.md", "components/sheet.md", "components/drawer.md"],
-    "relevant_apis": ["Dialog", "AlertDialog", "Sheet", "Drawer"],
-    "intent": "comparison",
-    "difficulty": "medium",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I build a data table with sorting and filtering?",
-    "expected_answer": "Use the `<DataTable>` component with `@tanstack/vue-table`. Define columns via `ColumnDef[]`, pass them and the data array to the table. Sorting via `getSortedRowModel`, filtering via `getFilteredRowModel`, pagination via `getPaginationRowModel`. The data-table page has a complete recipe.",
-    "relevant_paths": ["components/data-table.md", "components/table.md"],
-    "relevant_apis": ["DataTable", "data-table", "table"],
-    "intent": "how_to",
-    "difficulty": "hard",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I add a date picker?",
-    "expected_answer": "Run `npx shadcn-vue@latest add date-picker`. The component composes `<Popover>` + `<Calendar>` internally. Bind the value with `v-model`. For a date range, use `<RangeCalendar>` or pass `mode=\"range\"` to the underlying calendar.",
-    "relevant_paths": ["components/date-picker.md", "components/calendar.md", "components/range-calendar.md"],
-    "relevant_apis": ["DatePicker", "date-picker", "Calendar", "range-calendar"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I show toast notifications?",
-    "expected_answer": "Add the `sonner` component (`npx shadcn-vue@latest add sonner`) — it's the recommended toast solution. Place `<Toaster />` once at the root of your app, then call `toast('message')` from anywhere. Variants: `toast.success`, `toast.error`, `toast.warning`, `toast.info`, `toast.promise`.",
-    "relevant_paths": ["components/sonner.md", "components/toast.md"],
-    "relevant_apis": ["Sonner", "sonner", "toast"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I build a dropdown menu with keyboard shortcuts?",
-    "expected_answer": "Compose `<DropdownMenu>` with `<DropdownMenuTrigger>`, `<DropdownMenuContent>`, `<DropdownMenuItem>`. Use `<DropdownMenuShortcut>` (or render a `<Kbd>`) inside an item to display the shortcut. For grouped menus, wrap items in `<DropdownMenuGroup>` with `<DropdownMenuLabel>`.",
-    "relevant_paths": ["components/dropdown-menu.md", "components/kbd.md"],
-    "relevant_apis": ["DropdownMenu", "dropdown-menu", "Kbd", "kbd"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I create a command palette (cmd+k)?",
-    "expected_answer": "Use `<Command>` with `<CommandInput>`, `<CommandList>`, `<CommandEmpty>`, `<CommandGroup>`, `<CommandItem>`, `<CommandShortcut>`. Wrap in `<CommandDialog>` for the modal version that opens on cmd+k. The command page documents wiring up keyboard listeners and search filtering.",
-    "relevant_paths": ["components/command.md", "components/combobox.md"],
-    "relevant_apis": ["Command", "command", "Combobox"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I build a sidebar navigation?",
-    "expected_answer": "Use `<Sidebar>` with `<SidebarProvider>` at the root. The component supports `collapsible=\"icon\"` for a collapsible icon-only mode, `<SidebarHeader>`, `<SidebarContent>`, `<SidebarFooter>`, `<SidebarMenu>`, `<SidebarMenuItem>`, `<SidebarMenuButton>`. Use `<SidebarTrigger>` to toggle from anywhere.",
-    "relevant_paths": ["components/sidebar.md"],
-    "relevant_apis": ["Sidebar", "sidebar"],
-    "intent": "how_to",
-    "difficulty": "hard",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I add charts to my dashboard?",
-    "expected_answer": "Run `npx shadcn-vue@latest add chart`. shadcn-vue's chart component wraps `unovis` for data visualization. Define data and config, pass them to `<ChartContainer>` with the appropriate chart type (`<ChartLine>`, `<ChartBar>`, `<ChartArea>`, `<ChartPie>`).",
-    "relevant_paths": ["components/chart.md"],
-    "relevant_apis": ["Chart", "chart"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I add a tooltip to a button?",
-    "expected_answer": "Wrap the trigger element in `<TooltipProvider>` (once per app), then use `<Tooltip>`, `<TooltipTrigger>`, `<TooltipContent>`. The `as-child` prop on `<TooltipTrigger>` passes the props through to the wrapped element so the button doesn't get a redundant nested wrapper.",
-    "relevant_paths": ["components/tooltip.md", "components/hover-card.md"],
-    "relevant_apis": ["Tooltip", "tooltip", "HoverCard", "hover-card"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I create a multi-step form wizard?",
-    "expected_answer": "Use the `<Stepper>` component (`npx shadcn-vue@latest add stepper`) — it provides `<StepperItem>`, `<StepperTrigger>`, `<StepperIndicator>`, `<StepperTitle>`, `<StepperDescription>`, `<StepperSeparator>`. Drive the active step with `v-model:step`. Combine with conditional rendering of form fields per step.",
-    "relevant_paths": ["components/stepper.md"],
-    "relevant_apis": ["Stepper", "stepper"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I build a searchable select?",
-    "expected_answer": "Use `<Combobox>` instead of `<Select>` when the user needs to type to filter. Compose `<ComboboxRoot>`, `<ComboboxAnchor>` with `<ComboboxInput>`, `<ComboboxList>`, `<ComboboxItem>`. The combobox page demonstrates value/display separation and async option loading.",
-    "relevant_paths": ["components/combobox.md", "components/select.md"],
-    "relevant_apis": ["Combobox", "combobox", "Select", "select"],
-    "intent": "comparison",
-    "difficulty": "medium",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I create an OTP input field?",
-    "expected_answer": "Add the `input-otp` component. Use `<PinInput>` with `<PinInputGroup>`, `<PinInputSlot>` for individual digits, `<PinInputSeparator>` for visual breaks. Bind the value with `v-model` — receives the concatenated string. Configure `length`, `mask`, and `inputmode`.",
-    "relevant_paths": ["components/input-otp.md", "components/pin-input.md"],
-    "relevant_apis": ["PinInput", "pin-input", "input-otp"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I make a button toggle that visually persists state?",
-    "expected_answer": "Use `<Toggle>` for a single on/off button or `<ToggleGroup>` (with `<ToggleGroupItem>`) for a set of mutually exclusive (`type=\"single\"`) or multi-select (`type=\"multiple\"`) toggles. Bind state with `v-model:pressed` (single) or `v-model` (group).",
-    "relevant_paths": ["components/toggle.md", "components/toggle-group.md"],
-    "relevant_apis": ["Toggle", "toggle", "ToggleGroup", "toggle-group"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "What loading-state components are available?",
-    "expected_answer": "`<Spinner>` for indeterminate inline loading, `<Skeleton>` for placeholder boxes that match the final layout shape, and `<Progress>` for determinate progress (with a `value` prop). Use Skeleton during initial loads to reduce layout shift, Spinner inside buttons during submission, and Progress for known-duration tasks.",
-    "relevant_paths": ["components/spinner.md", "components/skeleton.md", "components/progress.md"],
-    "relevant_apis": ["Spinner", "spinner", "Skeleton", "skeleton", "Progress", "progress"],
-    "intent": "comparison",
-    "difficulty": "easy",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I build a navigation menu with submenus?",
-    "expected_answer": "Use `<NavigationMenu>` with `<NavigationMenuList>`, `<NavigationMenuItem>`, `<NavigationMenuTrigger>` (the top-level link), `<NavigationMenuContent>` (the popover with submenu items), and `<NavigationMenuLink>` for inner links. Use `as-child` on `<NavigationMenuLink>` to wrap a `<RouterLink>` from vue-router.",
-    "relevant_paths": ["components/navigation-menu.md", "components/menubar.md"],
-    "relevant_apis": ["NavigationMenu", "navigation-menu", "Menubar", "menubar"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I create a breadcrumb trail?",
-    "expected_answer": "Use `<Breadcrumb>` with `<BreadcrumbList>`, `<BreadcrumbItem>`, `<BreadcrumbLink>`, `<BreadcrumbSeparator>`, and `<BreadcrumbPage>` for the current page. Wrap the link with `as-child` to compose with `<RouterLink>`.",
-    "relevant_paths": ["components/breadcrumb.md"],
-    "relevant_apis": ["Breadcrumb", "breadcrumb"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I implement infinite scroll or pagination on a long list?",
-    "expected_answer": "For pagination UI, use `<Pagination>` with `<PaginationList>`, `<PaginationFirst>`, `<PaginationPrev>`, `<PaginationListItem>`, `<PaginationNext>`, `<PaginationLast>` and `<PaginationEllipsis>`. For infinite scroll, combine `<ScrollArea>` with an intersection observer (e.g. `useIntersectionObserver` from VueUse).",
-    "relevant_paths": ["components/pagination.md", "components/scroll-area.md"],
-    "relevant_apis": ["Pagination", "pagination", "ScrollArea", "scroll-area"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I add a context menu (right-click menu)?",
-    "expected_answer": "Wrap the target in `<ContextMenu>`, `<ContextMenuTrigger>`. Inside `<ContextMenuContent>`, compose `<ContextMenuItem>`, `<ContextMenuCheckboxItem>`, `<ContextMenuRadioItem>`, `<ContextMenuSub>` for nested menus. The trigger fires on right-click; pass `as-child` to wrap an existing element.",
-    "relevant_paths": ["components/context-menu.md"],
-    "relevant_apis": ["ContextMenu", "context-menu"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I create a resizable split-pane layout?",
-    "expected_answer": "Use `<ResizablePanelGroup>` with `<ResizablePanel>` children separated by `<ResizableHandle>`. Set `direction=\"horizontal\"` or `vertical`, and pass `default-size`/`min-size`/`max-size` to each panel. The component persists drag state internally.",
-    "relevant_paths": ["components/resizable.md"],
-    "relevant_apis": ["Resizable", "resizable"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I add a number-only input with min/max constraints?",
-    "expected_answer": "Use `<NumberField>` with `<NumberFieldContent>`, `<NumberFieldDecrement>`, `<NumberFieldInput>`, `<NumberFieldIncrement>`. Pass `:min`, `:max`, `:step`, and bind `v-model` to a numeric ref. Internally clamps and steps the value on blur.",
-    "relevant_paths": ["components/number-field.md", "components/input.md"],
-    "relevant_apis": ["NumberField", "number-field", "Input", "input"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I configure path aliases for component imports?",
-    "expected_answer": "Set `aliases` in `components.json`: `components`, `utils`, `ui`, `lib`, `hooks` mapped to your path aliases (typically `@/components`, `@/lib/utils`, etc.). The CLI uses these when generating files, so all generated imports follow your project's alias convention.",
-    "relevant_paths": ["03.components-json.md"],
-    "relevant_apis": ["components.json"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I use the JavaScript API to add components programmatically?",
-    "expected_answer": "Import from `@shadcn/cli` (or run via npx): `import { add } from 'shadcn-vue/cli'`. The CLI is also scriptable from a Node script for monorepo orchestration. The javascript page documents the programmatic API and CI/CD recipes.",
-    "relevant_paths": ["07.javascript.md", "06.cli.md"],
-    "relevant_apis": ["shadcn-vue", "cli"],
-    "intent": "how_to",
-    "difficulty": "hard",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I create a custom registry of components?",
-    "expected_answer": "Define a registry JSON file with `name`, `homepage`, and an array of `items` (each with `name`, `type`, `dependencies`, `files`). Host it on a public URL. Consumers use `npx shadcn-vue@latest add <url>/<name>` to fetch from your custom registry. The registry pages document the schema and hosting patterns.",
-    "relevant_paths": ["registry"],
-    "relevant_apis": ["registry"],
-    "intent": "how_to",
-    "difficulty": "hard",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "What CLI commands does shadcn-vue support?",
-    "expected_answer": "`npx shadcn-vue@latest init` — set up `components.json` and base styles. `add <component>` — install one or more components. `diff <component>` — show local diff vs upstream. `remove <component>` — delete an installed component. Pass `--cwd`, `--silent`, `--overwrite`, or specific framework flags as needed.",
-    "relevant_paths": ["06.cli.md"],
-    "relevant_apis": ["cli"],
+    "question": "What base color options are available when initializing a project?",
+    "expected_answer": "The available base colors are Neutral, Gray, Zinc, Stone, and Slate.",
     "intent": "api_lookup",
     "difficulty": "easy",
+    "relevant_paths": [
+      "04.theming.md"
+    ],
+    "relevant_apis": [
+      "tailwind.baseColor"
+    ],
     "framework": "shadcn-vue"
   },
   {
-    "question": "How do I migrate from the old v3 docs to v4?",
-    "expected_answer": "v4 ships with Tailwind v4 (CSS variables in `@theme` blocks instead of the JS config), removes the `style` setting (only one style remains), and renames a handful of components. The legacy page documents v3 → v4 migration steps including the codemods.",
-    "relevant_paths": ["11.legacy.md"],
-    "relevant_apis": ["legacy"],
+    "intent": "howto",
+    "difficulty": "easy",
+    "relevant_paths": [
+      "06.cli.md"
+    ],
+    "relevant_apis": [
+      "add"
+    ],
+    "question": "What is the CLI command to add a new component to my project?",
+    "expected_answer": "You can use the `npx shadcn-vue@latest add [component]` command.",
+    "framework": "shadcn-vue"
+  },
+  {
+    "relevant_paths": [
+      "03.components-json.md"
+    ],
+    "difficulty": "easy",
+    "intent": "conceptual",
+    "relevant_apis": [
+      "components.json"
+    ],
+    "question": "Is the components.json file mandatory for all projects?",
+    "expected_answer": "The `components.json` file is only required if you are using the CLI to add components. If you are using the copy and paste method, it is optional.",
+    "framework": "shadcn-vue"
+  },
+  {
+    "relevant_apis": [
+      "Button"
+    ],
+    "intent": "api_lookup",
+    "difficulty": "easy",
+    "relevant_paths": [
+      "components/button.md"
+    ],
+    "expected_answer": "You can use the `variant` prop to change the style of the Button component, for example `variant=\"outline\"`.",
+    "question": "How do I change the style of a button?",
+    "framework": "shadcn-vue"
+  },
+  {
+    "expected_answer": "The default style is 'new-york'. The 'default' style has been deprecated.",
+    "question": "What is the current default style for shadcn-vue components?",
+    "relevant_apis": [
+      "style"
+    ],
+    "relevant_paths": [
+      "03.components-json.md"
+    ],
+    "difficulty": "easy",
+    "intent": "api_lookup",
+    "framework": "shadcn-vue"
+  },
+  {
+    "expected_answer": "You can use the `npx shadcn-vue@latest init` command.",
+    "question": "How do I initialize a new shadcn-vue project?",
+    "relevant_apis": [
+      "init"
+    ],
+    "relevant_paths": [
+      "06.cli.md"
+    ],
+    "difficulty": "easy",
+    "intent": "howto",
+    "framework": "shadcn-vue"
+  },
+  {
+    "question": "How do I create a custom tooltip for a chart?",
+    "expected_answer": "You can pass the `customTooltip` prop with a custom Vue component.",
+    "intent": "howto",
+    "difficulty": "easy",
+    "relevant_paths": [
+      ".charts.md"
+    ],
+    "relevant_apis": [
+      "customTooltip"
+    ],
+    "framework": "shadcn-vue"
+  },
+  {
+    "relevant_apis": [
+      "docs"
+    ],
+    "intent": "howto",
+    "difficulty": "easy",
+    "relevant_paths": [
+      "06.cli.md"
+    ],
+    "expected_answer": "You can use the `npx shadcn-vue@latest docs [component]` command.",
+    "question": "How can I fetch documentation for a specific component using the CLI?",
+    "framework": "shadcn-vue"
+  },
+  {
+    "difficulty": "easy",
+    "intent": "howto",
+    "relevant_paths": [
+      "06.cli.md"
+    ],
+    "relevant_apis": [
+      "view"
+    ],
+    "question": "How do I view the contents of an item from the registry before installing it?",
+    "expected_answer": "You can use the `npx shadcn-vue@latest view [item]` command.",
+    "framework": "shadcn-vue"
+  },
+  {
+    "relevant_paths": [
+      "04.theming.md"
+    ],
+    "intent": "howto",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "tailwind.cssVariables"
+    ],
+    "question": "How do I switch between using CSS variables and utility classes for theming?",
+    "expected_answer": "You can set `tailwind.cssVariables` to `true` in your `components.json` for CSS variables, or `false` to use inline Tailwind utility classes instead.",
+    "framework": "shadcn-vue"
+  },
+  {
+    "relevant_apis": [
+      "@theme inline"
+    ],
+    "relevant_paths": [
+      ".tailwind-v4.md"
+    ],
     "intent": "migration",
+    "difficulty": "medium",
+    "expected_answer": "You should move your color definitions out of the @layer base, wrap them in hsl(), and add the `inline` option to the @theme directive in your CSS.",
+    "question": "What are the steps to update my CSS variables for Tailwind v4 compatibility?",
+    "framework": "shadcn-vue"
+  },
+  {
+    "relevant_apis": [
+      "SidebarMenuButton"
+    ],
+    "difficulty": "medium",
+    "intent": "howto",
+    "relevant_paths": [
+      "components/sidebar.md"
+    ],
+    "expected_answer": "You can use the `as-child` prop on the `SidebarMenuButton` component and pass an `<a>` tag as a child.",
+    "question": "How do I render a sidebar menu button as a link?",
+    "framework": "shadcn-vue"
+  },
+  {
+    "relevant_apis": [
+      "Carousel"
+    ],
+    "relevant_paths": [
+      "components/carousel.md"
+    ],
+    "difficulty": "medium",
+    "intent": "howto",
+    "expected_answer": "You can use the `v-slot=\"{ canScrollNext, canScrollPrev }\"` directive on the `Carousel` component to conditionally render navigation components.",
+    "question": "How can I conditionally show carousel navigation based on scroll state?",
+    "framework": "shadcn-vue"
+  },
+  {
+    "expected_answer": "You can use the `is-active` prop on the `PaginationLink` component to highlight the current page.",
+    "question": "How do I highlight the active page in the pagination component?",
+    "relevant_apis": [
+      "PaginationLink"
+    ],
+    "relevant_paths": [
+      "components/pagination.md"
+    ],
+    "intent": "api_lookup",
+    "difficulty": "medium",
+    "framework": "shadcn-vue"
+  },
+  {
+    "relevant_apis": [
+      "ButtonGroup"
+    ],
+    "intent": "api_lookup",
+    "difficulty": "medium",
+    "relevant_paths": [
+      "components/button-group.md"
+    ],
+    "expected_answer": "You can set the `orientation` prop to `\"vertical\"` or `\"horizontal\"` on the `ButtonGroup` component.",
+    "question": "How do I change the orientation of a button group?",
+    "framework": "shadcn-vue"
+  },
+  {
+    "expected_answer": "You can use the `Field` component with `orientation=\"responsive\"` and add container-aware classes like `@container/field-group` to the parent.",
+    "question": "How do I make a form field responsive so it switches layout based on container width?",
+    "relevant_apis": [
+      "Field"
+    ],
+    "relevant_paths": [
+      "components/field.md"
+    ],
+    "difficulty": "medium",
+    "intent": "howto",
+    "framework": "shadcn-vue"
+  },
+  {
+    "expected_answer": "You can use the `VisAxis` component from `@unovis/vue` within your chart container to add X and Y axes.",
+    "question": "What component do I use to add an axis to a chart?",
+    "relevant_apis": [
+      "VisAxis"
+    ],
+    "intent": "howto",
+    "difficulty": "medium",
+    "relevant_paths": [
+      "components/chart.md"
+    ],
+    "framework": "shadcn-vue"
+  },
+  {
+    "expected_answer": "You can use the `onExpand` event emitted by your dropdown action, and link it to the `row.toggleExpanded` method of the data table.",
+    "question": "How do I implement expandable rows in a data table using a dropdown action?",
+    "relevant_apis": [
+      "DataTable"
+    ],
+    "difficulty": "medium",
+    "intent": "howto",
+    "relevant_paths": [
+      "components/data-table.md"
+    ],
+    "framework": "shadcn-vue"
+  },
+  {
+    "difficulty": "medium",
+    "intent": "conceptual",
+    "relevant_paths": [
+      "forms/01.vee-validate.md"
+    ],
+    "relevant_apis": [
+      "toTypedSchema"
+    ],
+    "question": "How do I integrate Zod schema validation with VeeValidate forms?",
+    "expected_answer": "Use `zod` for schema definition and `toTypedSchema` from `@vee-validate/zod` to integrate it with `vee-validate`.",
+    "framework": "shadcn-vue"
+  },
+  {
+    "relevant_apis": [
+      "useForwardPropsEmits"
+    ],
+    "relevant_paths": [
+      ".contribution.md"
+    ],
+    "difficulty": "hard",
+    "intent": "conceptual",
+    "expected_answer": "The `useForwardPropsEmits` helper function combines props and emits from Reka UI components, ensuring they are correctly forwarded from your wrapper component.",
+    "question": "Why is it recommended to use `useForwardPropsEmits` when wrapping Reka UI components?",
+    "framework": "shadcn-vue"
+  },
+  {
+    "expected_answer": "You should create a computed property (e.g., `delegatedProps`) to remove the `class` prop from the props object using `reactiveOmit`, then bind the remaining props to the component. This avoids double class binding issues.",
+    "question": "How do I handle the `class` prop correctly when wrapping a Reka UI component to avoid double class binding?",
+    "relevant_apis": [
+      "reactiveOmit",
+      "cn"
+    ],
+    "intent": "debugging",
+    "difficulty": "hard",
+    "relevant_paths": [
+      ".contribution.md"
+    ],
+    "framework": "shadcn-vue"
+  },
+  {
+    "expected_answer": "You should import `Primitive` from `reka-ui` and use it as the root element, extending `PrimitiveProps` in your component's props definition.",
+    "question": "How do I implement a component that can act as a root element using the `as` prop?",
+    "relevant_apis": [
+      "Primitive"
+    ],
+    "intent": "howto",
+    "difficulty": "hard",
+    "relevant_paths": [
+      ".contribution.md"
+    ],
+    "framework": "shadcn-vue"
+  },
+  {
+    "expected_answer": "You need to provide a `placeholder` or `defaultPlaceholder` prop containing a date object with the desired calendar system (e.g., PersianCalendar) and set the `locale` prop.",
+    "question": "How do I implement non-Gregorian calendar systems like Persian or Hijri in the Calendar component?",
+    "relevant_apis": [
+      "Calendar"
+    ],
+    "intent": "howto",
+    "difficulty": "hard",
+    "relevant_paths": [
+      "components/calendar.md"
+    ],
+    "framework": "shadcn-vue"
+  },
+  {
+    "relevant_apis": [
+      "componentToString"
+    ],
+    "intent": "api_lookup",
+    "difficulty": "hard",
+    "relevant_paths": [
+      "components/chart.md"
+    ],
+    "expected_answer": "You can use the `componentToString` utility to convert a custom tooltip component into a string template that Unovis can process within `ChartTooltip`.",
+    "question": "How do I render a custom Vue component inside a chart tooltip template?",
+    "framework": "shadcn-vue"
+  },
+  {
+    "relevant_paths": [
+      "forms/02.tanstack-form.md"
+    ],
+    "difficulty": "hard",
+    "intent": "howto",
+    "relevant_apis": [
+      "FieldArray"
+    ],
+    "question": "How do I manage dynamic list items in a TanStack Form?",
+    "expected_answer": "You can use `field.pushValue()` and `field.removeValue()` from the `FieldArray` slot props to dynamically manage items, and use array bracket notation in the field name (e.g., `emails[${index}].address`).",
+    "framework": "shadcn-vue"
+  },
+  {
+    "question": "How do I add custom animations to a registry item?",
+    "expected_answer": "You must define both `@keyframes` in your CSS and the animation name in the `cssVars.theme` section of your registry item JSON file.",
+    "relevant_paths": [
+      "registry/examples.md"
+    ],
+    "intent": "howto",
+    "difficulty": "hard",
+    "relevant_apis": [
+      "cssVars"
+    ],
+    "framework": "shadcn-vue"
+  },
+  {
+    "question": "How can I create a custom sidebar trigger that is not a standard SidebarTrigger component?",
+    "expected_answer": "You use `useSidebar()` and its `toggleSidebar` method to control the sidebar state, which allows you to build custom trigger buttons.",
+    "relevant_paths": [
+      "components/sidebar.md"
+    ],
+    "difficulty": "hard",
+    "intent": "api_lookup",
+    "relevant_apis": [
+      "useSidebar"
+    ],
+    "framework": "shadcn-vue"
+  },
+  {
+    "relevant_paths": [
+      "components/data-table.md"
+    ],
+    "intent": "conceptual",
+    "difficulty": "hard",
+    "relevant_apis": [
+      "valueUpdater"
+    ],
+    "question": "What is the purpose of the `valueUpdater` utility in the context of TanStack Table state management?",
+    "expected_answer": "The `valueUpdater` utility handles both direct assignments and functional updates (e.g., `(prev) => updater(prev)`), ensuring correct state management for Vue refs in a way that is compatible with TanStack table state updates.",
+    "framework": "shadcn-vue"
+  },
+  {
+    "relevant_apis": [
+      "SidebarMenuButton",
+      "DropdownMenuTrigger"
+    ],
+    "intent": "howto",
+    "difficulty": "hard",
+    "relevant_paths": [
+      "components/sidebar.md"
+    ],
+    "expected_answer": "You can use the `as-child` prop on the `SidebarMenuButton` and wrap a `DropdownMenu` trigger. This allows the button to act as the trigger while maintaining proper sidebar styling.",
+    "question": "How do I nest a DropdownMenu inside a SidebarMenu button?",
+    "framework": "shadcn-vue"
+  },
+  {
+    "expected_answer": "Use the `as-child` prop on the component that you want to replace the root element with.",
+    "question": "I have a button thing and I want it to be a link instead of a button element, how do I change the underlying HTML tag?",
+    "relevant_apis": [
+      "Primitive",
+      "asChild"
+    ],
+    "difficulty": "extreme",
+    "intent": "howto",
+    "relevant_paths": [
+      ".contribution.md"
+    ],
+    "framework": "shadcn-vue"
+  },
+  {
+    "question": "I am getting two class tags on my thing when I try to combine my classes with the component's default ones, how do I fix this?",
+    "expected_answer": "You should create a computed property using `reactiveOmit` to pull the class prop out, and then bind everything else to the underlying component.",
+    "relevant_paths": [
+      ".contribution.md"
+    ],
+    "difficulty": "extreme",
+    "intent": "debugging",
+    "relevant_apis": [
+      "reactiveOmit"
+    ],
+    "framework": "shadcn-vue"
+  },
+  {
+    "intent": "howto",
+    "difficulty": "extreme",
+    "relevant_paths": [
+      ".contribution.md"
+    ],
+    "relevant_apis": [
+      "useForwardProps"
+    ],
+    "question": "My thing has some true/false properties and they aren't working right when I wrap them, what should I use to make them pass through properly?",
+    "expected_answer": "You should use the `useForwardProps` composable from `reka-ui` to handle the props object, especially if your component has boolean props.",
+    "framework": "shadcn-vue"
+  },
+  {
+    "expected_answer": "You should use the `cn` utility function to merge your custom classes with the default classes provided by the component.",
+    "question": "How do I add my own styles to one of these components without breaking the ones already there?",
+    "relevant_apis": [
+      "cn"
+    ],
+    "intent": "howto",
+    "difficulty": "extreme",
+    "relevant_paths": [
+      ".contribution.md"
+    ],
+    "framework": "shadcn-vue"
+  },
+  {
+    "relevant_apis": [
+      "@theme inline"
+    ],
+    "relevant_paths": [
+      "04.theming.md"
+    ],
+    "intent": "howto",
+    "difficulty": "extreme",
+    "expected_answer": "You need to define the color variables in your CSS and then use the `@theme inline` directive to expose them to Tailwind.",
+    "question": "I want to create a brand new color theme for my site, where do I define these colors and how do I make Tailwind see them?",
+    "framework": "shadcn-vue"
+  },
+  {
+    "question": "I made a nice little box to show data on my chart, but the chart library doesn't know how to render it, how do I tell it to use my box?",
+    "expected_answer": "You can use the `componentToString` helper to convert your custom Vue template into a string that the chart library can use.",
+    "intent": "api_lookup",
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "components/chart.md"
+    ],
+    "relevant_apis": [
+      "componentToString"
+    ],
+    "framework": "shadcn-vue"
+  },
+  {
+    "expected_answer": "You can use the `FieldArray` component and its `push` method to add new items to the list.",
+    "question": "I have a list of inputs that the user can keep adding to, how do I make a button that adds a new row to that list?",
+    "relevant_apis": [
+      "FieldArray"
+    ],
+    "relevant_paths": [
+      "forms/02.tanstack-form.md"
+    ],
+    "intent": "howto",
+    "difficulty": "extreme",
+    "framework": "shadcn-vue"
+  },
+  {
+    "question": "I have a group of menu items in my sidebar and I want to hide/show them when I click the group title, how do I do that?",
+    "expected_answer": "You can wrap the `SidebarGroup` in a `Collapsible` component and use the `CollapsibleTrigger` to toggle the visibility of the group content.",
+    "relevant_paths": [
+      "components/sidebar.md"
+    ],
+    "difficulty": "extreme",
+    "intent": "howto",
+    "relevant_apis": [
+      "Collapsible",
+      "SidebarGroup"
+    ],
+    "framework": "shadcn-vue"
+  },
+  {
+    "relevant_apis": [
+      "useSidebar"
+    ],
+    "intent": "api_lookup",
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "components/sidebar.md"
+    ],
+    "expected_answer": "The `useSidebar` hook provides the `toggleSidebar` method to open or close the menu container.",
+    "question": "I want to make my own button that opens and closes the side menu, what should I call to make that happen?",
+    "framework": "shadcn-vue"
+  },
+  {
+    "question": "If I refresh my page, the side menu resets to its default state, how do I make it remember if I had it open or closed?",
+    "expected_answer": "You need to pass the `storageKey` prop to the `SidebarProvider` component to save the state in local storage.",
+    "relevant_paths": [
+      "components/sidebar.md"
+    ],
+    "difficulty": "extreme",
+    "intent": "howto",
+    "relevant_apis": [
+      "SidebarProvider"
+    ],
+    "framework": "shadcn-vue"
+  },
+  {
+    "relevant_paths": [
+      "components/chart.md"
+    ],
+    "intent": "howto",
+    "difficulty": "hard",
+    "relevant_apis": [
+      "VisAxis"
+    ],
+    "question": "How do I format the X-axis of my chart to show months instead of numbers?",
+    "expected_answer": "You can use the `VisAxis` component and the `tickFormat` prop to supply a function that formats the date numbers into readable month strings.",
+    "framework": "shadcn-vue"
+  },
+  {
+    "expected_answer": "You should set the `orientation` prop to `\"responsive\"` and add the `@container/field-group` class to the parent `FieldGroup`, which enables container queries to switch the field layout based on width.",
+    "question": "How do I make my form fields automatically switch between vertical and horizontal layouts as the screen gets smaller?",
+    "relevant_apis": [
+      "Field"
+    ],
+    "relevant_paths": [
+      "components/field.md"
+    ],
+    "intent": "howto",
     "difficulty": "hard",
     "framework": "shadcn-vue"
   },
   {
-    "question": "How do I add an avatar with fallback initials?",
-    "expected_answer": "Use `<Avatar>` with `<AvatarImage src=\"...\">` and `<AvatarFallback>` containing the initials. The fallback renders if the image fails to load or while it's loading. Style with size classes on `<Avatar>` itself.",
-    "relevant_paths": ["components/avatar.md"],
-    "relevant_apis": ["Avatar", "avatar"],
-    "intent": "how_to",
-    "difficulty": "easy",
+    "intent": "api_lookup",
+    "difficulty": "hard",
+    "relevant_paths": [
+      "components/sidebar.md"
+    ],
+    "relevant_apis": [
+      "SidebarMenuBadge"
+    ],
+    "question": "How do I add a notification counter to a sidebar menu item?",
+    "expected_answer": "You can use the `SidebarMenuBadge` component inside a `SidebarMenuButton` to display a small indicator for notifications or counts.",
     "framework": "shadcn-vue"
   },
   {
-    "question": "How do I show validation errors inline below an input?",
-    "expected_answer": "Wrap the input in `<FormField>` with a `name` matching your validation schema. Pair with `<FormControl>` for the input slot, `<FormMessage>` to render the error. The `<FormMessage>` only renders when the field has an error.",
-    "relevant_paths": ["forms/01.vee-validate.md", "components/form.md", "components/field.md"],
-    "relevant_apis": ["FormField", "FormMessage", "form", "field"],
-    "intent": "how_to",
+    "expected_answer": "You can pass the `plugins` prop to the `Carousel` component containing the `Autoplay` plugin instance, configured with your desired delay.",
+    "question": "How do I add an automatic slide transition to my carousel component?",
+    "relevant_apis": [
+      "Autoplay"
+    ],
+    "intent": "howto",
+    "difficulty": "hard",
+    "relevant_paths": [
+      "components/carousel.md"
+    ],
+    "framework": "shadcn-vue"
+  },
+  {
+    "relevant_apis": [
+      "ChartCrosshair"
+    ],
+    "difficulty": "hard",
+    "intent": "howto",
+    "relevant_paths": [
+      "components/chart.md"
+    ],
+    "expected_answer": "You can use the `componentToString` helper in the `ChartCrosshair` template and pass an object to the `labelFormatter` option to customize the label display.",
+    "question": "How can I format the labels in a chart crosshair?",
+    "framework": "shadcn-vue"
+  },
+  {
+    "question": "How do I make an Item component behave as a link?",
+    "expected_answer": "You can use the `as-child` prop on the `Item` component to render it as a link, which ensures that the link's hover and focus styles are correctly applied to the entire item.",
+    "relevant_paths": [
+      "components/item.md"
+    ],
+    "intent": "howto",
+    "difficulty": "hard",
+    "relevant_apis": [
+      "Item"
+    ],
+    "framework": "shadcn-vue"
+  },
+  {
+    "relevant_apis": [
+      "PaginationLink"
+    ],
+    "intent": "howto",
+    "difficulty": "hard",
+    "relevant_paths": [
+      "components/pagination.md"
+    ],
+    "expected_answer": "You can use the `is-active` prop on the `PaginationLink` component to dynamically set the active state based on your current route index.",
+    "question": "How do I dynamically set the active pagination page?",
+    "framework": "shadcn-vue"
+  },
+  {
+    "expected_answer": "You can use the `asChild` prop on the `Button` component to render it as another element, which is useful when you need to nest a complex navigation component inside a button-styled trigger.",
+    "question": "What is the purpose of the `asChild` prop on the Button component?",
+    "relevant_apis": [
+      "Button"
+    ],
+    "relevant_paths": [
+      "components/button.md"
+    ],
+    "difficulty": "hard",
+    "intent": "api_lookup",
+    "framework": "shadcn-vue"
+  },
+  {
+    "intent": "conceptual",
+    "difficulty": "hard",
+    "relevant_paths": [
+      "forms/02.tanstack-form.md"
+    ],
+    "relevant_apis": [
+      "FieldArray"
+    ],
+    "question": "How do I handle dynamic form fields in TanStack Form?",
+    "expected_answer": "You can use the `FieldArray` component in TanStack Form to manage dynamic lists, providing `push`, `remove`, and `fields` helpers for form data.",
+    "framework": "shadcn-vue"
+  },
+  {
+    "expected_answer": "The `cn` utility uses `clsx` for conditional classes and `tailwind-merge` to intelligently merge Tailwind CSS classes, preventing conflicts.",
+    "question": "How does the `cn` utility function work?",
+    "relevant_apis": [
+      "cn"
+    ],
+    "relevant_paths": [
+      "installation/05.manual.md"
+    ],
+    "intent": "conceptual",
     "difficulty": "medium",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I create a card with header, content, and footer?",
-    "expected_answer": "Compose `<Card>` with `<CardHeader>` (which contains `<CardTitle>` and `<CardDescription>`), `<CardContent>` for the body, and `<CardFooter>` for actions. Use `<CardAction>` inside the header for top-right buttons.",
-    "relevant_paths": ["components/card.md"],
-    "relevant_apis": ["Card", "card"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I add a switch toggle for a setting?",
-    "expected_answer": "Add the `switch` component (`npx shadcn-vue@latest add switch`). Bind state with `v-model:checked`. Pair with `<Label>` for an accessible name (use `for` on the label and a matching `id` on the switch).",
-    "relevant_paths": ["components/switch.md", "components/label.md"],
-    "relevant_apis": ["Switch", "switch", "Label", "label"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I create a multi-select with tag display?",
-    "expected_answer": "Use `<TagsInput>` with `<TagsInputItem>` (each tag renders inside) and `<TagsInputInput>` for the new-tag input. Bind `v-model` to a string array. The component handles backspace-to-remove and Enter-to-add.",
-    "relevant_paths": ["components/tags-input.md"],
-    "relevant_apis": ["TagsInput", "tags-input"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I display a slider with two thumbs (range)?",
-    "expected_answer": "Pass an array `v-model` to `<Slider>` with two values: `<Slider v-model:value=\"[20, 80]\">`. The component renders two thumbs and supports `min`, `max`, `step`. For visual feedback, wire the displayed values to the model.",
-    "relevant_paths": ["components/slider.md"],
-    "relevant_apis": ["Slider", "slider"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I show a progress bar that animates while loading?",
-    "expected_answer": "Use `<Progress :model-value=\"value\">` with `value` as a 0-100 number. For indeterminate loading, omit `model-value` or set it to `null` and rely on the styled animated stripe.",
-    "relevant_paths": ["components/progress.md"],
-    "relevant_apis": ["Progress", "progress"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I implement keyboard navigation across a custom list?",
-    "expected_answer": "Most shadcn-vue components inherit keyboard handling from `reka-ui` primitives (arrow keys to move, Enter to select, Esc to close). For custom lists, wrap with `<Command>` or `<DropdownMenu>` to inherit the same patterns. Or build manually with `tabindex=\"-1\"` and a `keydown` handler.",
-    "relevant_paths": ["components/command.md", "components/dropdown-menu.md"],
-    "relevant_apis": ["Command", "DropdownMenu"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "What's the difference between Combobox and Select?",
-    "expected_answer": "`<Select>` is a closed list of fixed options; the user picks one via mouse or keyboard arrows. `<Combobox>` adds a text input for filtering — the user can type to narrow the list. Use Select when the option set is small (<10), Combobox when filtering helps (>20 options or async loading).",
-    "relevant_paths": ["components/select.md", "components/combobox.md"],
-    "relevant_apis": ["Select", "select", "Combobox", "combobox"],
-    "intent": "comparison",
-    "difficulty": "easy",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I make components styleable per-project after install?",
-    "expected_answer": "Once a component is added, its source lives in your repo (e.g. `@/components/ui/button/Button.vue`). Edit it directly: change classes, add variants via `class-variance-authority`, restructure markup. Since it's your code, there's no upstream override mechanism — you own it.",
-    "relevant_paths": ["01.introduction.md", "04.theming.md"],
-    "relevant_apis": ["shadcn-vue", "theming"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I add an aspect ratio container for an image or video?",
-    "expected_answer": "Use `<AspectRatio :ratio=\"16/9\">` to wrap the media. The component maintains the ratio at any width. Common ratios: `16/9` (video), `1/1` (square), `4/3` (legacy video), `21/9` (cinemascope).",
-    "relevant_paths": ["components/aspect-ratio.md"],
-    "relevant_apis": ["AspectRatio", "aspect-ratio"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I show typography that matches the shadcn style?",
-    "expected_answer": "The typography page documents standardized text styles: H1-H4 with consistent leading and tracking, blockquote, ul/ol with markers, inline code with a styled background, lead paragraph, large/small/muted modifiers. Apply via Tailwind classes or by composing the recommended HTML structures.",
-    "relevant_paths": ["components/typography.md"],
-    "relevant_apis": ["typography"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I install in an Astro project?",
-    "expected_answer": "Add the Vue integration to Astro (`npx astro add vue`), then run `npx shadcn-vue@latest init` and pick the Astro framework option. Components live under `src/components/ui/`. Astro-specific notes: only client-side components (`client:load` etc) need full hydration; static usage is fine.",
-    "relevant_paths": ["installation/03.astro.md"],
-    "relevant_apis": ["installation"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I install in a Laravel project?",
-    "expected_answer": "Use Inertia.js + Vue. Add Vue via `npm install vue@next @vitejs/plugin-vue`, configure Vite to use the plugin, then run `npx shadcn-vue@latest init` and pick the Laravel framework option. Components install under `resources/js/components/ui/`.",
-    "relevant_paths": ["installation/04.laravel.md"],
-    "relevant_apis": ["installation"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "shadcn-vue"
-  },
-  {
-    "question": "How do I use shadcn-vue components with TypeScript?",
-    "expected_answer": "All components ship with `.vue` SFCs that have TypeScript-ready scripts and proper prop types via Reka UI's interfaces. Imports are typed automatically. For passing props, use `defineProps<MyProps>()` patterns and rely on the auto-generated types from each component's `index.ts` re-exports.",
-    "relevant_paths": ["07.javascript.md"],
-    "relevant_apis": ["javascript"],
-    "intent": "how_to",
-    "difficulty": "easy",
     "framework": "shadcn-vue"
   }
 ]

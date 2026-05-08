@@ -1,6 +1,6 @@
 # Vue Flow
 
-<span style="color: var(--vp-c-brand-1); font-weight: 600;">3.88 / 5 composite score</span> &middot; 75.5% API recall &middot; 49 questions evaluated
+<span style="color: var(--vp-c-brand-1); font-weight: 600;">4.82 / 5 composite score</span> &middot; 95.0% API recall &middot; 50 questions evaluated
 
 Vue Docs MCP provides deep access to the official [Vue Flow documentation](https://vueflow.dev), covering the node-based diagram library: the `<VueFlow>` container, the `<Handle>` connection point, the addon packages (`Background`, `Controls`, `MiniMap`, `NodeToolbar`, `NodeResizer`), the composables (`useVueFlow`, `useNode`, `useEdge`, `useHandle`, `useNodesData`, `useNodesInitialized`, `useKeyPress`, ...), the edge primitives + path helpers (`BaseEdge`, `BezierEdge`, `getBezierPath`, `getSmoothStepPath`), controlled-flow patterns, custom node/edge authoring, theming, and the worked examples (drag-and-drop, dagre/elk auto-layout, validation, helper lines, multi-step wizards).
 
@@ -97,30 +97,30 @@ Each question has a ground-truth answer with expected API names and documentatio
     markers: { size: 4 },
   }"
   :series="[
-    { name: 'Vue Docs MCP', data: [4.29, 3.29, 3.86, 3.27, 4.71] },
-    { name: 'Context7', data: [4.16, 3.22, 3.86, 3.04, 4.53] },
+    { name: 'Vue Docs MCP', data: [4.92, 4.66, 4.82, 4.74, 4.96] },
+    { name: 'Context7', data: [4.92, 4.62, 4.76, 4.62, 4.76] },
   ]"
 />
 </ClientOnly>
 
 | Metric | Vue Docs MCP | Context7 |
 |---|---|---|
-| Relevance | **4.29** | 4.16 |
-| Completeness | **3.29** | 3.22 |
-| Correctness | 3.86 | 3.86 |
-| API Coverage | **3.27** | 3.04 |
-| Conciseness | **4.71** | 4.53 |
-| **Composite** | **3.88** | **3.76** |
+| Relevance | 4.92 | 4.92 |
+| Completeness | **4.66** | 4.62 |
+| Correctness | **4.82** | 4.76 |
+| API Coverage | **4.74** | 4.62 |
+| Conciseness | **4.96** | 4.76 |
+| **Composite** | **4.82** | 4.74 |
 
 ### Retrieval and Cost
 
 | Metric | Vue Docs MCP | Context7 |
 |---|---|---|
-| Path Recall | **83.7%** | 64.3% |
-| API Recall | **75.5%** | 75.1% |
-| Avg Response Tokens | 4,082 | **1,132** |
-| Avg Latency | **0.71s** | 1.72s |
-| P95 Latency | **1.08s** | 2.07s |
+| Path Recall | **98.0%** | 94.0% |
+| API Recall | **95.0%** | 92.0% |
+| Avg Response Tokens | 3,752 | **1,112** |
+| Avg Latency | **0.83s** | 1.73s |
+| P95 Latency | **1.29s** | 2.15s |
 | Cost per Query (user-facing) | **Free** | $0.002 |
 
 ### Notes on Fairness

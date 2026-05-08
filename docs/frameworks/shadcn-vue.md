@@ -1,6 +1,6 @@
 # shadcn-vue
 
-<span style="color: var(--vp-c-brand-1); font-weight: 600;">3.82 / 5 composite score</span> &middot; 90.7% API recall &middot; 50 questions evaluated
+<span style="color: var(--vp-c-brand-1); font-weight: 600;">4.30 / 5 composite score</span> &middot; 84.0% API recall &middot; 50 questions evaluated
 
 Vue Docs MCP provides deep access to the official [shadcn-vue documentation](https://www.shadcn-vue.com), covering the copy-paste component library built on `reka-ui` primitives: 64 documented components, the `npx shadcn-vue@latest add` CLI, `components.json` configuration, theming via Tailwind CSS variables, framework-specific installation guides (Vite, Nuxt, Astro, Laravel), form-library integration recipes (vee-validate, TanStack Form), and the custom-registry workflow.
 
@@ -98,30 +98,30 @@ Each question has a ground-truth answer with expected API names and documentatio
     markers: { size: 4 },
   }"
   :series="[
-    { name: 'Vue Docs MCP', data: [4.46, 3.14, 3.74, 3.46, 4.28] },
-    { name: 'Context7', data: [3.98, 3.06, 3.70, 3.24, 4.28] },
+    { name: 'Vue Docs MCP', data: [4.30, 4.12, 4.14, 4.06, 4.86] },
+    { name: 'Context7', data: [4.96, 4.82, 4.88, 4.76, 4.92] },
   ]"
 />
 </ClientOnly>
 
 | Metric | Vue Docs MCP | Context7 |
 |---|---|---|
-| Relevance | **4.46** | 3.98 |
-| Completeness | **3.14** | 3.06 |
-| Correctness | **3.74** | 3.70 |
-| API Coverage | **3.46** | 3.24 |
-| Conciseness | 4.28 | 4.28 |
-| **Composite** | **3.82** | **3.65** |
+| Relevance | 4.30 | **4.96** |
+| Completeness | 4.12 | **4.82** |
+| Correctness | 4.14 | **4.88** |
+| API Coverage | 4.06 | **4.76** |
+| Conciseness | 4.86 | **4.92** |
+| **Composite** | 4.30 | **4.87** |
 
 ### Retrieval and Cost
 
 | Metric | Vue Docs MCP | Context7 |
 |---|---|---|
-| Path Recall | **87.8%** | 66.3% |
-| API Recall | **90.7%** | 79.7% |
-| Avg Response Tokens | 4,701 | **1,089** |
-| Avg Latency | **0.75s** | 1.79s |
-| P95 Latency | **0.94s** | 2.46s |
+| Path Recall | 82.0% | **98.0%** |
+| API Recall | 84.0% | **93.0%** |
+| Avg Response Tokens | 4,407 | **1,005** |
+| Avg Latency | **0.78s** | 1.62s |
+| P95 Latency | **1.03s** | 1.95s |
 | Cost per Query (user-facing) | **Free** | $0.002 |
 
 ### Notes on Fairness

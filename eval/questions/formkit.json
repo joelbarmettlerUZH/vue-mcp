@@ -1,723 +1,731 @@
 [
   {
-    "question": "How do I install FormKit in a Vue project?",
-    "expected_answer": "Run `npm install @formkit/vue` (or use `npx formkit setup` for interactive install). Register the plugin in your app entry: `import { plugin, defaultConfig } from '@formkit/vue'; app.use(plugin, defaultConfig)`. The plugin auto-registers `<FormKit>` and `<FormKitSchema>` components globally.",
-    "relevant_paths": [
-      "1.getting-started/2.installation.md"
-    ],
+    "intent": "api_lookup",
     "relevant_apis": [
-      "FormKit",
-      "plugin",
-      "defineFormKitConfig"
+      "FormKit"
     ],
-    "intent": "how_to",
+    "question": "What is the primary role of the `<FormKit>` component in the framework?",
+    "expected_answer": "The `<FormKit>` component is the single component used for all input types in FormKit. It simplifies form creation by providing a unified API for various form controls.",
+    "difficulty": "easy",
+    "relevant_paths": [
+      "1.getting-started/1.what-is-formkit.md"
+    ],
+    "framework": "formkit"
+  },
+  {
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "question": "What does the `type` prop do on the `<FormKit>` component?",
+    "intent": "api_lookup",
+    "relevant_paths": [
+      "1.getting-started/3.your-first-form.md"
+    ],
+    "difficulty": "easy",
+    "expected_answer": "The `type` prop specifies which input to render (e.g., 'text', 'select', 'checkbox'). If omitted, it defaults to 'text'.",
+    "framework": "formkit"
+  },
+  {
+    "intent": "api_lookup",
+    "question": "What is the purpose of the `value` prop, and should it be used for reactive updates?",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "expected_answer": "The `value` prop is used to set the initial value of an input. It does not react to changes after the component is created.",
+    "relevant_paths": [
+      "1.getting-started/3.your-first-form.md",
+      "2.essentials/1.inputs.md"
+    ],
     "difficulty": "easy",
     "framework": "formkit"
   },
   {
-    "question": "What's the difference between a single FormKit input and a FormKit form?",
-    "expected_answer": "A single `<FormKit>` is a standalone input that emits its value via `v-model`. Wrap multiple `<FormKit>` inputs in a `<FormKit type=\"form\">` to create a form: the form is a group node whose value is an object keyed by each child's `name`, and submitting validates all descendants atomically.",
-    "relevant_paths": [
-      "2.essentials/1.inputs.md",
-      "2.essentials/2.forms.md"
-    ],
-    "relevant_apis": [
-      "FormKit",
-      "form"
-    ],
-    "intent": "comparison",
-    "difficulty": "easy",
-    "framework": "formkit"
-  },
-  {
-    "question": "How do I add validation rules to an input?",
-    "expected_answer": "Pass a `validation` prop with a string or array: `<FormKit validation=\"required|email\">`. Built-in rules include `required`, `email`, `length`, `min`, `max`, `matches`, `confirm`, etc. Custom messages via `validation-messages`, custom rules registered globally via `defaultConfig({ rules: { ... } })`.",
-    "relevant_paths": [
-      "2.essentials/3.validation.md"
-    ],
-    "relevant_apis": [
-      "validation",
-      "rules"
-    ],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "formkit"
-  },
-  {
-    "question": "How do I write a custom validation rule?",
-    "expected_answer": "Define a function `(node) => boolean | Promise<boolean>` that returns true for valid input. Register globally via `defaultConfig({ rules: { my_rule: myFn } })` or inline via the `validation-rules` prop. Provide a matching `validation-messages` entry for the error text.",
-    "relevant_paths": [
-      "2.essentials/3.validation.md"
-    ],
-    "relevant_apis": [
-      "validation",
-      "rules"
-    ],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "formkit"
-  },
-  {
-    "question": "How do I handle form submission asynchronously?",
-    "expected_answer": "Pass `@submit` to `<FormKit type=\"form\">`. The handler receives `(formData, node)` and the form auto-disables during async submission. Throw or return a rejected promise to surface errors via `useFormKitNodeById('id').setErrors(...)` or by binding `errors` / `input-errors` props on the form.",
-    "relevant_paths": [
-      "2.essentials/2.forms.md"
-    ],
-    "relevant_apis": [
-      "FormKit",
-      "form-handling"
-    ],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "formkit"
-  },
-  {
-    "question": "How do I show server-side errors on form fields?",
-    "expected_answer": "Bind `errors` (form-level array) or `input-errors` (object keyed by input name) on `<FormKit type=\"form\">`. From the submit handler, return errors via `setErrors(formErrors, inputErrors)` on the form node. Per input, `node.setErrors([...])` updates a single field.",
-    "relevant_paths": [
-      "2.essentials/2.forms.md",
-      "6.api-reference/formkit-core.md"
-    ],
-    "relevant_apis": [
-      "setErrors",
-      "FormKitNode"
-    ],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "formkit"
-  },
-  {
-    "question": "What is the FormKit core node and why does it matter?",
-    "expected_answer": "Every `<FormKit>` component owns a node (`createNode()`) that is FormKit's primitive: it tracks value, settled state, validation, plugins, and a tree of children. Parent nodes (forms / groups / lists) automatically structure data without prop drilling. Plugins extend nodes; events bubble through the tree. See the architecture page.",
-    "relevant_paths": [
-      "2.essentials/10.architecture.md",
-      "6.api-reference/formkit-core.md"
-    ],
-    "relevant_apis": [
-      "FormKitNode",
-      "createNode",
-      "node"
-    ],
-    "intent": "api_lookup",
-    "difficulty": "medium",
-    "framework": "formkit"
-  },
-  {
-    "question": "How do I access the underlying FormKit node from a component?",
-    "expected_answer": "Bind `@node` on a `<FormKit>` to capture the node when it's created: `<FormKit @node=\"(node) => ourNode = node\">`. Or use `useFormKitNodeById(id)` in setup, or access `context.node` from inside a custom input definition.",
-    "relevant_paths": [
-      "6.api-reference/formkit-vue.md",
-      "6.api-reference/1.context.md"
-    ],
-    "relevant_apis": [
-      "useFormKitNodeById",
-      "FormKitNode",
-      "context"
-    ],
-    "intent": "api_lookup",
-    "difficulty": "medium",
-    "framework": "formkit"
-  },
-  {
-    "question": "How do I render a form from a JSON schema?",
-    "expected_answer": "Use `<FormKitSchema :schema=\"schema\">`, where `schema` is an array of nodes. Each node is `{ $formkit: 'text', name: 'email', label: 'Email' }` for FormKit inputs, `{ $el: 'div' }` for HTML, or `{ $cmp: 'MyComponent' }` for Vue components. Schema supports `if`/`then`/`else`, `for`, and `bind` directives plus `$`-prefixed reactive expressions.",
-    "relevant_paths": [
-      "2.essentials/8.schema.md",
-      "6.api-reference/formkit-schema.md"
-    ],
-    "relevant_apis": [
-      "FormKitSchema"
-    ],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "formkit"
-  },
-  {
-    "question": "How do schema expressions work?",
-    "expected_answer": "`$`-prefixed strings are reactive references: `$value`, `$node.parent.value.email`. For arithmetic or comparisons, prefix with `$:` (e.g. `$: ($value * 3)`). Supports +, -, *, /, %, ==, !=, <, >, <=, >=, &&, ||, !. Use `__raw__` prefix to keep a literal `$` string. It's a restricted templating language, not real JavaScript.",
-    "relevant_paths": [
-      "6.api-reference/formkit-schema.md",
-      "2.essentials/8.schema.md"
-    ],
-    "relevant_apis": [
-      "FormKitSchema"
-    ],
-    "intent": "api_lookup",
-    "difficulty": "hard",
-    "framework": "formkit"
-  },
-  {
-    "question": "What input types does FormKit ship with?",
-    "expected_answer": "Native HTML wrappers (`text`, `email`, `password`, `number`, `tel`, `url`, `date`, `datetime-local`, `time`, `color`, `range`, `file`, `hidden`, `month`, `week`, `search`, `submit`, `button`, `checkbox`, `radio`, `select`, `textarea`) plus FormKit-specific (`form`, `group`, `list`, `repeater`, `mask`, `taglist`, `dropdown`, `autocomplete`, `colorpicker`, `currency`, `datepicker`, `rating`, `toggle`, `transferlist`, `unit`). Pro inputs require a license.",
-    "relevant_paths": [
-      "2.essentials/1.inputs.md",
-      "3.inputs"
-    ],
+    "question": "How do you apply validation rules to a FormKit input?",
     "relevant_apis": [
       "FormKit"
     ],
     "intent": "api_lookup",
     "difficulty": "easy",
+    "relevant_paths": [
+      "2.essentials/1.inputs.md",
+      "2.essentials/3.validation.md"
+    ],
+    "expected_answer": "The `validation` prop accepts a string of rule names separated by pipes (`|`) or an array of rules to apply to an input.",
     "framework": "formkit"
   },
   {
-    "question": "How do I create a custom input?",
-    "expected_answer": "Use `createInput(schema, options)` from `@formkit/vue`, where `schema` is a section composition or a Vue component. Register it via `defaultConfig({ inputs: { my_input: createInput(...) } })`. The custom input receives the standard FormKit context (`context.value`, `context.node`, sections to override).",
-    "relevant_paths": [
-      "5.guides/create-a-custom-input.md",
-      "6.api-reference/formkit-vue.md"
-    ],
     "relevant_apis": [
-      "createInput",
       "FormKit"
     ],
-    "intent": "how_to",
-    "difficulty": "hard",
+    "question": "Which prop controls when validation error messages appear for a user?",
+    "intent": "api_lookup",
+    "difficulty": "easy",
+    "relevant_paths": [
+      "1.getting-started/3.your-first-form.md",
+      "2.essentials/3.validation.md"
+    ],
+    "expected_answer": "The `validation-visibility` prop controls when validation messages are displayed, with options like 'blur', 'live', 'dirty', and 'submit'.",
     "framework": "formkit"
   },
   {
-    "question": "How do I configure FormKit globally?",
-    "expected_answer": "Pass a config object to the plugin: `app.use(plugin, defaultConfig({ ... }))` \u2014 or use `defineFormKitConfig` for typed config in Nuxt/Vite. Top-level keys: `locales`, `messages`, `rules`, `inputs`, `plugins`, `theme`, `iconLoader`, `config`. Per-instance overrides via the `config` prop on `<FormKit>`.",
-    "relevant_paths": [
-      "6.api-reference/formkit-vue.md"
-    ],
     "relevant_apis": [
-      "defineFormKitConfig",
-      "defaultConfig",
-      "plugin"
+      "FormKit"
     ],
-    "intent": "how_to",
-    "difficulty": "medium",
+    "question": "How can I change the text on the submit button of a FormKit form?",
+    "intent": "api_lookup",
+    "relevant_paths": [
+      "1.getting-started/3.your-first-form.md"
+    ],
+    "difficulty": "easy",
+    "expected_answer": "The `submitLabel` prop is used on a `type=\"form\"` input to change the text of the auto-generated submit button.",
     "framework": "formkit"
   },
   {
-    "question": "How do I localize FormKit error messages?",
-    "expected_answer": "Pass `locales` and `locale` in the config: `defaultConfig({ locales: { de, fr }, locale: 'de' })` from `@formkit/i18n`. To set per form/input, use the `locale` prop. Override per-rule messages via `validation-messages` or `messages.validation.{rule}` in config. Switching at runtime: `node.config.locale = 'de'`.",
+    "expected_answer": "The `group` type is used to structure related inputs together as an object in the form's data tree.",
+    "difficulty": "easy",
     "relevant_paths": [
-      "2.essentials/6.internationalization.md",
-      "6.api-reference/formkit-i18n.md"
+      "1.getting-started/3.your-first-form.md",
+      "3.inputs/group.md"
     ],
+    "intent": "api_lookup",
     "relevant_apis": [
-      "@formkit/i18n",
-      "defineFormKitConfig",
-      "createI18nPlugin"
+      "FormKit"
     ],
-    "intent": "how_to",
-    "difficulty": "medium",
+    "question": "What is the purpose of using `type=\"group\"`?",
     "framework": "formkit"
   },
   {
-    "question": "How do I write a FormKit plugin?",
-    "expected_answer": "A plugin is a function `(node) => { ... }` that receives the node when it's added to the tree. Register via the global `plugins` config or per-input via `:plugins`. Plugins can listen to `node.on('event', cb)`, mutate `node.context`, or wrap props. Hierarchical: parent plugins apply to children automatically.",
-    "relevant_paths": [
-      "6.api-reference/formkit-core.md"
-    ],
     "relevant_apis": [
-      "plugin",
-      "createPlugin",
-      "FormKitNode"
+      "FormKit"
     ],
-    "intent": "how_to",
-    "difficulty": "hard",
+    "question": "Why should I assign an `id` to a FormKit input?",
+    "intent": "api_lookup",
+    "difficulty": "easy",
+    "relevant_paths": [
+      "1.getting-started/3.your-first-form.md",
+      "2.essentials/10.architecture.md"
+    ],
+    "expected_answer": "The `id` prop is used to uniquely identify an input and is required when accessing its core node via `getNode()`.",
     "framework": "formkit"
   },
   {
-    "question": "How do I theme FormKit with Tailwind?",
-    "expected_answer": "Use `@formkit/themes` and the `genesisIcons` + Tailwind theme: `defaultConfig({ config: { classes: generateClasses(myTheme) } })`. Or run `npx formkit-theme-builder` to scaffold a theme. The Tailwind theme guide walks through extending the `regenesis` theme or building one from scratch.",
+    "expected_answer": "The `sections-schema` prop allows you to selectively override or extend the underlying schema structure of an input's sections.",
     "relevant_paths": [
-      "5.guides/create-a-tailwind-theme.md",
+      "2.essentials/1.inputs.md"
+    ],
+    "difficulty": "easy",
+    "intent": "api_lookup",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "question": "What is the `sections-schema` prop used for?",
+    "framework": "formkit"
+  },
+  {
+    "question": "What does the `disabled` prop do to a FormKit input?",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "intent": "api_lookup",
+    "relevant_paths": [
+      "2.essentials/1.inputs.md",
       "2.essentials/4.styling.md"
     ],
-    "relevant_apis": [
-      "@formkit/themes",
-      "themes"
-    ],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "formkit"
-  },
-  {
-    "question": "How do I add icons to FormKit inputs?",
-    "expected_answer": "Pass `prefix-icon` or `suffix-icon` props with an icon name like `email`. Globally register icon sources via `defaultConfig({ iconLoaderUrl, icons: {...} })` from `@formkit/icons`. Or pass raw SVG strings to the icon props. Genesis ships with the genesisIcons set.",
-    "relevant_paths": [
-      "2.essentials/5.icons.md"
-    ],
-    "relevant_apis": [
-      "icons",
-      "FormKitIcon"
-    ],
-    "intent": "how_to",
     "difficulty": "easy",
+    "expected_answer": "The `disabled` prop disables the input, preventing user interaction. It also adds a `data-disabled` attribute for styling.",
     "framework": "formkit"
   },
   {
-    "question": "How do I show a list of inputs that the user can add and remove?",
-    "expected_answer": "Use `<FormKit type=\"repeater\">` (or `type=\"list\"` for primitive arrays). Children are rendered for each entry; the `add` and `remove` buttons are built in. Schema form: `{ $formkit: 'repeater', name: 'phones', children: [...] }`.",
-    "relevant_paths": [
-      "3.inputs/repeater.md",
-      "3.inputs/list.md"
-    ],
-    "relevant_apis": [
-      "repeater",
-      "list"
-    ],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "formkit"
-  },
-  {
-    "question": "How do I build a multi-step form?",
-    "expected_answer": "Install `@formkit/multi-step` and use `<FormKit type=\"multi-step\">` wrapping `<FormKit type=\"step\">` children. Each step is its own group with validation; navigation buttons advance only when the current step is valid. The plugin handles step state, focus management, and submit on the final step.",
-    "relevant_paths": [
-      "4.plugins/multi-step.md"
-    ],
-    "relevant_apis": [
-      "@formkit/multi-step",
-      "multi-step"
-    ],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "formkit"
-  },
-  {
-    "question": "How do I persist form state across page reloads?",
-    "expected_answer": "Install `@formkit/local-storage` and add the plugin to a form via `:plugins=\"[localStoragePlugin({ ... })]\"`. The plugin saves the form's value to localStorage on input and restores it on mount. Configure `key`, `maxAge`, and selective field exclusion via the options.",
-    "relevant_paths": [
-      "4.plugins/local-storage.md"
-    ],
-    "relevant_apis": [
-      "@formkit/local-storage",
-      "local-storage"
-    ],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "formkit"
-  },
-  {
-    "question": "How do I animate inputs being added or removed?",
-    "expected_answer": "Install `@formkit/auto-animate` and add it as a plugin: `defaultConfig({ plugins: [autoAnimatePlugin] })`. The plugin auto-animates children of `<FormKit type=\"list\">`, `<FormKit type=\"repeater\">`, etc. when they enter or leave the DOM. Powered by FormKit's auto-animate library.",
-    "relevant_paths": [
-      "4.plugins/auto-animate.md"
-    ],
-    "relevant_apis": [
-      "@formkit/auto-animate",
-      "auto-animate"
-    ],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "formkit"
-  },
-  {
-    "question": "How do I integrate FormKit with Nuxt?",
-    "expected_answer": "Install `@formkit/nuxt` and add `'@formkit/nuxt'` to `modules` in `nuxt.config.ts`. Configure via `formkit: { ... }` in nuxt config or a `formkit.config.ts` at the project root. The module auto-registers `<FormKit>` and `<FormKitSchema>` and provides SSR-safe hydration.",
-    "relevant_paths": [
-      "1.getting-started/2.installation.md"
-    ],
-    "relevant_apis": [
-      "@formkit/nuxt"
-    ],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "formkit"
-  },
-  {
-    "question": "How do I use Zod for validation?",
-    "expected_answer": "Install `@formkit/zod`. Wrap your form's schema with `createZodPlugin(zodSchema, submitHandler)` and pass the plugin via `:plugins`. The submit handler receives the parsed (typed) form data. The plugin maps zod errors back to FormKit fields automatically.",
-    "relevant_paths": [
-      "4.plugins/zod.md",
-      "6.api-reference/formkit-zod.md"
-    ],
-    "relevant_apis": [
-      "@formkit/zod",
-      "createZodPlugin"
-    ],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "formkit"
-  },
-  {
-    "question": "What does the FormKit context object contain?",
-    "expected_answer": "The context (`context` or `$context` in schema) exposes the input's reactive state: `value`, `_value`, `node`, `state`, `messages`, `id`, `name`, `attrs`, `classes`, `handlers`, `fns`, `option`, plus framework-specific bits. Custom inputs use it to render UI driven by FormKit state.",
-    "relevant_paths": [
-      "6.api-reference/1.context.md"
-    ],
-    "relevant_apis": [
-      "context",
-      "FormKitFrameworkContext"
-    ],
     "intent": "api_lookup",
-    "difficulty": "medium",
-    "framework": "formkit"
-  },
-  {
-    "question": "What events does a FormKit node emit?",
-    "expected_answer": "Core events include `input` (raw value change), `commit` (settled value change), `created`, `child` (child added), `prop` (prop changed), `disabled`, `submit`, `submit-raw`, `submit-invalid`. Listen with `node.on('eventName', cb)`. Schema can use `@event-name` shorthand on `<FormKit>`.",
-    "relevant_paths": [
-      "6.api-reference/formkit-core.md"
-    ],
+    "question": "How do I adjust the debounce duration for an input, and what is the default?",
     "relevant_apis": [
-      "events",
-      "FormKitNode"
-    ],
-    "intent": "api_lookup",
-    "difficulty": "medium",
-    "framework": "formkit"
-  },
-  {
-    "question": "How do I structure data for nested forms?",
-    "expected_answer": "Use `<FormKit type=\"group\" name=\"address\">` to nest related fields under a key. Inside, each child's `name` becomes a property of `address`. For arrays, use `type=\"list\"` (positional) or `type=\"repeater\"` (with UI for add/remove). FormKit auto-structures the resulting object without manual wiring.",
-    "relevant_paths": [
-      "3.inputs/group.md",
-      "3.inputs/list.md",
-      "2.essentials/2.forms.md"
-    ],
-    "relevant_apis": [
-      "group",
-      "list",
       "FormKit"
     ],
-    "intent": "how_to",
+    "expected_answer": "The `delay` prop sets the debounce time in milliseconds for the `input` event before it is committed. The default is 20ms.",
+    "difficulty": "medium",
+    "relevant_paths": [
+      "2.essentials/1.inputs.md"
+    ],
+    "framework": "formkit"
+  },
+  {
+    "expected_answer": "You can use the `errors` prop to manually set non-blocking error messages on an input.",
+    "difficulty": "medium",
+    "relevant_paths": [
+      "2.essentials/1.inputs.md"
+    ],
+    "intent": "api_lookup",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "question": "How can I display an error message on an input that isn't derived from a validation rule?",
+    "framework": "formkit"
+  },
+  {
+    "difficulty": "medium",
+    "relevant_paths": [
+      "2.essentials/1.inputs.md"
+    ],
+    "expected_answer": "FormKit uses section keys (e.g., 'label', 'input') to target specific parts of an input for custom classes, slots, or schema modifications.",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "question": "What are section keys in FormKit, and why are they important?",
+    "intent": "conceptual",
+    "framework": "formkit"
+  },
+  {
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "question": "How do I change the HTML tag of a specific section in a FormKit input?",
+    "intent": "howto",
+    "relevant_paths": [
+      "2.essentials/1.inputs.md"
+    ],
+    "difficulty": "medium",
+    "expected_answer": "You can use the `schema` prop to modify an input's HTML tags or structure without replacing the entire component.",
+    "framework": "formkit"
+  },
+  {
+    "intent": "api_lookup",
+    "question": "Why is `node.input()` preferred over direct assignment for updating input values?",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "expected_answer": "The `node.input()` method is the most efficient way to programmatically update an input's value, and it is debounced/asynchronous.",
+    "relevant_paths": [
+      "2.essentials/1.inputs.md",
+      "2.essentials/10.architecture.md"
+    ],
     "difficulty": "medium",
     "framework": "formkit"
   },
   {
-    "question": "How do I customize the markup of a FormKit input?",
-    "expected_answer": "Use the `sections-schema` prop to override individual sections (`outer`, `wrapper`, `label`, `inner`, `input`, `help`, `messages`). Each section accepts a partial schema fragment. Or pass a Vue slot of the same name. For deep customization, build a custom input with `createInput`.",
-    "relevant_paths": [
-      "5.guides/export-and-restructure-inputs.md",
-      "2.essentials/7.custom-inputs.md"
-    ],
-    "relevant_apis": [
-      "sectionsSchema",
-      "createInput"
-    ],
-    "intent": "how_to",
-    "difficulty": "hard",
-    "framework": "formkit"
-  },
-  {
-    "question": "How do I make a confirmation field that matches another field?",
-    "expected_answer": "Use the `confirm` validation rule referencing the other field by name: `<FormKit name=\"password_confirm\" validation=\"required|confirm:password\">`. The rule compares the value to the named sibling. If the sibling is in a parent group, prefix with `$root.fieldname` or `$parent.fieldname`.",
     "relevant_paths": [
       "2.essentials/3.validation.md"
     ],
-    "relevant_apis": [
-      "validation",
-      "rules"
-    ],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "formkit"
-  },
-  {
-    "question": "How do I make an input visible only when another field has a certain value?",
-    "expected_answer": "Use the `if` schema directive when rendering via `FormKitSchema`: `{ $formkit: 'text', name: 'reason', if: '$value.kind == \"other\"' }`. In templates, drive a `v-if` from `model.kind`. To preserve hidden values, set `preserve: true` on the conditionally hidden node.",
-    "relevant_paths": [
-      "2.essentials/8.schema.md"
-    ],
-    "relevant_apis": [
-      "FormKitSchema"
-    ],
-    "intent": "how_to",
     "difficulty": "medium",
-    "framework": "formkit"
-  },
-  {
-    "question": "How do I optimize FormKit for production / smaller bundle?",
-    "expected_answer": "Use `defineFormKitConfig` with explicit `inputs` (only the input types you use) and explicit `rules` (only the validators you use). The Vite/Nuxt plugin auto-imports referenced inputs/rules from your codebase, tree-shaking the rest. Avoid `defaultConfig` in production builds when bundle size matters.",
-    "relevant_paths": [
-      "5.guides/optimizing-for-production.md"
-    ],
-    "relevant_apis": [
-      "defineFormKitConfig"
-    ],
-    "intent": "how_to",
-    "difficulty": "hard",
-    "framework": "formkit"
-  },
-  {
-    "question": "What's the difference between input and commit events on a node?",
-    "expected_answer": "`input` fires on every keystroke / raw value change. `commit` fires only when the value 'settles' \u2014 after debouncing for inputs that buffer (autocomplete, repeater) and after async validation completes. Use `commit` for derived state and external syncs; `input` only when you need raw responsiveness.",
-    "relevant_paths": [
-      "6.api-reference/formkit-core.md"
-    ],
-    "relevant_apis": [
-      "events",
-      "FormKitNode"
-    ],
-    "intent": "comparison",
-    "difficulty": "medium",
-    "framework": "formkit"
-  },
-  {
-    "question": "How do I disable a form during async submission?",
-    "expected_answer": "FormKit auto-disables `<FormKit type=\"form\">` while the `@submit` handler returns a pending promise \u2014 no manual state needed. To programmatically disable, set the `disabled` prop, or call `node.props.disabled = true` from a plugin.",
-    "relevant_paths": [
-      "2.essentials/2.forms.md"
-    ],
-    "relevant_apis": [
-      "FormKit",
-      "form-handling"
-    ],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "formkit"
-  },
-  {
-    "question": "How do I set initial values on a form?",
-    "expected_answer": "Pass the `value` prop to `<FormKit type=\"form\">` with an object whose keys match the children's names. Per-input, `value` sets the initial value of a single field. Both are reactive: changing `value` programmatically updates the form.",
-    "relevant_paths": [
-      "2.essentials/2.forms.md",
-      "2.essentials/1.inputs.md"
-    ],
+    "expected_answer": "You can use the `validation-rules` prop to define custom validation logic on a per-input basis.",
+    "question": "How do I add a custom validation rule to just one specific input?",
     "relevant_apis": [
       "FormKit"
     ],
-    "intent": "how_to",
-    "difficulty": "easy",
+    "intent": "howto",
     "framework": "formkit"
   },
   {
-    "question": "How do I make an autocomplete with remote data?",
-    "expected_answer": "Use `<FormKit type=\"autocomplete\" :options=\"loadOptions\">` where `loadOptions` is a function `(context) => Promise<Option[]>`. The function is called with the search context (term, value); FormKit handles debouncing and rendering the dropdown. Configure `min-search-term` and `popover` for tweaks.",
-    "relevant_paths": [
-      "3.inputs/autocomplete.md"
-    ],
     "relevant_apis": [
-      "autocomplete"
+      "FormKit"
     ],
-    "intent": "how_to",
+    "question": "What are validation rule hints, and how do they change rule behavior?",
+    "intent": "api_lookup",
+    "relevant_paths": [
+      "2.essentials/3.validation.md"
+    ],
+    "difficulty": "medium",
+    "expected_answer": "Rule hints like `+` (run when empty), `*` (force), and `?` (optional) allow you to modify how and when validation rules are executed.",
+    "framework": "formkit"
+  },
+  {
+    "intent": "howto",
+    "question": "How do I configure an input so that validation errors only show after a form submission attempt?",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "expected_answer": "`validation-visibility=\"submit\"` ensures errors only appear after the user attempts to submit the form.",
+    "relevant_paths": [
+      "2.essentials/3.validation.md"
+    ],
     "difficulty": "medium",
     "framework": "formkit"
   },
   {
-    "question": "What's the relationship between a form, a group, and a list node?",
-    "expected_answer": "All three are composite nodes. `form` is a group that adds the submit/submitted lifecycle. `group` exposes its children as a keyed object (by `name`). `list` exposes its children as an array. Children automatically register with their nearest ancestor; data flows up without prop drilling.",
+    "intent": "howto",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "question": "How can I react to input changes or transform values before they are committed?",
+    "expected_answer": "You can use `node.on('input', ...)` to listen for changes or `node.hook.input(...)` to transform the value as it is typed.",
+    "relevant_paths": [
+      "2.essentials/10.architecture.md"
+    ],
+    "difficulty": "medium",
+    "framework": "formkit"
+  },
+  {
+    "relevant_paths": [
+      "2.essentials/10.architecture.md"
+    ],
+    "difficulty": "medium",
+    "expected_answer": "`getNode()` fetches an input's core node by its `id`, while `useFormKitNodeById()` is a composable for the same purpose.",
+    "question": "What is the difference between `getNode()` and `useFormKitNodeById()`?",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "intent": "api_lookup",
+    "framework": "formkit"
+  },
+  {
+    "expected_answer": "FormKit's automatic architecture self-assembles the data tree, eliminating the need for manual prop-drilling or event emitting to manage nested form state.",
+    "relevant_paths": [
+      "1.getting-started/1.what-is-formkit.md"
+    ],
+    "difficulty": "hard",
+    "intent": "conceptual",
+    "question": "How does FormKit's \"automatic architecture\" simplify complex, nested forms?",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "framework": "formkit"
+  },
+  {
+    "question": "How can I ensure a form is completely finished with all asynchronous processing before triggering a submit action?",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "intent": "conceptual",
+    "relevant_paths": [
+      "2.essentials/10.architecture.md"
+    ],
+    "difficulty": "hard",
+    "expected_answer": "`node.settled` is a promise that resolves when all asynchronous tasks (like debounced inputs or async validation) in the node's subtree are complete.",
+    "framework": "formkit"
+  },
+  {
     "relevant_paths": [
       "2.essentials/10.architecture.md",
-      "3.inputs/group.md",
-      "3.inputs/list.md"
-    ],
-    "relevant_apis": [
-      "form",
-      "group",
-      "list"
-    ],
-    "intent": "comparison",
-    "difficulty": "medium",
-    "framework": "formkit"
-  },
-  {
-    "question": "How do I conditionally show validation errors only after a user has interacted with the form?",
-    "expected_answer": "FormKit's `state.blurred` and `state.dirty` track this automatically \u2014 by default messages render only after `blur` or after a submit attempt. Override with the `validation-visibility` prop: `live`, `blur`, `dirty`, or `submit`. Per-rule visibility via individual rule modifiers (`+rule` for live).",
-    "relevant_paths": [
       "2.essentials/3.validation.md"
     ],
+    "difficulty": "hard",
+    "expected_answer": "Traversing the tree with `node.at()` allows you to access any node in the tree using dot notation, which is essential for cross-input validation or value synchronization.",
     "relevant_apis": [
-      "validation"
+      "FormKit"
     ],
-    "intent": "how_to",
-    "difficulty": "medium",
+    "question": "How do I implement cross-input validation rules that depend on values from other fields?",
+    "intent": "howto",
     "framework": "formkit"
   },
   {
-    "question": "How do I retrieve a node by id from anywhere in the app?",
-    "expected_answer": "Set `id=\"foo\"` on a `<FormKit>` and call `getNode('foo')` from `@formkit/core` (or `useFormKitNodeById('foo')` in a Vue composable). The function returns the node or `undefined`. Useful for cross-component access or imperative manipulation.",
-    "relevant_paths": [
-      "6.api-reference/formkit-core.md",
-      "6.api-reference/formkit-vue.md"
-    ],
+    "intent": "conceptual",
     "relevant_apis": [
-      "getNode",
-      "useFormKitNodeById"
+      "FormKit"
     ],
-    "intent": "api_lookup",
-    "difficulty": "medium",
+    "question": "What is the role of the plugin inheritance model in FormKit's architecture?",
+    "expected_answer": "Plugins are functions that accept a node and can be used to add global functionality, custom inputs, or middleware hooks that apply to the node and its subtree.",
+    "difficulty": "hard",
+    "relevant_paths": [
+      "2.essentials/10.architecture.md"
+    ],
     "framework": "formkit"
   },
   {
-    "question": "How do I reset a form to its initial state?",
-    "expected_answer": "Call `node.reset()` on the form node, or `reset(formId)` from `@formkit/core`. Optionally pass new initial values: `node.reset({ name: '', email: '' })`. Use `<FormKit type=\"submit\" @click=\"reset\">` or a button bound to the reset handler.",
-    "relevant_paths": [
-      "6.api-reference/formkit-core.md"
-    ],
+    "intent": "conceptual",
     "relevant_apis": [
-      "reset",
-      "FormKitNode"
+      "FormKit"
     ],
-    "intent": "api_lookup",
-    "difficulty": "easy",
-    "framework": "formkit"
-  },
-  {
-    "question": "How do I conditionally enable / disable validation rules?",
-    "expected_answer": "Pass a function or computed to `validation`: `:validation=\"isAdult ? 'required|min:18' : ''\"`. FormKit re-evaluates rules whenever the bound expression changes. Alternatively, gate via a separate node and the `if` schema directive when using `FormKitSchema`.",
+    "question": "How do ledger counters work to optimize form state management?",
+    "expected_answer": "A ledger counter tracks specific message types (like validation errors) across a node's subtree, enabling efficient state tracking without manual tree traversal.",
     "relevant_paths": [
-      "2.essentials/3.validation.md"
+      "2.essentials/10.architecture.md"
     ],
-    "relevant_apis": [
-      "validation"
-    ],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "formkit"
-  },
-  {
-    "question": "How do I get TypeScript inference for form values?",
-    "expected_answer": "With `@formkit/zod`: pass a zod schema to `createZodPlugin(schema, handler)` \u2014 the submit handler is typed. With raw FormKit, generic-type the form: `<FormKit<MyForm> type=\"form\">` (in TSX) or annotate the submit handler's first parameter manually. Schema-driven forms: use `defineFormKitSchema<MyForm>()`.",
-    "relevant_paths": [
-      "4.plugins/zod.md",
-      "6.api-reference/formkit-zod.md"
-    ],
-    "relevant_apis": [
-      "@formkit/zod",
-      "createZodPlugin"
-    ],
-    "intent": "how_to",
     "difficulty": "hard",
     "framework": "formkit"
   },
   {
-    "question": "How do I display custom help text under an input?",
-    "expected_answer": "Pass the `help` prop: `<FormKit help=\"We never share your email\">`. For HTML help text, use the `help` slot or the `sections-schema` to override the help section. The text renders in a dedicated section after the input.",
+    "intent": "howto",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "question": "How can I synchronize multiple inputs that share the same name but are located in different parts of my template?",
+    "expected_answer": "Setting `mergeStrategy: { my_field: 'synced' }` on a parent configuration synchronizes values of all same-named siblings, effectively treating them as a single input.",
+    "difficulty": "hard",
+    "relevant_paths": [
+      "2.essentials/10.architecture.md"
+    ],
+    "framework": "formkit"
+  },
+  {
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "question": "How can I dynamically modify a label or other properties for all inputs in a group using hooks?",
+    "intent": "howto",
+    "relevant_paths": [
+      "2.essentials/10.architecture.md"
+    ],
+    "difficulty": "hard",
+    "expected_answer": "`node.hook.prop` allows you to intercept and transform property assignments (like labels or validation rules) before they are applied to the node.",
+    "framework": "formkit"
+  },
+  {
+    "expected_answer": "`node.store.set()` allows you to add custom messages to a node, which can be categorized (e.g., 'validation', 'ui') and used for blocking form submission or showing UI-specific information.",
+    "relevant_paths": [
+      "2.essentials/10.architecture.md"
+    ],
+    "difficulty": "hard",
+    "intent": "howto",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "question": "How do I add custom, categorization-aware messages to an input that can block submission?",
+    "framework": "formkit"
+  },
+  {
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "question": "Why would I need to use `mergeStrategy`, and what does it do?",
+    "intent": "conceptual",
+    "difficulty": "hard",
+    "relevant_paths": [
+      "2.essentials/10.architecture.md"
+    ],
+    "expected_answer": "The `mergeStrategy` config option allows sibling nodes with the same name to share values, which is necessary when rendering the same input in multiple locations.",
+    "framework": "formkit"
+  },
+  {
+    "relevant_paths": [
+      "2.essentials/10.architecture.md"
+    ],
+    "difficulty": "hard",
+    "expected_answer": "`node.at('$root.find(555, value)')` performs a breadth-first search to locate a node based on property matching, which is useful for finding specific nodes in deeply nested structures.",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "question": "How do I locate a node in a deeply nested tree based on a specific value?",
+    "intent": "api_lookup",
+    "framework": "formkit"
+  },
+  {
+    "expected_answer": "This sounds like the user wants to clear all errors from the form. They should use `node.clearErrors()`.",
+    "relevant_paths": [
+      "3.inputs/form.md"
+    ],
+    "difficulty": "extreme",
+    "intent": "debugging",
+    "question": "I have a bunch of red messages showing up on my form after I tried to send it, but I fixed the issues and they won't go away. How do I get rid of them?",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "framework": "formkit"
+  },
+  {
+    "expected_answer": "This describes using a plugin. The user should define a function that takes a node and registers a hook, then add it to the FormKit config.",
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "2.essentials/10.architecture.md"
+    ],
+    "intent": "howto",
+    "question": "I want to run a piece of code every time any part of my form is created, but I don't want to copy-paste it everywhere. How do I make something run automatically?",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "framework": "formkit"
+  },
+  {
+    "relevant_paths": [
+      "3.inputs/group.md"
+    ],
+    "difficulty": "extreme",
+    "expected_answer": "The user is describing the `group` type. They should use `type=\"group\"` to bundle fields together.",
+    "question": "I have a bunch of inputs that belong together, and I want them to be one object in my data, not just separate values. How do I group them?",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "intent": "howto",
+    "framework": "formkit"
+  },
+  {
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "3.inputs/list.md"
+    ],
+    "expected_answer": "The user is describing the `list` type. They should use `type=\"list\"` to create an array of inputs.",
+    "question": "I need a list of things where the user can add as many as they want. How do I set up a collection of inputs like that?",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "intent": "howto",
+    "framework": "formkit"
+  },
+  {
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "question": "I'm trying to change the value of an input from a button on my page, but it's not updating the form. Why?",
+    "intent": "debugging",
+    "difficulty": "extreme",
     "relevant_paths": [
       "2.essentials/1.inputs.md"
     ],
-    "relevant_apis": [
-      "FormKit",
-      "sectionsSchema"
-    ],
-    "intent": "how_to",
-    "difficulty": "easy",
+    "expected_answer": "The user is asking about the `value` prop vs `node.input()`. They should use `node.input()` to update the value programmatically.",
     "framework": "formkit"
   },
   {
-    "question": "How do I create floating-label inputs?",
-    "expected_answer": "Install `@formkit/floating-labels` and add the plugin to the global config: `defaultConfig({ plugins: [createFloatingLabelsPlugin()] })`. The plugin restructures input sections to render floating labels on inputs that have a `label` prop.",
-    "relevant_paths": [
-      "4.plugins/floating-labels.md"
-    ],
+    "intent": "howto",
+    "question": "I don't want the user to see the \"required\" errors until they actually click the submit button. How do I hide them until then?",
     "relevant_apis": [
-      "@formkit/floating-labels",
-      "floating-labels"
+      "FormKit"
     ],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "formkit"
-  },
-  {
-    "question": "What is the FormKit Schema's $formkit shorthand?",
-    "expected_answer": "Schema nodes with `$formkit: 'inputType'` render a `<FormKit type=\"inputType\">` with the rest of the object becoming props (no need for an `attrs` block). E.g. `{ $formkit: 'text', name: 'email', validation: 'required|email' }` renders the same as the equivalent template.",
-    "relevant_paths": [
-      "6.api-reference/formkit-schema.md",
-      "2.essentials/8.schema.md"
-    ],
-    "relevant_apis": [
-      "FormKitSchema"
-    ],
-    "intent": "api_lookup",
-    "difficulty": "medium",
-    "framework": "formkit"
-  },
-  {
-    "question": "How do I render a list of options for a select input?",
-    "expected_answer": "Pass `:options` with one of: an object (`{ value: label }`), an array of strings (used as both value and label), or an array of `{ value, label, attrs }` objects. For grouped options, nest with `{ group: 'Group 1', options: [...] }`. Async options via a function returning a promise.",
-    "relevant_paths": [
-      "3.inputs/select.md"
-    ],
-    "relevant_apis": [
-      "select"
-    ],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "formkit"
-  },
-  {
-    "question": "How do I read the current form value in a sibling component?",
-    "expected_answer": "Set an `id` on the form node and use `useFormKitNodeById('formId')` in the sibling. Access `node.value` (settled object) reactively, or subscribe via `node.on('commit', ({ payload }) => ...)`. Avoid `node._value` \u2014 that's the raw, pre-debounce value.",
-    "relevant_paths": [
-      "6.api-reference/formkit-vue.md",
-      "6.api-reference/1.context.md"
-    ],
-    "relevant_apis": [
-      "useFormKitNodeById",
-      "FormKitNode"
-    ],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "formkit"
-  },
-  {
-    "question": "How do I delay validation messages until the user blurs the input?",
-    "expected_answer": "Set `validation-visibility=\"blur\"` on the input (this is the default for most input types). Other values: `live` (every keystroke), `dirty` (after first input), `submit` (only after submit attempt). Per-rule visibility: prefix the rule with `+` to make it always visible (`+required`).",
+    "expected_answer": "The user is asking about `validation-visibility`. They should set `validation-visibility=\"submit\"`.",
+    "difficulty": "extreme",
     "relevant_paths": [
       "2.essentials/3.validation.md"
     ],
-    "relevant_apis": [
-      "validation"
-    ],
-    "intent": "how_to",
-    "difficulty": "easy",
     "framework": "formkit"
   },
   {
-    "question": "How do I handle file uploads with FormKit?",
-    "expected_answer": "Use `<FormKit type=\"file\" multiple :value=\"existingFiles\" accept=\".jpg,.png\">`. The value is an array of `{ name, file }` objects. Submit handler receives the file objects directly. Customize the visual via `sections-schema.fileItem` or built a custom uploader using `<FormKit type=\"file\">` as the input primitive.",
-    "relevant_paths": [
-      "3.inputs/file.md"
-    ],
     "relevant_apis": [
-      "file",
       "FormKit"
     ],
-    "intent": "how_to",
+    "question": "I have a special check I need to do on an input that isn't included in the built-in rules. How do I write my own?",
+    "intent": "howto",
+    "relevant_paths": [
+      "2.essentials/3.validation.md"
+    ],
+    "difficulty": "extreme",
+    "expected_answer": "The user is describing the need for a custom validation rule. They should write a function that returns true/false and register it.",
+    "framework": "formkit"
+  },
+  {
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "question": "I need to change the HTML tag of the label on my input to a div instead of a label tag. How do I do that?",
+    "intent": "howto",
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "2.essentials/1.inputs.md"
+    ],
+    "expected_answer": "The user is describing `sections-schema`. They should use the `schema` prop.",
+    "framework": "formkit"
+  },
+  {
+    "intent": "debugging",
+    "question": "My form is validating every time I type a single character, and it's making the page jumpy. How do I make it wait until I stop typing?",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "expected_answer": "The user is describing the `delay` prop. They should increase the `delay` value.",
+    "relevant_paths": [
+      "2.essentials/1.inputs.md"
+    ],
+    "difficulty": "extreme",
+    "framework": "formkit"
+  },
+  {
+    "intent": "howto",
+    "question": "I'm trying to submit my form via fetch, but the data is always missing the last few characters I typed. What am I doing wrong?",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "expected_answer": "The user is asking about `node.settled`. They should await the `settled` promise on the form node.",
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "2.essentials/10.architecture.md"
+    ],
+    "framework": "formkit"
+  },
+  {
+    "difficulty": "medium",
+    "relevant_paths": [
+      "1.getting-started/1.what-is-formkit.md"
+    ],
+    "expected_answer": "The main difference is that `FormKit` is a form authoring framework that manages state, validation, and accessibility, whereas VeeValidate is primarily focused only on form validation.",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "question": "What are the main differences between using FormKit and just using VeeValidate for my forms?",
+    "intent": "comparison",
+    "framework": "formkit"
+  },
+  {
+    "intent": "comparison",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "question": "Why would I use FormKit's schema instead of just writing standard HTML for my forms?",
+    "expected_answer": "FormKit's schema is a JSON-serializable format that allows you to store and generate complex form structures, whereas standard HTML is just static markup.",
+    "relevant_paths": [
+      "1.getting-started/1.what-is-formkit.md",
+      "2.essentials/8.schema.md"
+    ],
     "difficulty": "medium",
     "framework": "formkit"
   },
   {
-    "question": "What plugins ship officially with FormKit?",
-    "expected_answer": "auto-animate (DOM transitions), auto-height-textarea, floating-labels, local-storage (persistence), multi-step (wizard), barcode (scanner input), inertia (Laravel Inertia integration), and zod (schema validation). All live under `@formkit/*` and are documented in section 4 of the docs.",
+    "difficulty": "medium",
     "relevant_paths": [
-      "4.plugins"
+      "1.getting-started/1.what-is-formkit.md"
     ],
+    "expected_answer": "Both are UI frameworks that include form components, but FormKit is a focused framework specifically for form authoring, offering deeper features like automatic architecture, schema-based generation, and advanced validation.",
+    "question": "How does FormKit compare to full UI frameworks like Vuetify?",
     "relevant_apis": [
-      "plugin",
-      "@formkit/auto-animate",
-      "@formkit/multi-step",
-      "@formkit/zod"
-    ],
-    "intent": "api_lookup",
-    "difficulty": "easy",
-    "framework": "formkit"
-  },
-  {
-    "question": "What's the difference between `<FormKit>` and `<FormKitSchema>`?",
-    "expected_answer": "`<FormKit>` is the imperative form / input component used in templates (one component per input). `<FormKitSchema>` renders a JSON-serializable schema (an array of nodes) \u2014 useful for forms generated dynamically from configuration, an API, or a backend. Schema can mix FormKit inputs (`$formkit`), HTML elements (`$el`), and Vue components (`$cmp`).",
-    "relevant_paths": [
-      "2.essentials/8.schema.md",
-      "6.api-reference/formkit-schema.md"
-    ],
-    "relevant_apis": [
-      "FormKit",
-      "FormKitSchema"
+      "FormKit"
     ],
     "intent": "comparison",
-    "difficulty": "medium",
     "framework": "formkit"
   },
   {
-    "question": "How do I write a custom input that wraps a third-party component (e.g. a date picker library)?",
-    "expected_answer": "Build a wrapper Vue component that uses `useFormKit()` (or accepts the FormKit context) to expose `value`, `errors`, and node ops, then pass that component to `createInput(MyComponent)`. Register the input via `defaultConfig({ inputs: { my_picker: createInput(MyComponent) } })`. The custom-input guide walks through full code.",
     "relevant_paths": [
-      "5.guides/create-a-custom-input.md",
-      "6.api-reference/formkit-vue.md"
+      "3.inputs/group.md"
     ],
+    "difficulty": "medium",
+    "expected_answer": "FormKit's `group` is specifically for data object structure and state management within a form, while a standard div is purely for layout.",
     "relevant_apis": [
-      "createInput",
-      "context"
+      "FormKit"
     ],
-    "intent": "how_to",
+    "question": "What is the difference between a `group` type and just wrapping inputs in a `div`?",
+    "intent": "comparison",
+    "framework": "formkit"
+  },
+  {
+    "difficulty": "medium",
+    "relevant_paths": [
+      "2.essentials/1.inputs.md",
+      "2.essentials/10.architecture.md"
+    ],
+    "expected_answer": "`node.input()` is the correct way to set values in FormKit, whereas `v-model` is the framework-specific directive for two-way binding. `node.input()` is safer and more efficient for programmatic updates.",
+    "question": "When should I use `node.input()` vs `v-model`?",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "intent": "comparison",
+    "framework": "formkit"
+  },
+  {
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "question": "When should I use the `list` type instead of the `group` type?",
+    "intent": "comparison",
+    "relevant_paths": [
+      "3.inputs/list.md",
+      "3.inputs/group.md"
+    ],
+    "difficulty": "medium",
+    "expected_answer": "The `list` type manages array-based data, whereas the `group` type manages object-based data. Lists are also used for dynamic collections like repeaters.",
+    "framework": "formkit"
+  },
+  {
+    "intent": "comparison",
+    "question": "When should I choose the `textarea` type instead of the `text` type?",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "expected_answer": "The `textarea` input is for multi-line text, while a standard `text` input is for single-line text. They are separate native HTML elements.",
+    "difficulty": "medium",
+    "relevant_paths": [
+      "3.inputs/text.md",
+      "3.inputs/textarea.md"
+    ],
+    "framework": "formkit"
+  },
+  {
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "question": "What is the difference between the `submit` type and the `button` type?",
+    "intent": "comparison",
+    "difficulty": "medium",
+    "relevant_paths": [
+      "3.inputs/submit.md",
+      "3.inputs/button.md"
+    ],
+    "expected_answer": "The `submit` input is specifically designed for form submission and is typically used within a `type=\"form\"` component, whereas a standard `button` is for generic interactions.",
+    "framework": "formkit"
+  },
+  {
+    "difficulty": "medium",
+    "relevant_paths": [
+      "2.essentials/7.custom-inputs.md"
+    ],
+    "expected_answer": "Custom inputs allow you to define your own functionality while keeping FormKit's features, while simply wrapping components in HTML loses that deep integration.",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "question": "Why should I create a custom input instead of just wrapping a component?",
+    "intent": "comparison",
+    "framework": "formkit"
+  },
+  {
+    "relevant_paths": [
+      "2.essentials/10.architecture.md"
+    ],
+    "difficulty": "medium",
+    "expected_answer": "`node.at()` is for traversing the internal tree structure for data access, whereas `getNode()` is for fetching a node instance by its ID.",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "question": "What is the difference between `node.at()` and `getNode()`?",
+    "intent": "comparison",
+    "framework": "formkit"
+  },
+  {
+    "relevant_paths": [
+      "1.getting-started/1.what-is-formkit.md"
+    ],
     "difficulty": "hard",
+    "expected_answer": "FormKit 1.0.0 is the current framework, and you should migrate from older libraries by replacing them with FormKit's built-in components and validation rules. FormKit provides scaffolding to replace VeeValidate or Vuelidate.",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "question": "I'm migrating from VeeValidate. What is the recommended strategy for replacing it with FormKit?",
+    "intent": "migration",
+    "framework": "formkit"
+  },
+  {
+    "intent": "migration",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "question": "I have a custom form component I built in my project. How do I migrate it into a formal FormKit custom input?",
+    "expected_answer": "You should use `createInput` to define your input, then register it in your `defaultConfig` or via a plugin. You can also export existing inputs using the CLI to modify their structure.",
+    "relevant_paths": [
+      "2.essentials/7.custom-inputs.md",
+      "5.guides/export-and-restructure-inputs.md"
+    ],
+    "difficulty": "hard",
+    "framework": "formkit"
+  },
+  {
+    "relevant_paths": [
+      "2.essentials/4.styling.md"
+    ],
+    "difficulty": "hard",
+    "expected_answer": "You should remove your existing CSS files and migrate to using FormKit\u2019s `rootClasses` function or by installing one of the Tailwind CSS themes from themes.formkit.com.",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "question": "I'm migrating my project to use FormKit's theme system. What should I do with my existing custom CSS?",
+    "intent": "migration",
+    "framework": "formkit"
+  },
+  {
+    "relevant_paths": [
+      "2.essentials/8.schema.md"
+    ],
+    "difficulty": "hard",
+    "expected_answer": "You should replace your manual schema generation with the `FormKitSchema` component and port your logic into the schema format to enable features like form generation and data scoping.",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "question": "I have a complex manual form generation script. How can I migrate this to use FormKit's schema system?",
+    "intent": "migration",
+    "framework": "formkit"
+  },
+  {
+    "expected_answer": "You should replace your existing i18n logic with FormKit's built-in i18n plugin, moving your translation files into FormKit's message format.",
+    "difficulty": "hard",
+    "relevant_paths": [
+      "2.essentials/6.internationalization.md"
+    ],
+    "intent": "migration",
+    "relevant_apis": [
+      "FormKit"
+    ],
+    "question": "How do I migrate my existing i18n translation files to work with FormKit?",
     "framework": "formkit"
   }
 ]

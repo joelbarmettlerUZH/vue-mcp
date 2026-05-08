@@ -14,12 +14,12 @@ Vue Docs MCP provides deep, structured access to the Vue ecosystem documentation
 | [Nuxt](./nuxt) | [nuxt.com](https://nuxt.com) | 49 | **4.80 / 5** |
 | [Pinia](./pinia) | [pinia.vuejs.org](https://pinia.vuejs.org) | 49 | **4.81 / 5** |
 | [Vue DevTools](./vue-devtools) | [devtools.vuejs.org](https://devtools.vuejs.org) | 50 | **4.37 / 5** |
-| [VitePress](./vitepress) | [vitepress.dev](https://vitepress.dev) | 50 | **4.68 / 5** |
-| [Pinia Colada](./pinia-colada) | [pinia-colada.esm.dev](https://pinia-colada.esm.dev) | 49 | **4.14 / 5** |
-| [VeeValidate](./vee-validate) | [vee-validate.logaretm.com](https://vee-validate.logaretm.com/v4) | 49 | **4.26 / 5** |
-| [FormKit](./formkit) | [formkit.com](https://formkit.com) | 50 | **3.92 / 5** |
-| [shadcn-vue](./shadcn-vue) | [shadcn-vue.com](https://www.shadcn-vue.com) | 50 | **3.82 / 5** |
-| [Vue Flow](./vue-flow) | [vueflow.dev](https://vueflow.dev) | 49 | **3.88 / 5** |
+| [VitePress](./vitepress) | [vitepress.dev](https://vitepress.dev) | 45 | **4.58 / 5** |
+| [Pinia Colada](./pinia-colada) | [pinia-colada.esm.dev](https://pinia-colada.esm.dev) | 49 | **4.83 / 5** |
+| [VeeValidate](./vee-validate) | [vee-validate.logaretm.com](https://vee-validate.logaretm.com/v4) | 54 | **4.21 / 5** |
+| [FormKit](./formkit) | [formkit.com](https://formkit.com) | 55 | **4.59 / 5** |
+| [shadcn-vue](./shadcn-vue) | [shadcn-vue.com](https://www.shadcn-vue.com) | 50 | **4.30 / 5** |
+| [Vue Flow](./vue-flow) | [vueflow.dev](https://vueflow.dev) | 50 | **4.82 / 5** |
 
 ## What Each Framework Provides
 

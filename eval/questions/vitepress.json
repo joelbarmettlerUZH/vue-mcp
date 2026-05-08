@@ -1,452 +1,537 @@
 [
   {
-    "question": "How do I access the current page's frontmatter and site metadata at runtime?",
-    "expected_answer": "Use the `useData()` composable from `vitepress`. It returns reactive refs including `site`, `theme`, `page`, `frontmatter`, `params`, `lang`, `dir`, `localeIndex`, and `title`.",
-    "relevant_paths": ["reference/runtime-api.md"],
-    "relevant_apis": ["useData"],
-    "intent": "api_lookup",
     "difficulty": "easy",
+    "relevant_paths": [
+      "guide/asset-handling.md"
+    ],
+    "relevant_apis": [
+      "withBase"
+    ],
+    "intent": "api_lookup",
+    "expected_answer": "The `withBase` helper, provided by VitePress, should be used to wrap paths in theme components that link to assets dynamically based on theme config values to ensure the correct base URL is applied.",
+    "question": "What helper function should I use when authoring a theme component that links to assets whose paths are based on theme configuration?",
     "framework": "vitepress"
   },
   {
-    "question": "How do I get the current route inside a custom theme component?",
-    "expected_answer": "Import `useRoute` from `vitepress`. It returns a reactive route object with `path`, `data`, and `component` for the current page.",
-    "relevant_paths": ["reference/runtime-api.md"],
-    "relevant_apis": ["useRoute"],
     "intent": "api_lookup",
+    "relevant_paths": [
+      "reference/site-config.md"
+    ],
     "difficulty": "easy",
+    "relevant_apis": [
+      "defineConfig"
+    ],
+    "expected_answer": "The `defineConfig` helper should be used in the config file to get TypeScript-powered intellisense for configuration options.",
+    "question": "Which helper function provides TypeScript intellisense for VitePress configuration files?",
     "framework": "vitepress"
   },
   {
-    "question": "How do I navigate programmatically from one page to another?",
-    "expected_answer": "Use `useRouter()` from `vitepress` and call `router.go(path)`. The router also exposes `onBeforeRouteChange` and `onAfterRouteChange` hooks for navigation lifecycle.",
-    "relevant_paths": ["reference/runtime-api.md"],
-    "relevant_apis": ["useRouter"],
+    "difficulty": "easy",
+    "relevant_paths": [
+      "reference/runtime-api.md"
+    ],
+    "relevant_apis": [
+      "useData"
+    ],
     "intent": "api_lookup",
+    "expected_answer": "The `useData` composable returns page-specific data including site metadata, theme config, page metadata, frontmatter, and dynamic route params.",
+    "question": "What does the `useData` composable return?",
+    "framework": "vitepress"
+  },
+  {
+    "expected_answer": "The `Content` component is used to display the rendered markdown content of a page, and is essential when creating a custom theme.",
+    "question": "Which built-in component is used to render the markdown content in a custom theme layout?",
+    "difficulty": "easy",
+    "relevant_paths": [
+      "reference/runtime-api.md"
+    ],
+    "relevant_apis": [
+      "Content"
+    ],
+    "intent": "api_lookup",
+    "framework": "vitepress"
+  },
+  {
+    "relevant_apis": [
+      "useRouter"
+    ],
+    "relevant_paths": [
+      "reference/runtime-api.md"
+    ],
+    "difficulty": "easy",
+    "intent": "api_lookup",
+    "question": "How can I programmatically navigate to a different page in VitePress?",
+    "expected_answer": "The `useRouter` composable returns the VitePress router instance, which allows for programmatic navigation using the `go` method.",
+    "framework": "vitepress"
+  },
+  {
+    "intent": "api_lookup",
+    "relevant_apis": [
+      "defineRoutes"
+    ],
+    "relevant_paths": [
+      "guide/routing.md"
+    ],
     "difficulty": "medium",
+    "question": "Why is it recommended to use `defineRoutes` in a `.paths.ts` file?",
+    "expected_answer": "The `defineRoutes` helper provides type hints for route hooks like `paths`, `watch`, and `transformPageData` when creating `[slug].paths.ts` files for dynamic routes.",
     "framework": "vitepress"
   },
   {
-    "question": "How do I prefix an asset URL with the configured base path?",
-    "expected_answer": "Wrap the path with `withBase()` from `vitepress`, e.g. `withBase('/icon.png')`. This is needed when the site is deployed under a non-root base.",
-    "relevant_paths": ["reference/runtime-api.md"],
-    "relevant_apis": ["withBase", "base"],
     "intent": "api_lookup",
-    "difficulty": "easy",
+    "relevant_apis": [
+      "defineClientComponent"
+    ],
+    "difficulty": "medium",
+    "relevant_paths": [
+      "guide/ssr-compat.md"
+    ],
+    "question": "How do I safely import a component that tries to access the `window` object during its import phase?",
+    "expected_answer": "The `defineClientComponent` helper is used to import Vue components that access browser APIs on import, ensuring they are only imported in the `mounted` hook of the wrapper component.",
     "framework": "vitepress"
   },
   {
-    "question": "How do I render content that should only run in the browser?",
-    "expected_answer": "Wrap the content in the built-in `<ClientOnly>` component. Anything inside it is rendered only on the client, skipping SSR.",
-    "relevant_paths": ["reference/runtime-api.md"],
-    "relevant_apis": ["ClientOnly"],
+    "expected_answer": "The `transformPageData` build hook allows you to mutate `pageData` or return new data to be merged into it, which is useful for adding dynamic information like contributors or meta tags.",
+    "question": "How can I dynamically add new data to the `pageData` object during the build process?",
+    "relevant_paths": [
+      "reference/site-config.md"
+    ],
+    "difficulty": "medium",
+    "relevant_apis": [
+      "transformPageData"
+    ],
     "intent": "api_lookup",
-    "difficulty": "easy",
     "framework": "vitepress"
   },
   {
-    "question": "How do I load data from local files at build time and use it in pages?",
-    "expected_answer": "Create a `*.data.ts` file that exports `default defineLoader({ ... })` or use `createContentLoader('glob', options)` to scan a glob of markdown files. Import the default export from any page or component to access the data.",
-    "relevant_paths": ["guide/data-loading.md"],
-    "relevant_apis": ["createContentLoader", "defineLoader"],
+    "relevant_apis": [
+      "transformHead"
+    ],
+    "relevant_paths": [
+      "reference/site-config.md"
+    ],
+    "difficulty": "hard",
     "intent": "api_lookup",
-    "difficulty": "medium",
+    "question": "Which build hook should I use to add dynamic `<head>` tags that are computationally expensive to generate?",
+    "expected_answer": "The `transformHead` build hook is used to add extra tags to the `<head>` of each page during build, which is useful for preloading assets or adding dynamic meta tags that are too expensive to compute during dev.",
     "framework": "vitepress"
   },
   {
-    "question": "What is the configuration entry point and how do I get type hints?",
-    "expected_answer": "Place `.vitepress/config.ts` in your project and wrap the export with `defineConfig()` from `vitepress`. Use `defineConfigWithTheme<ThemeConfig>()` when you have a custom theme config type.",
-    "relevant_paths": ["reference/site-config.md"],
-    "relevant_apis": ["defineConfig", "defineConfigWithTheme"],
+    "question": "What is the purpose of the `postRender` build hook?",
+    "expected_answer": "The `postRender` hook is called after static site generation is finished, allowing you to manipulate the rendered HTML, such as handling content injected via teleports.",
     "intent": "api_lookup",
-    "difficulty": "easy",
-    "framework": "vitepress"
-  },
-  {
-    "question": "How do I deploy a VitePress site under a sub-path like `/docs/`?",
-    "expected_answer": "Set `base: '/docs/'` in `.vitepress/config.ts`. All asset URLs and internal links will be rewritten to include the base. Use `withBase()` for runtime-resolved asset paths.",
-    "relevant_paths": ["reference/site-config.md", "guide/deploy.md"],
-    "relevant_apis": ["base", "withBase"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "vitepress"
-  },
-  {
-    "question": "How do I remove the .html extension from generated URLs?",
-    "expected_answer": "Set `cleanUrls: true` in `.vitepress/config.ts`. The build will produce directory-style URLs (e.g. `/guide/`) that work on hosts that handle `index.html` resolution.",
-    "relevant_paths": ["reference/site-config.md"],
-    "relevant_apis": ["cleanUrls"],
-    "intent": "api_lookup",
-    "difficulty": "easy",
-    "framework": "vitepress"
-  },
-  {
-    "question": "How do I rewrite source paths to different output URLs?",
-    "expected_answer": "Use the `rewrites` option in site config: `rewrites: { 'packages/:pkg/:slug.md': ':pkg/:slug.md' }`. Each rule maps a source path pattern to the desired output URL pattern.",
-    "relevant_paths": ["reference/site-config.md", "guide/routing.md"],
-    "relevant_apis": ["rewrites"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vitepress"
-  },
-  {
-    "question": "How do I configure the sidebar with multi-section grouping?",
-    "expected_answer": "In `themeConfig.sidebar`, pass a record keyed by URL prefix where each value is an array of groups: `{ '/guide/': [{ text: 'Intro', items: [{ text: 'Hello', link: '/guide/hello' }] }] }`. Items can have `collapsed: false` to start expanded.",
-    "relevant_paths": ["reference/default-theme-sidebar.md", "reference/default-theme-config.md"],
-    "relevant_apis": ["sidebar"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vitepress"
-  },
-  {
-    "question": "How do I add a top navigation menu with dropdowns?",
-    "expected_answer": "Set `themeConfig.nav` to an array of `NavItem`s. Each item is either `{ text, link }` or `{ text, items: [...] }` for a dropdown. Use `activeMatch` to control which path triggers the active style.",
-    "relevant_paths": ["reference/default-theme-nav.md", "reference/default-theme-config.md"],
-    "relevant_apis": ["nav"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "vitepress"
-  },
-  {
-    "question": "How do I enable Algolia DocSearch?",
-    "expected_answer": "Set `themeConfig.search.provider = 'algolia'` and pass `themeConfig.search.options = { appId, apiKey, indexName }`. Alternatively, use `provider: 'local'` for built-in client-side search.",
-    "relevant_paths": ["reference/default-theme-search.md"],
-    "relevant_apis": ["search", "algolia"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vitepress"
-  },
-  {
-    "question": "How do I enable local search instead of Algolia?",
-    "expected_answer": "Set `themeConfig.search = { provider: 'local' }`. This builds a small client-side search index at build time and avoids any external service.",
-    "relevant_paths": ["reference/default-theme-search.md"],
-    "relevant_apis": ["search"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "vitepress"
-  },
-  {
-    "question": "How do I configure the homepage hero and features?",
-    "expected_answer": "Set `layout: home` in the index page's frontmatter, then add `hero: { name, text, tagline, actions }` and `features: [{ title, details }]`. The default theme renders the home layout from these fields.",
-    "relevant_paths": ["reference/default-theme-home-page.md", "reference/frontmatter-config.md"],
-    "relevant_apis": ["hero", "features", "layout"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "vitepress"
-  },
-  {
-    "question": "How do I render a team members page?",
-    "expected_answer": "Use the `<VPTeamMembers>` component (size `medium` or `small`) and pass an array of members `{ avatar, name, title, links }`. For richer layouts, wrap with `<VPTeamPage>`, `<VPTeamPageTitle>`, and `<VPTeamPageSection>`.",
-    "relevant_paths": ["reference/default-theme-team-page.md"],
-    "relevant_apis": ["VPTeamMembers", "VPTeamPage"],
-    "intent": "api_lookup",
-    "difficulty": "medium",
-    "framework": "vitepress"
-  },
-  {
-    "question": "How do I add custom <head> tags like favicons and Google Fonts?",
-    "expected_answer": "Use the `head` array in site config. Each entry is `[tag, attrs, innerContent?]`, e.g. `['link', { rel: 'icon', href: '/favicon.ico' }]`. Use `transformHead(context)` for per-page head injection.",
-    "relevant_paths": ["reference/site-config.md"],
-    "relevant_apis": ["head", "transformHead"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vitepress"
-  },
-  {
-    "question": "How do I run code at the end of the build?",
-    "expected_answer": "Define `buildEnd(siteConfig)` in your site config. It receives the resolved site config and runs after the static build completes, e.g. for sitemap generation or post-processing.",
-    "relevant_paths": ["reference/site-config.md"],
-    "relevant_apis": ["buildEnd"],
-    "intent": "api_lookup",
-    "difficulty": "medium",
-    "framework": "vitepress"
-  },
-  {
-    "question": "How do I generate a sitemap.xml?",
-    "expected_answer": "Set `sitemap: { hostname: 'https://example.com' }` in site config. VitePress writes `sitemap.xml` to the output directory at the end of the build.",
-    "relevant_paths": ["guide/sitemap-generation.md"],
-    "relevant_apis": ["sitemap"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "vitepress"
-  },
-  {
-    "question": "How do I extend the default theme with custom components?",
-    "expected_answer": "Create `.vitepress/theme/index.ts` that exports `{ extends: DefaultTheme, Layout, enhanceApp({ app, router, siteData }) }`. Register custom components via `app.component(name, comp)` inside `enhanceApp`.",
-    "relevant_paths": ["guide/extending-default-theme.md"],
-    "relevant_apis": [],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vitepress"
-  },
-  {
-    "question": "How do I write a fully custom theme?",
-    "expected_answer": "Create `.vitepress/theme/index.ts` exporting `{ Layout, enhanceApp? }` where `Layout` is a Vue component. Use `<Content />` to render the current page's markdown. Register globals through `enhanceApp`.",
-    "relevant_paths": ["guide/custom-theme.md"],
-    "relevant_apis": ["Content"],
-    "intent": "how_to",
+    "relevant_apis": [
+      "postRender"
+    ],
+    "relevant_paths": [
+      "reference/site-config.md"
+    ],
     "difficulty": "hard",
     "framework": "vitepress"
   },
   {
-    "question": "How do I render the current page's content inside a custom layout?",
-    "expected_answer": "Use the `<Content />` component from the runtime. It renders the current page's markdown inside whatever layout you provide.",
-    "relevant_paths": ["reference/runtime-api.md"],
-    "relevant_apis": ["Content"],
-    "intent": "api_lookup",
+    "expected_answer": "VitePress is a static site generator that uses Markdown for content and generates static HTML pages that can be deployed anywhere, while providing an SPA-like experience for post-load navigation.",
+    "question": "What is the core architecture of VitePress and how does it balance performance?",
+    "intent": "conceptual",
     "difficulty": "easy",
+    "relevant_paths": [
+      "guide/what-is-vitepress.md"
+    ],
+    "relevant_apis": [],
     "framework": "vitepress"
   },
   {
-    "question": "How do I customize syntax highlighting?",
-    "expected_answer": "Configure `markdown.theme` (a Shiki theme name or `{ light, dark }` pair) and `markdown.lineNumbers` in site config. Pass `markdown.config(md)` to register additional markdown-it plugins.",
-    "relevant_paths": ["reference/site-config.md", "guide/markdown.md"],
-    "relevant_apis": ["markdown", "markdown.theme", "markdown.lineNumbers"],
-    "intent": "how_to",
+    "expected_answer": "VitePress uses file-based routing where each `.md` file is automatically compiled into a corresponding `.html` file at the same relative path.",
+    "question": "How does VitePress handle routing?",
+    "difficulty": "easy",
+    "relevant_paths": [
+      "guide/routing.md"
+    ],
+    "relevant_apis": [],
+    "intent": "conceptual",
+    "framework": "vitepress"
+  },
+  {
+    "expected_answer": "In MPA mode, pages are rendered without JavaScript by default. This improves initial load performance but disables SPA navigation and requires the `<script client>` tag for any client-side interactivity.",
+    "question": "What are the main consequences of enabling MPA mode in VitePress?",
+    "intent": "conceptual",
     "difficulty": "medium",
+    "relevant_paths": [
+      "guide/mpa-mode.md"
+    ],
+    "relevant_apis": [],
     "framework": "vitepress"
   },
   {
-    "question": "How do I show line numbers in code blocks globally?",
-    "expected_answer": "Set `markdown: { lineNumbers: true }` in site config. Per-block override with `:line-numbers` after the language tag in the fence.",
-    "relevant_paths": ["reference/site-config.md", "guide/markdown.md"],
-    "relevant_apis": ["markdown.lineNumbers"],
-    "intent": "how_to",
-    "difficulty": "easy",
+    "intent": "conceptual",
+    "difficulty": "medium",
+    "relevant_paths": [
+      "guide/data-loading.md"
+    ],
+    "relevant_apis": [],
+    "expected_answer": "Data loaders allow you to execute code in Node.js at build time to fetch or generate arbitrary data, which is then serialized as JSON and imported into your pages or components.",
+    "question": "How do data loaders work in VitePress?",
     "framework": "vitepress"
   },
   {
-    "question": "How do I configure dark mode behavior?",
-    "expected_answer": "Set `themeConfig.appearance` to `true` (default with toggle), `false` (force light), `'force-dark'`, or `'force-auto'`. The default theme reads system preference on first visit.",
-    "relevant_paths": ["reference/default-theme-config.md", "reference/site-config.md"],
-    "relevant_apis": ["appearance"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "vitepress"
-  },
-  {
-    "question": "How do I show a Last Updated timestamp on pages?",
-    "expected_answer": "Set `lastUpdated: true` at the site config level (uses git mtime), then enable display via `themeConfig.lastUpdated = { text: 'Updated', formatOptions: { ... } }`.",
-    "relevant_paths": ["reference/default-theme-last-updated.md", "reference/site-config.md"],
-    "relevant_apis": ["lastUpdated"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "vitepress"
-  },
-  {
-    "question": "How do I add an Edit on GitHub link to each page?",
-    "expected_answer": "Set `themeConfig.editLink = { pattern: 'https://github.com/<org>/<repo>/edit/main/docs/:path', text: 'Edit this page' }`. The `:path` token is replaced per page.",
-    "relevant_paths": ["reference/default-theme-edit-link.md"],
-    "relevant_apis": ["editLink"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "vitepress"
-  },
-  {
-    "question": "How do I configure social links in the navigation?",
-    "expected_answer": "Set `themeConfig.socialLinks` to an array of `{ icon, link }` items. Built-in icons include 'github', 'twitter', 'discord', 'mastodon', 'youtube', or pass `{ svg: '<svg ...>' }` for a custom icon.",
-    "relevant_paths": ["reference/default-theme-config.md"],
-    "relevant_apis": ["socialLinks"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "vitepress"
-  },
-  {
-    "question": "How do I configure the right-side outline (table of contents)?",
-    "expected_answer": "Set `themeConfig.outline = { level, label }` (e.g. `level: [2, 3]`) or `outline: 'deep'` for h2-h6. Disable per page with frontmatter `outline: false`.",
-    "relevant_paths": ["reference/default-theme-config.md"],
-    "relevant_apis": ["outline"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "vitepress"
-  },
-  {
-    "question": "How do I show or hide the right-side aside?",
-    "expected_answer": "Use frontmatter `aside: false` to hide it on a page, or set `themeConfig.aside = false` globally. Set `aside: 'left'` to move it to the left.",
-    "relevant_paths": ["reference/default-theme-config.md", "reference/frontmatter-config.md"],
-    "relevant_apis": ["aside"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "vitepress"
-  },
-  {
-    "question": "How do I set up i18n with multiple locales?",
-    "expected_answer": "Use the `locales` site config to declare each locale's `label`, `lang`, `link`, and `themeConfig`. Place locale content under matching subdirectories (e.g. `en/`, `zh/`). VitePress generates a language switcher in the nav.",
-    "relevant_paths": ["guide/i18n.md"],
-    "relevant_apis": ["lang", "i18nRouting"],
-    "intent": "how_to",
+    "intent": "conceptual",
+    "relevant_paths": [
+      "guide/using-vue.md"
+    ],
     "difficulty": "hard",
-    "framework": "vitepress"
-  },
-  {
-    "question": "How do I use a Vue component inside a markdown file?",
-    "expected_answer": "Either register the component globally via `enhanceApp` and use it directly, or import it inline using a `<script setup>` block at the top of the markdown file. Markdown content renders alongside Vue components.",
-    "relevant_paths": ["guide/using-vue.md"],
     "relevant_apis": [],
-    "intent": "how_to",
-    "difficulty": "easy",
+    "expected_answer": "VitePress compiles Markdown into Vue SFCs. It optimizes static content by removing it from the client-side JS bundle and skipping it during hydration, ensuring that only dynamic parts of the page incur a performance penalty.",
+    "question": "How does VitePress optimize the performance of Vue-enhanced Markdown content?",
     "framework": "vitepress"
   },
   {
-    "question": "How do I import images and assets from markdown?",
-    "expected_answer": "Reference public assets with absolute paths (`/icon.png` resolves against `public/`). Reference imported assets via standard markdown image syntax — Vite hashes the URL at build time. Use `withBase()` for runtime-resolved paths.",
-    "relevant_paths": ["guide/asset-handling.md"],
-    "relevant_apis": ["withBase"],
-    "intent": "how_to",
     "difficulty": "easy",
+    "relevant_paths": [
+      "guide/getting-started.md"
+    ],
+    "relevant_apis": [],
+    "intent": "howto",
+    "expected_answer": "You can scaffold a new VitePress project by running `npx vitepress init` in your terminal.",
+    "question": "How do I initialize a new VitePress project?",
     "framework": "vitepress"
   },
   {
-    "question": "How do I run VitePress in development and build for production?",
-    "expected_answer": "Use the `vitepress dev [root]` command for the dev server with HMR, `vitepress build [root]` to produce the static output, and `vitepress preview [root]` to serve the build locally.",
-    "relevant_paths": ["reference/cli.md"],
-    "relevant_apis": ["vitepress dev", "vitepress build", "vitepress preview"],
-    "intent": "api_lookup",
+    "question": "How can I prevent a component from rendering during the server-side build process?",
+    "expected_answer": "You can use the `<ClientOnly>` component to wrap components that are not SSR-friendly and might cause errors during the build process.",
+    "intent": "howto",
+    "relevant_apis": [],
     "difficulty": "easy",
+    "relevant_paths": [
+      "guide/ssr-compat.md"
+    ],
     "framework": "vitepress"
   },
   {
-    "question": "How do I scaffold a new VitePress site?",
-    "expected_answer": "Run `npx vitepress init` and follow the interactive prompts. It writes `.vitepress/config.ts`, an `index.md`, theme defaults, and adds the relevant scripts to `package.json`.",
-    "relevant_paths": ["reference/cli.md", "guide/getting-started.md"],
-    "relevant_apis": ["vitepress init"],
-    "intent": "how_to",
-    "difficulty": "easy",
+    "relevant_apis": [],
+    "difficulty": "medium",
+    "relevant_paths": [
+      "guide/markdown.md"
+    ],
+    "intent": "howto",
+    "question": "How do I create a custom container in my Markdown and change its default label?",
+    "expected_answer": "You can define custom containers in your markdown by using the `::: <type> <title>` syntax, and globally configure the titles in your `config.ts` file under the `markdown.container` option.",
     "framework": "vitepress"
   },
   {
-    "question": "How do I deploy a VitePress site to GitHub Pages?",
-    "expected_answer": "Set `base: '/<repo>/'` in site config, build with `vitepress build docs`, then publish the `docs/.vitepress/dist` directory via a GitHub Actions workflow that runs `actions/deploy-pages@v4`.",
-    "relevant_paths": ["guide/deploy.md"],
-    "relevant_apis": ["base"],
-    "intent": "how_to",
+    "intent": "howto",
+    "relevant_apis": [],
+    "difficulty": "medium",
+    "relevant_paths": [
+      "guide/routing.md"
+    ],
+    "question": "How can I change the URL path of a Markdown file without moving it in the file system?",
+    "expected_answer": "You can use the `rewrites` option in your config to map complex source directory structures to cleaner, simplified URL paths.",
+    "framework": "vitepress"
+  },
+  {
+    "intent": "howto",
+    "difficulty": "hard",
+    "relevant_paths": [
+      "guide/extending-default-theme.md"
+    ],
+    "relevant_apis": [],
+    "expected_answer": "You can register your own global components by using the `enhanceApp` hook in your `.vitepress/theme/index.js` or `.ts` file and calling `app.component()`.",
+    "question": "How do I register a Vue component globally so it can be used in any Markdown file?",
+    "framework": "vitepress"
+  },
+  {
+    "question": "What are the key differences between VitePress and VuePress 1?",
+    "expected_answer": "VitePress is based on Vite and Vue 3, while VuePress 1 was based on Webpack and Vue 2. VitePress offers better DX, performance, and a more flexible customization API.",
+    "relevant_apis": [],
+    "relevant_paths": [
+      "guide/what-is-vitepress.md"
+    ],
+    "difficulty": "easy",
+    "intent": "comparison",
+    "framework": "vitepress"
+  },
+  {
+    "expected_answer": "The `doc` layout applies default documentation styles (like sidebar and outline), while the `page` layout applies no default styling, making it suitable for fully custom pages. Both still parse Markdown.",
+    "question": "What is the difference between the `doc` and `page` layout types?",
+    "relevant_paths": [
+      "reference/default-theme-layout.md"
+    ],
+    "difficulty": "medium",
+    "relevant_apis": [],
+    "intent": "comparison",
+    "framework": "vitepress"
+  },
+  {
+    "question": "When should I choose `transformHead` over `transformPageData`?",
+    "expected_answer": "`transformHead` is for build-time generation of head tags, which is more performant for expensive tasks. `transformPageData` is for modifying page data, which is applied during both dev and build, and is more flexible for runtime-aware logic.",
+    "intent": "comparison",
+    "relevant_apis": [],
+    "relevant_paths": [
+      "reference/site-config.md"
+    ],
     "difficulty": "medium",
     "framework": "vitepress"
   },
   {
-    "question": "How do I migrate from VuePress to VitePress?",
-    "expected_answer": "Move docs into the new structure (`.vitepress/config.ts`), rewrite plugin-style Vue config into `enhanceApp`, replace `<router-link>` with internal markdown links, and migrate theme components to the new theme API. The migration guide lists removed and renamed config keys.",
-    "relevant_paths": ["guide/migration-from-vuepress.md"],
+    "question": "How do `postRender` and `transformHtml` hooks differ?",
+    "expected_answer": "Both are used for side-effects, but `postRender` happens after the HTML string is fully rendered, while `transformHtml` allows you to manipulate the raw HTML string before it is saved to disk. Modifying HTML in either can lead to hydration issues.",
+    "intent": "comparison",
     "relevant_apis": [],
+    "difficulty": "hard",
+    "relevant_paths": [
+      "reference/site-config.md"
+    ],
+    "framework": "vitepress"
+  },
+  {
+    "intent": "comparison",
+    "relevant_apis": [],
+    "difficulty": "hard",
+    "relevant_paths": [
+      "reference/default-theme-layout.md"
+    ],
+    "question": "How does using `layout: home` compare to building a completely custom theme layout?",
+    "expected_answer": "`layout: home` is a specialized layout with pre-templated sections like hero and features. A custom theme layout allows you to define the entire structure from scratch using a Vue component and `<Content />`.",
+    "framework": "vitepress"
+  },
+  {
+    "question": "Why is my `lastUpdated` timestamp showing the same date for all files?",
+    "expected_answer": "You should add `fetch-depth: 0` to your `actions/checkout` step in your GitHub Actions workflow to ensure the full Git history is available for the `lastUpdated` feature.",
+    "intent": "debugging",
+    "relevant_apis": [],
+    "difficulty": "easy",
+    "relevant_paths": [
+      "reference/default-theme-last-updated.md"
+    ],
+    "framework": "vitepress"
+  },
+  {
+    "question": "I'm getting an error about ESM when trying to run VitePress. What is wrong?",
+    "expected_answer": "You likely forgot to add `\"type\": \"module\"` to your `package.json` or use the `.mjs` extension for your config file, as VitePress is an ESM-only package.",
+    "intent": "debugging",
+    "relevant_apis": [],
+    "relevant_paths": [
+      "guide/getting-started.md"
+    ],
+    "difficulty": "easy",
+    "framework": "vitepress"
+  },
+  {
+    "expected_answer": "You are likely using an inline component that isn't PascalCase or doesn't have a hyphen in its name, which causes it to be wrapped in a `<p>` tag and leads to a hydration mismatch.",
+    "question": "Why am I getting hydration mismatch errors when using my custom component in Markdown?",
+    "relevant_paths": [
+      "guide/using-vue.md"
+    ],
+    "difficulty": "medium",
+    "relevant_apis": [],
+    "intent": "debugging",
+    "framework": "vitepress"
+  },
+  {
+    "expected_answer": "You are likely using `try_files` with a default of `index.html`, which is incorrect for VitePress. You should use `try_files $uri $uri.html $uri/ =404;` in your Nginx configuration.",
+    "question": "My Nginx setup for clean URLs is failing or showing an invalid page state. What should I check?",
+    "difficulty": "hard",
+    "relevant_paths": [
+      "guide/deploy.md"
+    ],
+    "relevant_apis": [],
+    "intent": "debugging",
+    "framework": "vitepress"
+  },
+  {
+    "question": "Why is my page size unexpectedly large after adding custom styles in a Markdown file?",
+    "expected_answer": "You are likely using `<style scoped>` in Markdown, which forces the generator to add unique attributes to every single element on the page, significantly increasing the page size. Use `<style module>` instead.",
+    "intent": "debugging",
+    "relevant_apis": [],
+    "difficulty": "hard",
+    "relevant_paths": [
+      "guide/using-vue.md"
+    ],
+    "framework": "vitepress"
+  },
+  {
     "intent": "migration",
-    "difficulty": "hard",
-    "framework": "vitepress"
-  },
-  {
-    "question": "How do I add custom routes that aren't backed by a markdown file?",
-    "expected_answer": "Use a `paths()` dynamic route (`[param].md`) to generate pages at build time, or inject runtime routes via `router.go` with `app.runtime` configuration. Dynamic routes export `paths()` returning route param objects.",
-    "relevant_paths": ["guide/routing.md"],
-    "relevant_apis": ["paths"],
-    "intent": "how_to",
-    "difficulty": "hard",
-    "framework": "vitepress"
-  },
-  {
-    "question": "How do I render the same content in multi-page (MPA) mode?",
-    "expected_answer": "Set `mpa: true` in site config (experimental). VitePress emits one HTML per page without a client-side router, useful for content-heavy sites where SPA navigation isn't needed.",
-    "relevant_paths": ["guide/mpa-mode.md", "reference/site-config.md"],
-    "relevant_apis": ["mpa"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vitepress"
-  },
-  {
-    "question": "What SSR-safe patterns must I follow in custom components?",
-    "expected_answer": "Avoid accessing `window`, `document`, or `localStorage` outside `onMounted` or a `<ClientOnly>` boundary. Use `import.meta.env.SSR` to gate server-only code. Lazy-import browser-only deps via dynamic `import()` inside `onMounted`.",
-    "relevant_paths": ["guide/ssr-compat.md"],
-    "relevant_apis": ["ClientOnly"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vitepress"
-  },
-  {
-    "question": "How do I ignore broken links during build?",
-    "expected_answer": "Set `ignoreDeadLinks: true` in site config, or pass an array of regex patterns/strings to ignore selectively. Use `'localhostLinks'` to ignore only localhost references.",
-    "relevant_paths": ["reference/site-config.md"],
-    "relevant_apis": ["ignoreDeadLinks"],
-    "intent": "how_to",
+    "relevant_apis": [],
+    "relevant_paths": [
+      "guide/migration-from-vitepress-0.md"
+    ],
     "difficulty": "easy",
+    "question": "What are the primary steps to migrate my sidebar configuration from VitePress 0.x?",
+    "expected_answer": "You need to migrate your sidebar configuration by renaming the `children` key to `items` and updating your GitHub links to use the new `socialLinks` configuration.",
     "framework": "vitepress"
   },
   {
-    "question": "How do I change the source directory and output directory?",
-    "expected_answer": "Set `srcDir` (default: project root) and `outDir` (default: `<root>/.vitepress/dist`) in site config. Use `srcExclude` (an array of micromatch patterns) to skip files inside `srcDir`.",
-    "relevant_paths": ["reference/site-config.md"],
-    "relevant_apis": ["srcDir", "outDir", "srcExclude"],
-    "intent": "how_to",
+    "question": "How do I update my image syntax when migrating from VuePress?",
+    "expected_answer": "You should replace `<img :src=\"$withBase('/foo.png')\" alt=\"foo\">` with the standard Markdown image syntax `![foo](/foo.png)`.",
+    "relevant_apis": [],
+    "relevant_paths": [
+      "guide/migration-from-vuepress.md"
+    ],
     "difficulty": "easy",
+    "intent": "migration",
     "framework": "vitepress"
   },
   {
-    "question": "How do I access frontmatter values inside a markdown file template expression?",
-    "expected_answer": "Use the `$frontmatter` template global (e.g. `{{ $frontmatter.title }}`). For dynamic routes, `$params` exposes the matched route params object.",
-    "relevant_paths": ["reference/runtime-api.md"],
-    "relevant_apis": ["$frontmatter", "$params"],
+    "relevant_apis": [],
+    "difficulty": "medium",
+    "relevant_paths": [
+      "guide/migration-from-vuepress.md"
+    ],
+    "intent": "migration",
+    "question": "How do I replicate VuePress's automatic sidebar generation in VitePress?",
+    "expected_answer": "You need to remove the automatic sidebar generation from frontmatter and instead read the frontmatter manually in your config to populate the sidebar dynamically.",
+    "framework": "vitepress"
+  },
+  {
+    "expected_answer": "You need to split the old `lastUpdated` option into `config.lastUpdated` and `themeConfig.lastUpdatedText` in your configuration file.",
+    "question": "How do I update the `lastUpdated` configuration when upgrading from 0.x?",
+    "intent": "migration",
+    "relevant_paths": [
+      "guide/migration-from-vitepress-0.md"
+    ],
+    "difficulty": "hard",
+    "relevant_apis": [],
+    "framework": "vitepress"
+  },
+  {
+    "question": "How do I configure the \"Edit this page\" feature in the latest version of VitePress?",
+    "expected_answer": "You should use the `editLink` feature in the new theme config instead of the older, removed `editLinks` and `editLinkText` options.",
+    "relevant_apis": [],
+    "difficulty": "hard",
+    "relevant_paths": [
+      "guide/migration-from-vitepress-0.md"
+    ],
+    "intent": "migration",
+    "framework": "vitepress"
+  },
+  {
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/asset-handling.md"
+    ],
+    "relevant_apis": [
+      "withBase"
+    ],
     "intent": "api_lookup",
-    "difficulty": "easy",
+    "expected_answer": "The `withBase` helper.",
+    "question": "I have an image in my layout thingy and I need to make sure the path works even if the site is not at the root of the domain. What do I wrap the path in?",
     "framework": "vitepress"
   },
   {
-    "question": "How do I configure environment-specific behavior in the config file?",
-    "expected_answer": "`defineConfig` accepts a function that receives `{ command, mode }`. Branch on `command === 'build'` or use `loadEnv` to read `.env` files just like in a Vite config.",
-    "relevant_paths": ["reference/site-config.md"],
-    "relevant_apis": ["defineConfig", "loadEnv"],
-    "intent": "how_to",
-    "difficulty": "medium",
+    "expected_answer": "The `<ClientOnly>` component.",
+    "question": "I have a bit of code that needs to talk to the browser screen, but it breaks during the build process because it can't find it. How do I tell it to only run once it is in the user's browser?",
+    "relevant_paths": [
+      "guide/ssr-compat.md"
+    ],
+    "difficulty": "extreme",
+    "relevant_apis": [
+      "ClientOnly"
+    ],
+    "intent": "howto",
     "framework": "vitepress"
   },
   {
-    "question": "How do I customize the sidebar per URL prefix?",
-    "expected_answer": "Pass an object to `themeConfig.sidebar` keyed by the URL prefix. Each prefix gets its own array of groups, allowing different sidebars for `/guide/` vs `/reference/` etc.",
-    "relevant_paths": ["reference/default-theme-sidebar.md"],
-    "relevant_apis": ["sidebar"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vitepress"
-  },
-  {
-    "question": "How do I disable the prev/next links at the bottom of pages?",
-    "expected_answer": "Set `themeConfig.docFooter = { prev: false, next: false }` globally, or use frontmatter `prev: false` / `next: false` on a single page. You can also pass strings to override the displayed text.",
-    "relevant_paths": ["reference/default-theme-prev-next-links.md"],
-    "relevant_apis": ["docFooter"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "vitepress"
-  },
-  {
-    "question": "How do I add a global footer below page content?",
-    "expected_answer": "Set `themeConfig.footer = { message, copyright }`. The footer is hidden on pages where the right-side aside is shown unless explicitly forced.",
-    "relevant_paths": ["reference/default-theme-footer.md"],
-    "relevant_apis": ["footer"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "vitepress"
-  },
-  {
-    "question": "How do I add a Carbon Ads banner?",
-    "expected_answer": "Set `themeConfig.carbonAds = { code, placement }`. The default theme renders the ad in the right-side aside when both fields are provided.",
-    "relevant_paths": ["reference/default-theme-carbon-ads.md"],
-    "relevant_apis": ["carbonAds"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "vitepress"
-  },
-  {
-    "question": "How do I read site data and theme config inside a component?",
-    "expected_answer": "Call `useData()` and read `site.value` for site-level config and `theme.value` for `themeConfig`. Both are reactive refs.",
-    "relevant_paths": ["reference/runtime-api.md"],
-    "relevant_apis": ["useData"],
     "intent": "api_lookup",
-    "difficulty": "easy",
+    "relevant_apis": [
+      "defineClientComponent"
+    ],
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/ssr-compat.md"
+    ],
+    "question": "I am trying to import a thing that needs to look at the user's browser info immediately when it loads, but it keeps crashing my app. Is there a way to delay that import until the page is fully ready?",
+    "expected_answer": "The `defineClientComponent` helper.",
     "framework": "vitepress"
   },
   {
-    "question": "How do I write a CMS-backed VitePress site?",
-    "expected_answer": "Use a build-time data loader (`createContentLoader` or `defineLoader`) that fetches from your CMS and returns the page list. For runtime CMS data, fetch inside `<script setup>` guarded by `<ClientOnly>` for SSR safety.",
-    "relevant_paths": ["guide/cms.md"],
-    "relevant_apis": ["createContentLoader", "defineLoader", "ClientOnly"],
-    "intent": "how_to",
-    "difficulty": "hard",
+    "intent": "api_lookup",
+    "relevant_paths": [
+      "guide/data-loading.md"
+    ],
+    "difficulty": "extreme",
+    "relevant_apis": [
+      "data"
+    ],
+    "expected_answer": "The `data` named export.",
+    "question": "I have a file that pulls in some info at build time, but how do I get that info into my page? I keep getting an empty thing back.",
+    "framework": "vitepress"
+  },
+  {
+    "question": "I have a file that pulls in data, but when I change the source file, the page doesn't update unless I restart the whole thing. How do I make it notice changes?",
+    "expected_answer": "The `watch` option in the data loader.",
+    "relevant_apis": [
+      "watch"
+    ],
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/data-loading.md"
+    ],
+    "intent": "howto",
+    "framework": "vitepress"
+  },
+  {
+    "relevant_apis": [
+      "Content"
+    ],
+    "relevant_paths": [
+      "guide/custom-theme.md"
+    ],
+    "difficulty": "extreme",
+    "intent": "api_lookup",
+    "question": "I am trying to make my own wrapper for all pages, but I cannot figure out how to put the actual text from my files into my wrapper. What is the tag for that?",
+    "expected_answer": "The `<Content />` component.",
+    "framework": "vitepress"
+  },
+  {
+    "intent": "howto",
+    "relevant_apis": [
+      "rewrites"
+    ],
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/routing.md"
+    ],
+    "question": "My files are deep inside a bunch of folders, but I want the URLs to be flat. How do I tell the tool to change the addresses of my pages without moving the files?",
+    "expected_answer": "The `rewrites` configuration option.",
+    "framework": "vitepress"
+  },
+  {
+    "relevant_apis": [
+      "mpa"
+    ],
+    "relevant_paths": [
+      "guide/mpa-mode.md"
+    ],
+    "difficulty": "extreme",
+    "intent": "howto",
+    "question": "My site is too heavy because of all the scripts it loads. Is there a way to just turn off all the interactivity and make it a basic site with zero scripts?",
+    "expected_answer": "The `mpa` option or `--mpa` flag.",
+    "framework": "vitepress"
+  },
+  {
+    "expected_answer": "The `<script client>` tag.",
+    "question": "I turned off all the scripts, but now I really need just one little button to do something. How do I add a script that only runs for this one tiny thing?",
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/mpa-mode.md"
+    ],
+    "relevant_apis": [
+      "script client"
+    ],
+    "intent": "api_lookup",
+    "framework": "vitepress"
+  },
+  {
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "reference/site-config.md"
+    ],
+    "relevant_apis": [
+      "defineConfig"
+    ],
+    "intent": "api_lookup",
+    "expected_answer": "The `defineConfig` helper.",
+    "question": "I want to get help from my editor while typing out the settings for my project, but none of the options are showing up. What do I need to wrap my settings in?",
     "framework": "vitepress"
   }
 ]

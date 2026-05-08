@@ -1,6 +1,6 @@
 # VitePress
 
-<span style="color: var(--vp-c-brand-1); font-weight: 600;">4.68 / 5 composite score</span> &middot; 92.7% API recall &middot; 50 questions evaluated
+<span style="color: var(--vp-c-brand-1); font-weight: 600;">4.58 / 5 composite score</span> &middot; 100.0% API recall &middot; 45 questions evaluated
 
 Vue Docs MCP provides deep access to the official [VitePress documentation](https://vitepress.dev), covering the static site generator's runtime API (composables, helpers, components), default theme config, build hooks, data loaders, deploy guides, and migration paths from VuePress.
 
@@ -101,30 +101,30 @@ Each question has a ground-truth answer with expected API names and documentatio
     markers: { size: 4 },
   }"
   :series="[
-    { name: 'Vue Docs MCP', data: [4.92, 4.58, 4.72, 4.44, 4.76] },
-    { name: 'Context7', data: [4.78, 4.24, 4.64, 4.12, 4.44] },
+    { name: 'Vue Docs MCP', data: [4.80, 4.71, 4.76, 3.67, 4.96] },
+    { name: 'Context7', data: [4.76, 4.69, 4.71, 4.20, 4.73] },
   ]"
 />
 </ClientOnly>
 
 | Metric | Vue Docs MCP | Context7 |
 |---|---|---|
-| Relevance | **4.92** | 4.78 |
-| Completeness | **4.58** | 4.24 |
-| Correctness | **4.72** | 4.64 |
-| API Coverage | **4.44** | 4.12 |
-| Conciseness | **4.76** | 4.44 |
-| **Composite** | **4.68** | **4.44** |
+| Relevance | **4.80** | 4.76 |
+| Completeness | **4.71** | 4.69 |
+| Correctness | **4.76** | 4.71 |
+| API Coverage | 3.67 | **4.20** |
+| Conciseness | **4.96** | 4.73 |
+| **Composite** | 4.58 | **4.62** |
 
 ### Retrieval and Cost
 
 | Metric | Vue Docs MCP | Context7 |
 |---|---|---|
-| Path Recall | **100.0%** | 94.0% |
-| API Recall | **92.7%** | 91.0% |
-| Avg Response Tokens | 2,930 | 787 |
-| Avg Latency | **0.76s** | 1.69s |
-| P95 Latency | **0.93s** | 2.08s |
+| Path Recall | 95.6% | 95.6% |
+| API Recall | 100.0% | 100.0% |
+| Avg Response Tokens | 3,056 | **779** |
+| Avg Latency | **0.83s** | 1.78s |
+| P95 Latency | **1.03s** | 2.15s |
 | Cost per Query (user-facing) | **Free** | $0.002 |
 
 ### Notes on Fairness

@@ -1,6 +1,6 @@
 # FormKit
 
-<span style="color: var(--vp-c-brand-1); font-weight: 600;">3.92 / 5 composite score</span> &middot; 71.8% API recall &middot; 50 questions evaluated
+<span style="color: var(--vp-c-brand-1); font-weight: 600;">4.59 / 5 composite score</span> &middot; 100.0% API recall &middot; 55 questions evaluated
 
 Vue Docs MCP provides deep access to the official [FormKit documentation](https://formkit.com), covering Vue's most ergonomic form framework: `<FormKit>` and `<FormKitSchema>` components, the core node primitive, validation rules, all 42+ input types, the official plugin set (auto-animate, multi-step, local-storage, zod, floating-labels, ...), the i18n system, theming, and the full @formkit/* package surface (~320 API entries).
 
@@ -105,33 +105,31 @@ Each question has a ground-truth answer with expected API names and documentatio
     markers: { size: 4 },
   }"
   :series="[
-    { name: 'Vue Docs MCP', data: [4.66, 3.36, 4.10, 3.34, 4.12] },
-    { name: 'Context7', data: [4.52, 3.44, 4.12, 3.60, 4.28] },
+    { name: 'Vue Docs MCP', data: [4.85, 4.33, 4.55, 4.58, 4.62] },
+    { name: 'Context7', data: [4.62, 4.20, 4.47, 4.53, 4.80] },
   ]"
 />
 </ClientOnly>
 
 | Metric | Vue Docs MCP | Context7 |
 |---|---|---|
-| Relevance | **4.66** | 4.52 |
-| Completeness | 3.36 | **3.44** |
-| Correctness | 4.10 | **4.12** |
-| API Coverage | 3.34 | **3.60** |
-| Conciseness | 4.12 | **4.28** |
-| **Composite** | **3.92** | **3.99** |
+| Relevance | **4.85** | 4.62 |
+| Completeness | **4.33** | 4.20 |
+| Correctness | **4.55** | 4.47 |
+| API Coverage | **4.58** | 4.53 |
+| Conciseness | 4.62 | **4.80** |
+| **Composite** | **4.59** | 4.52 |
 
 ### Retrieval and Cost
 
 | Metric | Vue Docs MCP | Context7 |
 |---|---|---|
-| Path Recall | **65.3%** | 0.0%* |
-| API Recall | 71.8% | **79.3%** |
-| Avg Response Tokens | 2,788 | **1,015** |
-| Avg Latency | **0.57s** | 1.53s |
-| P95 Latency | **0.72s** | 1.89s |
+| Path Recall | **95.5%** | 80.9% |
+| API Recall | 100.0% | 100.0% |
+| Avg Response Tokens | 2,751 | **893** |
+| Avg Latency | **0.70s** | 1.75s |
+| P95 Latency | **1.14s** | 2.15s |
 | Cost per Query (user-facing) | **Free** | $0.002 |
-
-\* Context7's responses don't echo source file paths in a form the substring-based recall metric can match, so its path-recall is reported as 0%. This is a metric artifact of the response shape, not a measure of retrieval quality.
 
 ### Notes on Fairness
 

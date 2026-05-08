@@ -1,443 +1,748 @@
 [
   {
-    "question": "How do I create a basic form with validation?",
-    "expected_answer": "Use `<Form>` with a `validation-schema` prop (or `useForm({ validationSchema })` in the composition API), and place `<Field>` components inside with their `name` and `rules`. `<ErrorMessage name=\"...\">` displays the error for a named field. The form auto-tracks values, errors, dirty/touched state, and submission.",
-    "relevant_paths": ["guide/overview.mdx", "guide/components/validation.mdx"],
-    "relevant_apis": ["Form", "Field", "ErrorMessage"],
-    "intent": "how_to",
+    "intent": "api_lookup",
+    "difficulty": "easy",
+    "question": "What is the purpose of the useField composable in VeeValidate?",
+    "relevant_apis": [
+      "useField"
+    ],
+    "relevant_paths": [
+      "/api/use-field.md"
+    ],
+    "expected_answer": "The `useField` composable is the primary way to integrate a single field into VeeValidate, providing its value, error messages, and meta state.",
+    "framework": "vee-validate"
+  },
+  {
+    "question": "What does useForm return when called in a component?",
+    "intent": "api_lookup",
+    "difficulty": "easy",
+    "relevant_apis": [
+      "useForm"
+    ],
+    "expected_answer": "The `useForm` composable manages the state of the entire form, providing helpers like handleSubmit, errors, and meta information.",
+    "relevant_paths": [
+      "/api/use-form.md"
+    ],
+    "framework": "vee-validate"
+  },
+  {
+    "expected_answer": "The `ErrorMessage` component is used to display validation error messages associated with a specific field.",
+    "relevant_paths": [
+      "/api/error-message.md"
+    ],
+    "relevant_apis": [
+      "ErrorMessage"
+    ],
+    "question": "What is the role of the ErrorMessage component?",
+    "intent": "api_lookup",
     "difficulty": "easy",
     "framework": "vee-validate"
   },
   {
-    "question": "What's the composition API equivalent of <Form> and <Field>?",
-    "expected_answer": "`useForm()` is the composition equivalent of `<Form>`, and `useField('name', rules)` is the equivalent of `<Field>`. They expose the same state (`values`, `errors`, `meta`, `handleSubmit`) as refs. Use them when building custom input components or fully custom form layouts.",
-    "relevant_paths": ["guide/composition-api/getting-started.mdx", "api/use-form.mdx", "api/use-field.mdx"],
-    "relevant_apis": ["useForm", "useField"],
+    "relevant_paths": [
+      "/api/field.md"
+    ],
+    "expected_answer": "The `Field` component is used to create an input field that is automatically connected to the validation state, simplifying the process of binding inputs.",
+    "relevant_apis": [
+      "Field"
+    ],
+    "intent": "api_lookup",
+    "difficulty": "easy",
+    "question": "What is the purpose of the Field component?",
+    "framework": "vee-validate"
+  },
+  {
+    "relevant_apis": [
+      "validate"
+    ],
+    "relevant_paths": [
+      "/api/validate.md"
+    ],
+    "expected_answer": "The `validate` function is a standalone utility that allows you to validate a single value against a set of rules without needing a form or field setup.",
+    "intent": "api_lookup",
+    "difficulty": "easy",
+    "question": "What is the validate utility function used for?",
+    "framework": "vee-validate"
+  },
+  {
+    "question": "What does the Form component do?",
+    "intent": "api_lookup",
+    "difficulty": "easy",
+    "relevant_apis": [
+      "Form"
+    ],
+    "expected_answer": "The `Form` component acts as a wrapper that automatically handles form submission and validation, integrating seamlessly with the useForm composable.",
+    "relevant_paths": [
+      "/api/form.md"
+    ],
+    "framework": "vee-validate"
+  },
+  {
+    "relevant_paths": [
+      "/api/define-rule.md"
+    ],
+    "expected_answer": "The `defineRule` function is used to register a global validation rule that can be used by name in any field or form.",
+    "relevant_apis": [
+      "defineRule"
+    ],
+    "intent": "api_lookup",
+    "difficulty": "easy",
+    "question": "How do I register a global validation rule?",
+    "framework": "vee-validate"
+  },
+  {
+    "question": "What is the configure function used for?",
+    "intent": "api_lookup",
+    "difficulty": "easy",
+    "relevant_apis": [
+      "configure"
+    ],
+    "expected_answer": "The `configure` function allows you to set global defaults, such as the validation mode (e.g., 'eager', 'aggressive') or custom validation messages.",
+    "relevant_paths": [
+      "/api/configure.md"
+    ],
+    "framework": "vee-validate"
+  },
+  {
+    "intent": "howto",
+    "difficulty": "medium",
+    "question": "How do I stop validation from running every time the user types in an input?",
+    "relevant_apis": [
+      "configure",
+      "useField"
+    ],
+    "relevant_paths": [
+      "/api/configure.md",
+      "/api/use-field.md"
+    ],
+    "expected_answer": "You can set the `validateOnValueUpdate` option to `false` in the `configure` function or as an option to `useField` to disable automatic validation on every keystroke.",
+    "framework": "vee-validate"
+  },
+  {
+    "question": "How can I populate my form fields with data when the form first loads?",
+    "intent": "howto",
+    "difficulty": "medium",
+    "expected_answer": "You can use the `initialValues` option in `useForm` to set the starting values for your form fields.",
+    "relevant_paths": [
+      "/api/use-form.md"
+    ],
+    "relevant_apis": [
+      "useForm"
+    ],
+    "framework": "vee-validate"
+  },
+  {
+    "relevant_paths": [
+      "/api/use-form.md",
+      "/api/configure.md"
+    ],
+    "expected_answer": "You can pass a custom `validateOnBlur` or `validateOnInput` setting within the `useForm` options or via global `configure`.",
+    "relevant_apis": [
+      "useForm",
+      "configure"
+    ],
+    "intent": "howto",
+    "difficulty": "medium",
+    "question": "How do I change the trigger event for form validation?",
+    "framework": "vee-validate"
+  },
+  {
+    "relevant_apis": [
+      "useForm"
+    ],
+    "expected_answer": "You can use the `setFieldError` function returned by `useForm` to manually display an error message on a specific field.",
+    "relevant_paths": [
+      "/api/use-form.md"
+    ],
+    "question": "How can I set an error message on a field manually after an API call fails?",
+    "intent": "howto",
+    "difficulty": "medium",
+    "framework": "vee-validate"
+  },
+  {
+    "relevant_paths": [
+      "/api/use-form.md"
+    ],
+    "expected_answer": "You can use the `resetForm` function to clear the form state, optionally passing an object to set new initial values.",
+    "relevant_apis": [
+      "useForm"
+    ],
+    "intent": "howto",
+    "difficulty": "medium",
+    "question": "How do I reset a form to its initial state after a successful submission?",
+    "framework": "vee-validate"
+  },
+  {
+    "relevant_paths": [
+      "/api/use-form.md"
+    ],
+    "expected_answer": "You can use the `validate` method returned by `useForm` to trigger validation for all fields manually.",
+    "relevant_apis": [
+      "useForm"
+    ],
+    "intent": "howto",
+    "difficulty": "medium",
+    "question": "How can I trigger validation for the entire form programmatically?",
+    "framework": "vee-validate"
+  },
+  {
+    "relevant_apis": [
+      "useForm"
+    ],
+    "relevant_paths": [
+      "/api/use-form.md"
+    ],
+    "expected_answer": "You can use the `setFieldValue` function from `useForm` to update the value of a field programmatically.",
+    "intent": "howto",
+    "difficulty": "medium",
+    "question": "How do I update a field's value without the user interacting with the input?",
+    "framework": "vee-validate"
+  },
+  {
+    "relevant_apis": [
+      "useForm"
+    ],
+    "relevant_paths": [
+      "/api/use-form.md"
+    ],
+    "expected_answer": "You can use the `values` object returned by `useForm` to access the current state of all fields in the form.",
+    "intent": "howto",
+    "difficulty": "medium",
+    "question": "How do I get the current values of all fields in a form?",
+    "framework": "vee-validate"
+  },
+  {
+    "expected_answer": "You can implement a custom validation rule by creating a function that returns a boolean or a string (error message) and registering it with `defineRule`. You can then use this rule in your schema or field definition.",
+    "relevant_paths": [
+      "/api/define-rule.md"
+    ],
+    "relevant_apis": [
+      "defineRule"
+    ],
+    "question": "What is the architectural approach to creating a custom validation rule that depends on other field values?",
+    "intent": "conceptual",
+    "difficulty": "hard",
+    "framework": "vee-validate"
+  },
+  {
+    "question": "How does VeeValidate maintain synchronization between field components and the form state?",
+    "intent": "conceptual",
+    "difficulty": "hard",
+    "relevant_apis": [
+      "useForm",
+      "Field"
+    ],
+    "expected_answer": "VeeValidate manages form state using a reactive approach where `useForm` creates a reactive context. The `Field` components subscribe to this context to update their error, meta, and value states.",
+    "relevant_paths": [
+      "/api/use-form.md",
+      "/api/field.md"
+    ],
+    "framework": "vee-validate"
+  },
+  {
+    "relevant_apis": [
+      "useField",
+      "useForm"
+    ],
+    "expected_answer": "`useForm` is for managing complex forms with multiple inputs, while `useField` is for granular control over individual inputs outside of a standard form wrapper.",
+    "relevant_paths": [
+      "/api/use-field.md",
+      "/api/use-form.md"
+    ],
+    "question": "When should I choose useField over useForm for a single input?",
     "intent": "comparison",
-    "difficulty": "easy",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I validate a form with a yup schema?",
-    "expected_answer": "Pass the yup schema to `<Form :validation-schema=\"schema\">` or `useForm({ validationSchema: schema })`. With `@vee-validate/yup`, wrap the schema with `toTypedSchema(yup.object({...}))` to also get TypeScript inference for `values` and `errors`.",
-    "relevant_paths": ["api/use-form.mdx", "api/form.mdx"],
-    "relevant_apis": ["useForm", "Form", "toTypedSchema", "@vee-validate/yup"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I get full TypeScript inference for form values?",
-    "expected_answer": "Use one of the `@vee-validate/yup`, `@vee-validate/zod`, or `@vee-validate/valibot` adapters and wrap your schema with `toTypedSchema(...)`. Pass the result as `validationSchema` to `useForm` or `<Form>`. `values`, `errors`, `setFieldValue`, and submit handlers are all typed from the schema.",
-    "relevant_paths": ["api/use-form.mdx"],
-    "relevant_apis": ["toTypedSchema", "useForm", "@vee-validate/yup", "@vee-validate/zod", "@vee-validate/valibot"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I register a custom validation rule globally?",
-    "expected_answer": "Call `defineRule(name, validatorFn)` once at app startup, e.g. `defineRule('required', value => !!value || 'This field is required')`. The validator returns `true` for valid input or an error string. Rules can be referenced by name in the `rules` prop or option.",
-    "relevant_paths": ["guide/global-validators.mdx", "api/configuration.mdx"],
-    "relevant_apis": ["defineRule"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I use the built-in rules from @vee-validate/rules?",
-    "expected_answer": "Install `@vee-validate/rules` and register them in bulk with `import { all } from '@vee-validate/rules'; Object.keys(all).forEach(rule => defineRule(rule, all[rule]));`. Or import individual rules and register them by name with `defineRule`.",
-    "relevant_paths": ["guide/global-validators.mdx"],
-    "relevant_apis": ["defineRule", "@vee-validate/rules", "all"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I configure global behavior like validate-on-blur?",
-    "expected_answer": "Call `configure({ validateOnBlur: true, validateOnInput: false, validateOnChange: true, validateOnModelUpdate: true })` once at app startup. Field-level overrides take precedence.",
-    "relevant_paths": ["api/configuration.mdx", "guide/global-validators.mdx"],
-    "relevant_apis": ["configure", "getConfig"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I handle form submission?",
-    "expected_answer": "Use `<Form @submit=\"onSubmit\">` (the handler receives `(values, { resetForm, setErrors, ... })`) or `useForm()`'s `handleSubmit(submitFn)`. The submit only fires after successful validation. Inside the handler you can call `resetForm()`, `setErrors({...})`, or `setFieldError(name, msg)` for server-side errors.",
-    "relevant_paths": ["guide/composition-api/handling-forms.mdx", "guide/components/handling-forms.mdx", "api/use-form.mdx"],
-    "relevant_apis": ["useForm", "Form", "useSubmitForm"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I show an inline error message for a specific field?",
-    "expected_answer": "Use `<ErrorMessage name=\"email\" />` inside a `<Form>`, or destructure `errorMessage` from `useField('email')` in the composition API. The component renders nothing when there's no error and supports an `as` prop and a default slot for custom rendering.",
-    "relevant_paths": ["api/error-message.mdx"],
-    "relevant_apis": ["ErrorMessage", "useField", "useFieldError"],
-    "intent": "api_lookup",
-    "difficulty": "easy",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I work with array-of-fields, like a list of phone numbers?",
-    "expected_answer": "Use `<FieldArray name=\"phones\" v-slot=\"{ fields, push, remove, replace, move, swap }\">` (or `useFieldArray('phones')` in the composition API). Each entry is bound by index (`phones[0]`, `phones[1]`, ...). `push(initialValue)` adds, `remove(idx)` removes, `swap(i, j)` reorders.",
-    "relevant_paths": ["api/field-array.mdx", "api/use-field-array.mdx"],
-    "relevant_apis": ["FieldArray", "useFieldArray"],
-    "intent": "api_lookup",
-    "difficulty": "medium",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I model a nested object like address.city?",
-    "expected_answer": "Use dot-notation in the field name: `<Field name=\"address.city\" />` or `useField('address.city')`. VeeValidate normalizes nested paths in `values`, `errors`, and the validation schema so the resulting object reflects the dotted shape.",
-    "relevant_paths": ["guide/composition-api/nested-objects-and-arrays.mdx", "guide/components/nested-objects-and-arrays.mdx"],
-    "relevant_apis": ["useField", "Field"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I build a custom input component with vee-validate?",
-    "expected_answer": "Inside the custom input's setup, call `useField(name, rules, { initialValue, validateOnValueUpdate })`. Bind the returned `value` ref to the underlying input via `v-model`, and surface `errorMessage` and `meta` to the consumer. The custom component then plugs into a parent `<Form>` or any `useForm()`.",
-    "relevant_paths": ["api/use-field.mdx", "guide/composition-api/custom-inputs.mdx"],
-    "relevant_apis": ["useField"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I read the current value of a single field?",
-    "expected_answer": "Use `useFieldValue('email')` to get a reactive ref to the field's value. Useful in components that need read-only access without rebinding the input.",
-    "relevant_paths": ["api/composition-helpers.mdx"],
-    "relevant_apis": ["useFieldValue"],
-    "intent": "api_lookup",
-    "difficulty": "easy",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I check if a field has been touched or modified?",
-    "expected_answer": "Use `useIsFieldTouched('email')` (returns true once the field loses focus after interaction) and `useIsFieldDirty('email')` (true once the value differs from its initial value). For form-level state, use `useIsFormTouched()` and `useIsFormDirty()`.",
-    "relevant_paths": ["api/composition-helpers.mdx"],
-    "relevant_apis": ["useIsFieldTouched", "useIsFieldDirty", "useIsFormTouched", "useIsFormDirty"],
-    "intent": "api_lookup",
-    "difficulty": "easy",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I check if the form is currently submitting?",
-    "expected_answer": "Use `useIsSubmitting()` to get a reactive ref. It's true between the start of `handleSubmit` and the resolution of the async submit handler. `useSubmitCount()` returns how many times the form has been submitted.",
-    "relevant_paths": ["api/composition-helpers.mdx"],
-    "relevant_apis": ["useIsSubmitting", "useSubmitCount"],
-    "intent": "api_lookup",
-    "difficulty": "easy",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I trigger validation programmatically?",
-    "expected_answer": "Call `useValidateField('email')` for a single field or `useValidateForm()` for the whole form (returns `{ valid, errors }`). Or use the global `validate(value, rules, opts)` helper for ad-hoc one-off checks outside a form context.",
-    "relevant_paths": ["api/composition-helpers.mdx"],
-    "relevant_apis": ["useValidateField", "useValidateForm", "validate"],
-    "intent": "api_lookup",
-    "difficulty": "medium",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I set a field's value programmatically?",
-    "expected_answer": "Use `useSetFieldValue('email')` from the composition helpers, or call `setFieldValue('email', newValue)` from `useForm()`'s return. To set the entire form at once, use `useSetFormValues()` or `setValues({...})`. Validation re-runs by default — pass `false` as the second arg to skip.",
-    "relevant_paths": ["api/composition-helpers.mdx", "api/use-form.mdx"],
-    "relevant_apis": ["useSetFieldValue", "useSetFormValues", "useForm"],
-    "intent": "api_lookup",
-    "difficulty": "medium",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I display server-side validation errors?",
-    "expected_answer": "On submit failure, call `setErrors({ field: 'message', other: 'message' })` from `useForm()`'s return, or `useSetFormErrors()` from the composition helpers. Per-field, use `setFieldError(name, message)` or `useSetFieldError`. The errors render via `<ErrorMessage>` like client-side errors.",
-    "relevant_paths": ["guide/composition-api/handling-forms.mdx", "api/composition-helpers.mdx"],
-    "relevant_apis": ["useSetFieldError", "useSetFormErrors", "useForm"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I reset the form to its initial state?",
-    "expected_answer": "Call `useResetForm()` in the composition API, or `resetForm()` from `useForm()`'s return. Optionally pass an object `{ values, errors, touched }` to reset to a custom state instead of the original initial values.",
-    "relevant_paths": ["api/composition-helpers.mdx", "api/use-form.mdx"],
-    "relevant_apis": ["useResetForm", "useForm"],
-    "intent": "api_lookup",
-    "difficulty": "easy",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I validate one field that depends on another (cross-field)?",
-    "expected_answer": "Define both fields in the same `validationSchema` and reference the dependency: with yup, `password_confirm: yup.string().oneOf([yup.ref('password')], 'must match')`. Cross-field validation re-runs whenever any referenced field changes.",
-    "relevant_paths": ["examples/cross-field-validation.mdx"],
-    "relevant_apis": ["validationSchema", "useForm"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I validate a field asynchronously, e.g. checking a username against a server?",
-    "expected_answer": "Return a promise from the validator function: `useField('username', async (value) => { const res = await fetch(`/check?u=${value}`); return res.ok || 'taken'; })`. VeeValidate awaits the result and surfaces the message via `errorMessage`. Combine with `useIsValidating()` to show a loading indicator.",
-    "relevant_paths": ["examples/async-validation.mdx", "api/use-field.mdx"],
-    "relevant_apis": ["useField", "useIsValidating"],
-    "intent": "how_to",
     "difficulty": "hard",
     "framework": "vee-validate"
   },
   {
-    "question": "How do I integrate vee-validate with Vuetify or PrimeVue?",
-    "expected_answer": "Wrap the UI library's input in a thin component that calls `useField(name, rules)` and binds `value`/`errorMessage` to the wrapped input's props. Or use the `<Field>` component with `as=\"v-text-field\"` (or whatever component) plus `v-bind` of the slot scope. The examples page shows ready-to-copy patterns for Vuetify, PrimeVue, Element Plus, etc.",
-    "relevant_paths": ["examples/ui-libraries.mdx", "guide/composition-api/custom-inputs.mdx"],
-    "relevant_apis": ["useField", "Field"],
-    "intent": "how_to",
+    "relevant_apis": [
+      "useForm",
+      "Field"
+    ],
+    "relevant_paths": [
+      "/api/use-form.md",
+      "/api/field.md"
+    ],
+    "expected_answer": "The `yup` or `zod` integration allows you to define complex validation schemas that are passed to `useForm` or `Field`, centralizing validation logic rather than defining rules inline.",
+    "intent": "conceptual",
+    "difficulty": "hard",
+    "question": "How does schema-based validation differ from inline rule definition in VeeValidate?",
+    "framework": "vee-validate"
+  },
+  {
+    "intent": "conceptual",
+    "difficulty": "hard",
+    "question": "What is the lifecycle of a form submission when using handleSubmit?",
+    "relevant_paths": [
+      "/api/use-form.md"
+    ],
+    "expected_answer": "`handleSubmit` handles the form submission by preventing the default browser behavior, validating all fields, and only executing your provided callback if the form is valid.",
+    "relevant_apis": [
+      "useForm"
+    ],
+    "framework": "vee-validate"
+  },
+  {
+    "question": "How can I track the interaction state of a form field without manual tracking?",
+    "intent": "conceptual",
+    "difficulty": "hard",
+    "relevant_apis": [
+      "useForm",
+      "useField"
+    ],
+    "expected_answer": "You can use the `meta` object returned by `useForm` or `useField`, which includes `dirty`, `touched`, and `valid` properties to track user interaction.",
+    "relevant_paths": [
+      "/api/use-form.md",
+      "/api/use-field.md"
+    ],
+    "framework": "vee-validate"
+  },
+  {
+    "intent": "comparison",
+    "difficulty": "hard",
+    "question": "What are the main functional differences between using the validate function and the useField composable?",
+    "relevant_paths": [
+      "/api/validate.md",
+      "/api/use-field.md"
+    ],
+    "expected_answer": "`validate` is a standalone, stateless utility for checking values, while `useField` is stateful and reactive, designed to be used within a component's lifecycle.",
+    "relevant_apis": [
+      "validate",
+      "useField"
+    ],
+    "framework": "vee-validate"
+  },
+  {
+    "relevant_paths": [
+      "/api/configure.md",
+      "/api/use-field.md",
+      "/api/field.md"
+    ],
+    "expected_answer": "You can use the `validateOnBlur` or `validateOnInput` options in `configure`, but they can be overridden per field in `useField` or the `Field` component.",
+    "relevant_apis": [
+      "configure",
+      "useField",
+      "Field"
+    ],
+    "intent": "comparison",
+    "difficulty": "hard",
+    "question": "How does global configuration compare to field-level configuration in terms of precedence?",
+    "framework": "vee-validate"
+  },
+  {
+    "question": "I have a box where people type, but the red warning text shows up immediately when they click in it, even if they haven't typed anything yet. How do I make it wait until they leave the box?",
+    "intent": "debugging",
+    "difficulty": "extreme",
+    "relevant_apis": [
+      "useField",
+      "useForm"
+    ],
+    "expected_answer": "You can use the `touched` property from the `meta` object returned by `useField` or `useForm`.",
+    "relevant_paths": [
+      "/api/use-field.md",
+      "/api/use-form.md"
+    ],
+    "framework": "vee-validate"
+  },
+  {
+    "question": "I got a response from my server saying that some of the information the user sent is wrong. How do I show these errors next to the specific items on the screen?",
+    "intent": "howto",
+    "difficulty": "extreme",
+    "relevant_apis": [
+      "useForm"
+    ],
+    "expected_answer": "You can use the `setErrors` function returned by the form handler.",
+    "relevant_paths": [
+      "/api/use-form.md"
+    ],
+    "framework": "vee-validate"
+  },
+  {
+    "relevant_paths": [
+      "/api/use-form.md"
+    ],
+    "expected_answer": "You can use the `handleSubmit` function which prevents the default form action if validation fails.",
+    "relevant_apis": [
+      "useForm"
+    ],
+    "intent": "conceptual",
+    "difficulty": "extreme",
+    "question": "Every time I press the button to finish the form, the whole page refreshes and clears everything. How do I stop the page from reloading and just check the work first?",
+    "framework": "vee-validate"
+  },
+  {
+    "expected_answer": "You can use the `dirty` property from the `meta` object provided by the state manager.",
+    "relevant_paths": [
+      "/api/use-form.md",
+      "/api/use-field.md"
+    ],
+    "relevant_apis": [
+      "useForm",
+      "useField"
+    ],
+    "question": "Is there a way to know if the person has changed anything at all in the form since they opened it? I need to know if they actually did work or just looked at it.",
+    "intent": "api_lookup",
+    "difficulty": "extreme",
+    "framework": "vee-validate"
+  },
+  {
+    "expected_answer": "You can use the `resetForm` function to revert the state.",
+    "relevant_paths": [
+      "/api/use-form.md"
+    ],
+    "relevant_apis": [
+      "useForm"
+    ],
+    "question": "I have a button that says \"Clear\". What do I call to make all the boxes empty and get rid of all the error messages at once?",
+    "intent": "howto",
+    "difficulty": "extreme",
+    "framework": "vee-validate"
+  },
+  {
+    "question": "I need to make sure that a specific box has a value that is exactly equal to some other value, but I don't see a standard way to do that. How do I add my own custom check?",
+    "intent": "howto",
+    "difficulty": "extreme",
+    "relevant_apis": [
+      "defineRule"
+    ],
+    "expected_answer": "You can use `defineRule` to create a new requirement.",
+    "relevant_paths": [
+      "/api/define-rule.md"
+    ],
+    "framework": "vee-validate"
+  },
+  {
+    "intent": "debugging",
+    "difficulty": "extreme",
+    "question": "I'm trying to see why my form won't send, but I can't find where the hidden messages about what's wrong are stored. How do I look at all the current complaints?",
+    "relevant_paths": [
+      "/api/use-form.md"
+    ],
+    "expected_answer": "You can use the `errors` object returned by `useForm`.",
+    "relevant_apis": [
+      "useForm"
+    ],
+    "framework": "vee-validate"
+  },
+  {
+    "question": "When I open my page, I want some of the boxes to already have information in them from the database. How do I pre-fill them?",
+    "intent": "howto",
+    "difficulty": "extreme",
+    "relevant_apis": [
+      "useForm",
+      "Field"
+    ],
+    "expected_answer": "You can use the `initialValues` prop or option.",
+    "relevant_paths": [
+      "/api/use-form.md",
+      "/api/field.md"
+    ],
+    "framework": "vee-validate"
+  },
+  {
+    "question": "I have a simple button that is not inside a form, but I still want to check if a single piece of text is correct before I do something else. How do I check it?",
+    "intent": "howto",
+    "difficulty": "extreme",
+    "relevant_apis": [
+      "validate"
+    ],
+    "expected_answer": "You can use the `validate` function as a standalone checker.",
+    "relevant_paths": [
+      "/api/validate.md"
+    ],
+    "framework": "vee-validate"
+  },
+  {
+    "relevant_paths": [
+      "/api/use-form.md"
+    ],
+    "expected_answer": "You can use the `valid` property in the `meta` object.",
+    "relevant_apis": [
+      "useForm"
+    ],
+    "intent": "api_lookup",
+    "difficulty": "extreme",
+    "question": "How do I check if the entire page is good to go? I want to enable the save button only if every single box is filled out correctly.",
+    "framework": "vee-validate"
+  },
+  {
+    "question": "What are the fundamental differences between VeeValidate 3 and 4 that I need to consider when upgrading?",
+    "intent": "migration",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "useForm",
+      "useField"
+    ],
+    "expected_answer": "VeeValidate 4 is built for Vue 3 using the Composition API, whereas older versions relied on mixins or different component structures. Migration requires moving from the old component-based or mixin-based API to the new composables.",
+    "relevant_paths": [
+      "/api/use-form.md",
+      "/api/use-field.md"
+    ],
+    "framework": "vee-validate"
+  },
+  {
+    "relevant_apis": [
+      "Field",
+      "Form",
+      "useField",
+      "useForm"
+    ],
+    "relevant_paths": [
+      "/api/field.md",
+      "/api/form.md",
+      "/api/use-field.md",
+      "/api/use-form.md"
+    ],
+    "expected_answer": "You can migrate by replacing the old `ValidationProvider` and `ValidationObserver` components with the new `Field` and `Form` components or `useField` and `useForm` composables.",
+    "intent": "migration",
+    "difficulty": "medium",
+    "question": "How do I replace the old ValidationProvider with the new system?",
+    "framework": "vee-validate"
+  },
+  {
+    "intent": "migration",
+    "difficulty": "medium",
+    "question": "How does the migration to schema-based validation affect my existing custom rule logic?",
+    "relevant_apis": [
+      "useForm"
+    ],
+    "relevant_paths": [
+      "/api/use-form.md"
+    ],
+    "expected_answer": "VeeValidate 4 supports schema validation directly, which replaces the need for some of the complex custom rule structures used in older versions.",
+    "framework": "vee-validate"
+  },
+  {
+    "relevant_apis": [
+      "useForm"
+    ],
+    "expected_answer": "You need to import `useForm` and use it within `setup()` instead of defining providers in your templates.",
+    "relevant_paths": [
+      "/api/use-form.md"
+    ],
+    "question": "What is the primary change in how form state is initialized during migration?",
+    "intent": "migration",
     "difficulty": "medium",
     "framework": "vee-validate"
   },
   {
-    "question": "How do I localize validation error messages?",
-    "expected_answer": "Install `@vee-validate/i18n`, register a locale with `localize('en', { messages: { required: '...', email: '...' }})`, and call `setLocale(locale)` to switch. Combine with `configure({ generateMessage: localize(...) })` to plug it into the global config.",
-    "relevant_paths": ["guide/i18n.mdx"],
-    "relevant_apis": ["@vee-validate/i18n", "configure"],
-    "intent": "how_to",
+    "question": "How has the standalone validation utility changed in the latest version?",
+    "intent": "migration",
     "difficulty": "medium",
+    "expected_answer": "The `validate` function in v4 is a standalone utility, whereas in older versions, validation was often tied to the component instance. Migration involves decoupling this logic.",
+    "relevant_paths": [
+      "/api/validate.md"
+    ],
+    "relevant_apis": [
+      "validate"
+    ],
     "framework": "vee-validate"
   },
   {
-    "question": "How do I use vee-validate with Nuxt?",
-    "expected_answer": "Install `@vee-validate/nuxt` and add it to `modules` in `nuxt.config.ts`. The module auto-imports composables and registers components globally. Configure schema adapters and global rules via the `veeValidate` key in nuxt config.",
-    "relevant_paths": ["integrations/nuxt.mdx"],
-    "relevant_apis": ["@vee-validate/nuxt"],
-    "intent": "how_to",
-    "difficulty": "easy",
+    "intent": "comparison",
+    "difficulty": "hard",
+    "question": "How do the interaction tracking mechanisms differ between the latest version and the legacy approach?",
+    "relevant_paths": [
+      "/api/field.md"
+    ],
+    "expected_answer": "The `Field` component now manages its own interaction state internally, whereas older versions required manual configuration of events to track `touched` or `dirty` states.",
+    "relevant_apis": [
+      "Field"
+    ],
     "framework": "vee-validate"
   },
   {
-    "question": "How do I test components that use vee-validate?",
-    "expected_answer": "Mount with @testing-library/vue or @vue/test-utils. Drive value updates via input events, assert error messages via the rendered `<ErrorMessage>`, and `await flushPromises()` between submission and assertions for async validators. Stub schema deps if needed; the testing guide covers patterns for each.",
-    "relevant_paths": ["guide/testing.mdx"],
-    "relevant_apis": ["useField", "useForm"],
-    "intent": "how_to",
-    "difficulty": "medium",
+    "relevant_apis": [
+      "useForm",
+      "useField"
+    ],
+    "expected_answer": "VeeValidate 4 provides a more reactive and modular architecture compared to the monolithic mixin approach of version 2 or the provider-based approach of version 3.",
+    "relevant_paths": [
+      "/api/use-form.md",
+      "/api/use-field.md"
+    ],
+    "question": "Why is the new architecture considered more performant and easier to test than previous versions?",
+    "intent": "comparison",
+    "difficulty": "hard",
     "framework": "vee-validate"
   },
   {
-    "question": "How do I migrate from vee-validate v3 to v4?",
-    "expected_answer": "v4 ships a Composition API and renderless components instead of v3's directives. Replace the `v-validate` directive with either `<Field name=\"...\" rules=\"...\">` or `useField(name, rules)`. Replace the `<ValidationProvider>`/`<ValidationObserver>` wrappers with `<Form>` and `<Field>`. The migration guide walks through the option-by-option mapping.",
-    "relevant_paths": ["guide/migration.mdx"],
-    "relevant_apis": ["useForm", "useField", "Form", "Field"],
+    "expected_answer": "`useForm` provides a `handleSubmit` which is a more robust way to handle submission than the old `ValidationObserver` events. Migration involves moving form submission logic into this callback.",
+    "relevant_paths": [
+      "/api/use-form.md"
+    ],
+    "relevant_apis": [
+      "useForm"
+    ],
+    "question": "How should I refactor my form submission logic when moving from version 3 to 4?",
     "intent": "migration",
     "difficulty": "hard",
     "framework": "vee-validate"
   },
   {
-    "question": "How do I implement a multistep form wizard?",
-    "expected_answer": "Use a single `<Form>` (or `useForm`) with the full schema. Drive step state with a local `step` ref. On step submit, call `validate({ mode: 'silent' })` to check the active fields without showing errors elsewhere. The multistep example shows handling per-step validation via `useFormErrors`/`useValidateForm`.",
-    "relevant_paths": ["examples/multistep-form-wizard.mdx"],
-    "relevant_apis": ["useForm", "useValidateForm", "useFormErrors"],
-    "intent": "how_to",
-    "difficulty": "hard",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I store form values in a Pinia store?",
-    "expected_answer": "Use `useForm({ initialValues: store.values })` to seed from the store, then watch `values` (`watch(values, store.setValues)`) to mirror back. The using-stores example shows a pattern that keeps Pinia as the source of truth and vee-validate as the validation/UX layer.",
-    "relevant_paths": ["examples/using-stores.mdx"],
-    "relevant_apis": ["useForm"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I format input as the user types (e.g. phone-number masking)?",
-    "expected_answer": "Use the `value-formatting` example pattern: bind the input via the `<Field>` slot's `field` object and intercept `update:modelValue` to format before calling `setValue`. With `useField`, watch `value` and re-set after formatting via `setValue(formatted, false)` (the `false` avoids re-validation on each keystroke).",
-    "relevant_paths": ["examples/value-formatting.mdx"],
-    "relevant_apis": ["useField", "Field"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I handle checkbox groups and radio buttons?",
-    "expected_answer": "For checkboxes, use `useField(name, rules, { type: 'checkbox', valueProp: trueValue, uncheckedValue: falseValue })`. For groups, the field stores an array. For radios, set `type: 'radio'` and pass distinct `valueProp` values per option. The example page shows full code for both.",
-    "relevant_paths": ["examples/checkboxes-and-radio.mdx", "examples/custom-checkboxes.mdx"],
-    "relevant_apis": ["useField", "Field"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I add field-level validation triggers like 'validate on blur but not on input'?",
-    "expected_answer": "Either pass `validateOnBlur: true, validateOnInput: false` to `useField` options, or set them globally with `configure({...})`. For per-field overrides, the `<Field>` component accepts `validate-on-blur`, `validate-on-input`, `validate-on-change`, and `validate-on-model-update` props.",
-    "relevant_paths": ["examples/dynamic-validation-triggers.mdx", "api/configuration.mdx"],
-    "relevant_apis": ["useField", "Field", "configure"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I dynamically generate a form from a schema?",
-    "expected_answer": "Define a JSON descriptor of fields (name, type, rules) and `v-for` over it inside a `<Form>`, rendering a `<Field>` per entry with the right `as`/`type`/`rules`. The dynamic-form-generator tutorial walks through accessor functions, ref tracking, and conditional fields.",
-    "relevant_paths": ["tutorials/dynamic-form-generator.mdx"],
-    "relevant_apis": ["Form", "Field", "useForm"],
-    "intent": "how_to",
-    "difficulty": "hard",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "What's the difference between meta.dirty, meta.touched, and meta.valid?",
-    "expected_answer": "`dirty` is true once the value differs from the initial value. `touched` is true once the user has focused and blurred the field. `valid` is true when no validation errors are present. `meta` is exposed both as a property on the field's destructured return and as a reactive ref on the `Form` slot scope.",
-    "relevant_paths": ["api/use-field.mdx", "api/use-form.mdx"],
-    "relevant_apis": ["useField", "useForm", "FieldSlotProps", "FormSlotProps"],
-    "intent": "api_lookup",
-    "difficulty": "easy",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I read all current form values in a child component?",
-    "expected_answer": "Inject the form context via `useFormContext()` (returns `useForm()`'s state) and access `values`. Or use the focused `useFormValues()` helper which returns just the values ref.",
-    "relevant_paths": ["api/use-form.mdx", "api/composition-helpers.mdx"],
-    "relevant_apis": ["useFormContext", "useFormValues"],
-    "intent": "api_lookup",
-    "difficulty": "medium",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I validate an object schema outside of a form, e.g. in a server endpoint?",
-    "expected_answer": "Use the standalone `validate(value, rules)` function for a single value, or `validateObject(values, schema)` for a record. Both return `{ errors, valid }` without needing a `<Form>` or `useForm` context.",
-    "relevant_paths": ["api/configuration.mdx"],
-    "relevant_apis": ["validate", "validateObject"],
-    "intent": "api_lookup",
-    "difficulty": "medium",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I keep field metadata in sync when the field unmounts?",
-    "expected_answer": "Pass `keepValueOnUnmount: true` to `useField` (or `keep-value-on-unmount` on `<Field>`) so the value persists in the form state after the component unmounts. Mirror with `keepValuesOnUnmount` at the form level for the bulk default. The composition-api caveats page documents the lifecycle carefully.",
-    "relevant_paths": ["guide/composition-api/caveats.mdx"],
-    "relevant_apis": ["useField", "useForm"],
-    "intent": "api_lookup",
-    "difficulty": "hard",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I integrate with Vue DevTools to inspect form state?",
-    "expected_answer": "VeeValidate ships built-in Vue DevTools integration that's automatically active in dev. The 'Vee Validate' tab inspector shows each form, its fields, current state (`values`, `errors`, `meta`), and emits events for value changes — no extra setup required.",
-    "relevant_paths": ["guide/devtools.mdx"],
-    "relevant_apis": [],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "What composition helpers does vee-validate expose for building reactive UIs?",
-    "expected_answer": "The granular helpers in `api/composition-helpers` cover field-level (`useFieldValue`, `useFieldError`, `useIsFieldDirty`, `useIsFieldTouched`, `useIsFieldValid`, `useValidateField`, `useSetFieldError`, `useSetFieldTouched`, `useSetFieldValue`) and form-level (`useFormValues`, `useFormErrors`, `useIsFormDirty`, `useIsFormTouched`, `useIsFormValid`, `useIsSubmitting`, `useIsValidating`, `useValidateForm`, `useSubmitCount`, `useResetForm`, `useSetFormErrors`, `useSetFormTouched`, `useSetFormValues`) variants.",
-    "relevant_paths": ["api/composition-helpers.mdx"],
-    "relevant_apis": ["useFieldValue", "useFieldError", "useIsFieldDirty", "useFormValues", "useFormErrors", "useIsSubmitting", "useResetForm"],
-    "intent": "api_lookup",
-    "difficulty": "easy",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I use a zod schema for typed forms?",
-    "expected_answer": "Install `@vee-validate/zod` and wrap the zod schema with `toTypedSchema(zodSchema)`. Pass the result to `useForm({ validationSchema: ... })` or `<Form :validation-schema=\"...\">`. Form values, errors, and submit handlers infer their types from the zod schema.",
-    "relevant_paths": ["api/use-form.mdx"],
-    "relevant_apis": ["@vee-validate/zod", "toTypedSchema", "useForm"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "What does the Form component slot scope expose?",
-    "expected_answer": "`<Form v-slot=\"{ values, errors, meta, isSubmitting, submitCount, handleSubmit, handleReset, setErrors, setFieldError, setValues, setFieldValue, validate, ... }\">` — it surfaces the entire `useForm` return as scoped slot props so templates can drive any UI without `useForm()` directly.",
-    "relevant_paths": ["api/form.mdx"],
-    "relevant_apis": ["Form", "FormSlotProps"],
-    "intent": "api_lookup",
-    "difficulty": "medium",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "What does the Field component slot scope expose?",
-    "expected_answer": "`<Field v-slot=\"{ field, value, errorMessage, errors, meta, handleChange, handleBlur, validate, resetField }\">` — `field` is a binding object you can `v-bind=\"field\"` onto the underlying input; the rest are reactive refs reflecting the field's state.",
-    "relevant_paths": ["api/field.mdx"],
-    "relevant_apis": ["Field", "FieldSlotProps"],
-    "intent": "api_lookup",
-    "difficulty": "medium",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I conditionally enable/disable validation rules?",
-    "expected_answer": "Pass a function or computed to the `rules` prop/option that returns the rules string or schema based on reactive state: `useField('age', () => isAdult.value ? 'required|min:18' : '')`. Validation re-runs whenever the rules change.",
-    "relevant_paths": ["api/use-field.mdx", "examples/dynamic-validation-triggers.mdx"],
-    "relevant_apis": ["useField", "RuleExpression"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I clear all errors without resetting the form?",
-    "expected_answer": "Call `setErrors({})` (sets errors to empty) from `useForm()`'s return, or `useSetFormErrors()` with an empty object. Per-field, call `setFieldError(name, undefined)` to clear that field's error in isolation.",
-    "relevant_paths": ["api/use-form.mdx", "api/composition-helpers.mdx"],
-    "relevant_apis": ["useForm", "useSetFormErrors", "useSetFieldError"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "What's the right way to integrate a third-party masked-input component?",
-    "expected_answer": "Wrap the third-party component and inside it call `useField(name, rules)`. Bind `value` and listen to the third-party component's value-change event to call `setValue(newValue)`. This is the same recipe as `<CustomInput>` patterns and works for any input that emits a value-change event.",
-    "relevant_paths": ["examples/custom-inputs.mdx", "guide/composition-api/custom-inputs.mdx"],
-    "relevant_apis": ["useField"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I disable validation on a field temporarily?",
-    "expected_answer": "Pass an empty rules expression (`''` or `null`) for that field — the field still tracks state but no validation runs. Re-enable by setting the rules back. For ad-hoc disabling, use the `validateOnInput`/`validateOnChange` flags or call `validateOnValueUpdate: false` to skip re-runs on programmatic value changes.",
-    "relevant_paths": ["api/use-field.mdx"],
-    "relevant_apis": ["useField"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I get the basics tutorial setup working?",
-    "expected_answer": "The basics tutorial walks through installing `vee-validate`, registering rules, building a sign-up form with `<Form>` and `<Field>`, displaying errors with `<ErrorMessage>`, and handling submission. Follow `tutorials/basics` end-to-end before reaching for the composition API.",
-    "relevant_paths": ["tutorials/basics.mdx"],
-    "relevant_apis": ["Form", "Field", "ErrorMessage"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "vee-validate"
-  },
-  {
-    "question": "How do I migrate from raw HTML form handling to vee-validate?",
-    "expected_answer": "Replace `<form @submit.prevent=\"submit\">` with `<Form @submit=\"submit\">` and each `<input v-model=\"x\">` with `<Field name=\"x\" :rules=\"...\">`. Move scattered ref-based error tracking into a single `validationSchema`. The overview page lays out the conceptual mapping.",
-    "relevant_paths": ["guide/overview.mdx"],
-    "relevant_apis": ["Form", "Field", "useForm"],
+    "expected_answer": "You can use the `defineRule` API to register global rules, which is cleaner than the legacy approach of passing rules as strings or objects to the provider.",
+    "relevant_paths": [
+      "/api/define-rule.md"
+    ],
+    "relevant_apis": [
+      "defineRule"
+    ],
+    "question": "How do I modernize my rule definitions during a migration to VeeValidate 4?",
     "intent": "migration",
-    "difficulty": "easy",
+    "difficulty": "hard",
     "framework": "vee-validate"
   },
   {
-    "question": "How do I render errors as a list under the form (not inline per-field)?",
-    "expected_answer": "Use `useFormErrors()` (or `<Form v-slot=\"{ errors }\">`) and render `<li v-for=\"(msg, name) in errors\">`. The object is keyed by field name; iterate to display a summary list at the top or bottom of the form.",
-    "relevant_paths": ["api/composition-helpers.mdx", "api/form.mdx"],
-    "relevant_apis": ["useFormErrors", "Form"],
-    "intent": "how_to",
-    "difficulty": "easy",
+    "question": "How does the composable-first design improve integration compared to the legacy component-based design?",
+    "intent": "comparison",
+    "difficulty": "hard",
+    "relevant_apis": [
+      "useForm",
+      "useField"
+    ],
+    "expected_answer": "The new API encourages the use of composables, which makes integration with other Vue 3 features like `computed` or `watch` much smoother than the previous component-wrapping approach.",
+    "relevant_paths": [
+      "/api/use-form.md",
+      "/api/use-field.md"
+    ],
     "framework": "vee-validate"
   },
   {
-    "question": "How do I tell vee-validate to validate an entire form once on submit only?",
-    "expected_answer": "Set the field-level options `validateOnInput: false, validateOnChange: false, validateOnBlur: false, validateOnModelUpdate: false` (or globally via `configure(...)`). Validation then only runs when the user submits the form, since `handleSubmit` always validates regardless of those flags.",
-    "relevant_paths": ["api/configuration.mdx", "examples/dynamic-validation-triggers.mdx"],
-    "relevant_apis": ["configure", "useField", "useForm"],
-    "intent": "how_to",
+    "expected_answer": "You can use the `errors` object which is a reactive map of field names to error messages.",
+    "relevant_paths": [
+      "/api/use-form.md"
+    ],
+    "relevant_apis": [
+      "useForm"
+    ],
+    "question": "Why is my form showing an error even though I think I filled it out correctly? What should I check?",
+    "intent": "debugging",
     "difficulty": "medium",
+    "framework": "vee-validate"
+  },
+  {
+    "relevant_apis": [
+      "Field",
+      "useForm"
+    ],
+    "relevant_paths": [
+      "/api/field.md",
+      "/api/use-form.md"
+    ],
+    "expected_answer": "This usually happens if the field is not correctly linked to the `useForm` context. Check if the name prop in `Field` matches the expected key.",
+    "intent": "debugging",
+    "difficulty": "medium",
+    "question": "My input field isn't triggering validation at all. What is the most common reason for this?",
+    "framework": "vee-validate"
+  },
+  {
+    "intent": "debugging",
+    "difficulty": "medium",
+    "question": "I'm getting a 'rule not found' error. How do I debug this?",
+    "relevant_apis": [
+      "defineRule",
+      "Field"
+    ],
+    "relevant_paths": [
+      "/api/define-rule.md",
+      "/api/field.md"
+    ],
+    "expected_answer": "Ensure you have registered the rule globally using `defineRule` or passed it as a prop to the `Field` component.",
+    "framework": "vee-validate"
+  },
+  {
+    "question": "Why does my validation feel sluggish or unresponsive?",
+    "intent": "debugging",
+    "difficulty": "medium",
+    "expected_answer": "Check if you are using the correct `mode` configuration, such as 'eager' or 'aggressive', which determines when validation runs.",
+    "relevant_paths": [
+      "/api/configure.md"
+    ],
+    "relevant_apis": [
+      "configure"
+    ],
+    "framework": "vee-validate"
+  },
+  {
+    "expected_answer": "This usually occurs if you are updating values outside of the `setFieldValue` method, which skips the internal reactivity system.",
+    "relevant_paths": [
+      "/api/use-form.md"
+    ],
+    "relevant_apis": [
+      "useForm"
+    ],
+    "question": "My form values aren't updating in the state manager. What am I doing wrong?",
+    "intent": "debugging",
+    "difficulty": "medium",
+    "framework": "vee-validate"
+  },
+  {
+    "relevant_paths": [
+      "/api/use-form.md"
+    ],
+    "expected_answer": "VeeValidate uses standard Vue 3 reactivity. If you are using non-reactive data objects, the form state will not update as expected. Ensure your initial values are reactive.",
+    "relevant_apis": [
+      "useForm"
+    ],
+    "intent": "debugging",
+    "difficulty": "hard",
+    "question": "I'm having trouble with form synchronization. Could my use of non-reactive objects be the cause?",
+    "framework": "vee-validate"
+  },
+  {
+    "intent": "debugging",
+    "difficulty": "hard",
+    "question": "Why is my custom input component failing to validate properly when wrapped in a Field component?",
+    "relevant_paths": [
+      "/api/field.md",
+      "/api/use-field.md"
+    ],
+    "expected_answer": "If you use `v-model` on a custom input, ensure it interacts correctly with the `Field` component's `value` prop and `input` event, or use the `useField` composable to manually bridge the gap.",
+    "relevant_apis": [
+      "Field",
+      "useField"
+    ],
+    "framework": "vee-validate"
+  },
+  {
+    "question": "My custom rule is returning a result, but the validation isn't working as expected. What should I check?",
+    "intent": "debugging",
+    "difficulty": "hard",
+    "expected_answer": "It usually means the validation function is not returning the correct structure. Ensure your rule returns a boolean or a string message.",
+    "relevant_paths": [
+      "/api/define-rule.md"
+    ],
+    "relevant_apis": [
+      "defineRule"
+    ],
+    "framework": "vee-validate"
+  },
+  {
+    "expected_answer": "You may need to manually trigger `validate()` after the data arrives if the form was initialized before the data was ready.",
+    "relevant_paths": [
+      "/api/use-form.md"
+    ],
+    "relevant_apis": [
+      "useForm"
+    ],
+    "question": "Why are my initial values not being validated on load?",
+    "intent": "debugging",
+    "difficulty": "hard",
+    "framework": "vee-validate"
+  },
+  {
+    "expected_answer": "Check if there are multiple fields with the same name, which can lead to state collisions in `useForm`.",
+    "relevant_paths": [
+      "/api/use-form.md",
+      "/api/field.md"
+    ],
+    "relevant_apis": [
+      "useForm",
+      "Field"
+    ],
+    "question": "Why are my error messages appearing on the wrong fields?",
+    "intent": "debugging",
+    "difficulty": "hard",
     "framework": "vee-validate"
   }
 ]

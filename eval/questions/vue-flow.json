@@ -1,443 +1,675 @@
 [
   {
-    "question": "How do I install Vue Flow and set up a basic flow?",
-    "expected_answer": "Install with `npm install @vue-flow/core`. Import the component and styles: `import { VueFlow } from '@vue-flow/core'` and `import '@vue-flow/core/dist/style.css'` plus `'@vue-flow/core/dist/theme-default.css'`. Render `<VueFlow :nodes=\"nodes\" :edges=\"edges\" />` with reactive `nodes` and `edges` arrays.",
-    "relevant_paths": ["guide/getting-started.md", "guide/index.md"],
-    "relevant_apis": ["VueFlow", "@vue-flow/core"],
-    "intent": "how_to",
+    "relevant_apis": [
+      "style",
+      "class"
+    ],
+    "relevant_paths": [
+      "guide/theming.md"
+    ],
+    "difficulty": "easy",
+    "question": "How do I apply custom styling to a specific node in my graph?",
+    "intent": "howto",
+    "expected_answer": "You can set a custom class name on your node and use CSS to target that class. You can also pass a style object to the style prop of the node definition. Alternatively, you can use CSS variables like --vf-node-bg to override theme defaults.",
+    "framework": "vue-flow"
+  },
+  {
+    "relevant_paths": [
+      "guide/components/minimap.md"
+    ],
+    "relevant_apis": [
+      "MiniMap"
+    ],
+    "difficulty": "easy",
+    "intent": "api_lookup",
+    "question": "Which props do I need to add to the MiniMap component to enable dragging and zooming on it?",
+    "expected_answer": "The MiniMap component can be made interactive by adding the pannable and zoomable props to it.",
+    "framework": "vue-flow"
+  },
+  {
+    "relevant_apis": [
+      "Controls"
+    ],
+    "relevant_paths": [
+      "guide/components/controls.md"
+    ],
+    "difficulty": "easy",
+    "question": "What is the default value for the showFitView prop on the Controls component?",
+    "intent": "api_lookup",
+    "expected_answer": "The default value for the fitViewOn the Controls component is true.",
+    "framework": "vue-flow"
+  },
+  {
+    "expected_answer": "The default edge type is a bezier curve.",
+    "intent": "conceptual",
+    "question": "What is the default type of edge used by Vue Flow?",
+    "difficulty": "easy",
+    "relevant_paths": [
+      "guide/edge.md"
+    ],
+    "relevant_apis": [
+      "DefaultEdgeTypes"
+    ],
+    "framework": "vue-flow"
+  },
+  {
+    "intent": "howto",
+    "question": "How can I listen for click events on a node?",
+    "expected_answer": "You can use the onNodeClick event handler on the VueFlow component or the onNodeClick composable from useVueFlow.",
+    "relevant_paths": [
+      "guide/node.md"
+    ],
+    "relevant_apis": [
+      "onNodeClick",
+      "useVueFlow"
+    ],
     "difficulty": "easy",
     "framework": "vue-flow"
   },
   {
-    "question": "What's the data shape of a node and an edge?",
-    "expected_answer": "A node is `{ id, position: { x, y }, data?, type?, ... }`. An edge is `{ id, source, target, sourceHandle?, targetHandle?, type?, label?, data?, ... }`. Both are JSON-serializable. The `id` must be unique within its array. The `source` and `target` of an edge reference node ids.",
-    "relevant_paths": ["guide/node.md", "guide/edge.md"],
-    "relevant_apis": ["Node", "Edge"],
+    "question": "What pattern variants does the Background component support?",
+    "intent": "api_lookup",
+    "expected_answer": "The Background component supports 'dots' and 'lines' variants.",
+    "relevant_apis": [
+      "Background"
+    ],
+    "relevant_paths": [
+      "guide/components/background.md"
+    ],
+    "difficulty": "easy",
+    "framework": "vue-flow"
+  },
+  {
+    "intent": "howto",
+    "question": "How do I keep my external nodes array in sync with the Vue Flow graph?",
+    "expected_answer": "You can use the v-model:nodes directive to bind your own nodes array to the internal state.",
+    "relevant_paths": [
+      "guide/node.md"
+    ],
+    "relevant_apis": [
+      "v-model:nodes"
+    ],
+    "difficulty": "easy",
+    "framework": "vue-flow"
+  },
+  {
+    "expected_answer": "The default export from @vue-flow/core is the VueFlow component.",
+    "question": "What is the main component exported by @vue-flow/core?",
     "intent": "api_lookup",
     "difficulty": "easy",
+    "relevant_apis": [
+      "VueFlow"
+    ],
+    "relevant_paths": [
+      "guide/getting-started.md"
+    ],
     "framework": "vue-flow"
   },
   {
-    "question": "How do I create a custom node type?",
-    "expected_answer": "Build a Vue component, then register it in the `:node-types` prop on `<VueFlow>`: `:node-types=\"{ custom: MyNode }\"`. Set `type: 'custom'` on each node that should use it. Inside the component, receive `data`, `id`, and the rest of the node props, and render `<Handle>` connection points where users can drag edges.",
-    "relevant_paths": ["guide/node.md"],
-    "relevant_apis": ["VueFlow", "Handle", "node"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vue-flow"
-  },
-  {
-    "question": "How do I create a custom edge type?",
-    "expected_answer": "Build a Vue component that receives `EdgeProps` (`id`, `source`, `target`, `sourceX`, `sourceY`, `targetX`, `targetY`, `data`, ...). Use `<BaseEdge>` plus a path helper (`getBezierPath`, `getStraightPath`, `getSmoothStepPath`) to draw the line, optionally overlay an `<EdgeLabelRenderer>` for HTML labels. Register via the `:edge-types` prop.",
-    "relevant_paths": ["guide/edge.md"],
-    "relevant_apis": ["BaseEdge", "EdgeProps", "EdgeLabelRenderer", "getBezierPath"],
-    "intent": "how_to",
-    "difficulty": "hard",
-    "framework": "vue-flow"
-  },
-  {
-    "question": "What does the Handle component do?",
-    "expected_answer": "`<Handle>` marks a connection point on a node. Users drag from a source `Handle` (`type=\"source\"`) to a target `Handle` (`type=\"target\"`) on another node to create an edge. Pass `position` (Top/Right/Bottom/Left) and an `id` if the node has multiple handles of the same type.",
-    "relevant_paths": ["guide/handle.md"],
-    "relevant_apis": ["Handle", "Position"],
     "intent": "api_lookup",
+    "question": "How do I get the current node's ID inside a custom node component?",
+    "expected_answer": "You can use the useNodeId composable inside your custom node component to access its unique ID.",
+    "relevant_paths": [
+      "guide/composables.md"
+    ],
+    "relevant_apis": [
+      "useNodeId"
+    ],
     "difficulty": "easy",
     "framework": "vue-flow"
   },
   {
-    "question": "How do I read or modify the flow state from outside the component tree?",
-    "expected_answer": "Pass `:id=\"flowId\"` to `<VueFlow>` and call `useVueFlow({ id: flowId })` (or just `useVueFlow()` from a child component). It returns refs and helpers — `nodes`, `edges`, `viewport`, `addNodes`, `addEdges`, `removeNodes`, `setNodes`, `setEdges`, `fitView`, `project`, `screenToFlowCoordinate`, etc.",
-    "relevant_paths": ["guide/composables.md", "guide/vue-flow/state.md"],
-    "relevant_apis": ["useVueFlow"],
     "intent": "api_lookup",
-    "difficulty": "medium",
-    "framework": "vue-flow"
-  },
-  {
-    "question": "How do I add a Background grid to my flow?",
-    "expected_answer": "Install the addon (`npm install @vue-flow/background`), import the component (`import { Background } from '@vue-flow/background'`) and its CSS (`'@vue-flow/background/dist/style.css'`), then render `<Background>` inside `<VueFlow>`. Configure `pattern-color`, `gap`, `size`, and `variant` (`dots` / `lines`).",
-    "relevant_paths": ["guide/components/background.md"],
-    "relevant_apis": ["Background", "BackgroundVariant", "@vue-flow/background"],
-    "intent": "how_to",
+    "question": "What is the default value for the snapGrid configuration?",
+    "expected_answer": "The default value for the snapGrid prop is [15, 15].",
+    "relevant_paths": [
+      "guide/vue-flow/config.md"
+    ],
+    "relevant_apis": [
+      "snapGrid"
+    ],
     "difficulty": "easy",
     "framework": "vue-flow"
   },
   {
-    "question": "How do I add zoom/fit/pan controls?",
-    "expected_answer": "Install `@vue-flow/controls`, import `Controls` and its CSS, render `<Controls />` inside `<VueFlow>`. Provides zoom-in / zoom-out / fit-view / lock buttons. Add `<ControlButton>` for custom controls. Configure `position` (PanelPosition value).",
-    "relevant_paths": ["guide/components/controls.md", "guide/components/control-button.md"],
-    "relevant_apis": ["Controls", "ControlButton", "@vue-flow/controls"],
-    "intent": "how_to",
-    "difficulty": "easy",
+    "relevant_apis": [
+      "updateNodeInternals",
+      "useVueFlow"
+    ],
+    "relevant_paths": [
+      "guide/handle.md"
+    ],
+    "difficulty": "medium",
+    "question": "I am adding handles to my node dynamically, but the edges are not connecting correctly. What should I do?",
+    "intent": "howto",
+    "expected_answer": "You should use the updateNodeInternals method from the useVueFlow composable. This forces Vue Flow to re-calculate handle positions, which is necessary when they are added or modified dynamically.",
     "framework": "vue-flow"
   },
   {
-    "question": "How do I show a minimap?",
-    "expected_answer": "Install `@vue-flow/minimap`, import `MiniMap` and its CSS, render `<MiniMap>` inside `<VueFlow>`. Customize node rendering with `:node-class-name`, `:node-color`, `:mask-color`, and override per-node visuals via the `<MiniMapNode>` slot.",
-    "relevant_paths": ["guide/components/minimap.md", "guide/components/minimap-node.md"],
-    "relevant_apis": ["MiniMap", "MiniMapNode", "@vue-flow/minimap"],
-    "intent": "how_to",
-    "difficulty": "easy",
+    "expected_answer": "You can set the ConnectionMode.Strict on the VueFlow component to restrict connections to only be made between source and target type handles.",
+    "question": "How can I prevent users from connecting two source handles together?",
+    "intent": "howto",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "ConnectionMode",
+      "VueFlow"
+    ],
+    "relevant_paths": [
+      "guide/handle.md"
+    ],
     "framework": "vue-flow"
   },
   {
-    "question": "How do I add a toolbar that appears next to a selected node?",
-    "expected_answer": "Install `@vue-flow/node-toolbar`, render `<NodeToolbar>` inside your custom node component. Pass `:node-id=\"id\"` (the node's own id) and optional `position`, `is-visible`. The toolbar floats relative to the node and shows when the node is selected by default.",
-    "relevant_paths": ["guide/components/node-toolbar.md"],
-    "relevant_apis": ["NodeToolbar", "@vue-flow/node-toolbar"],
-    "intent": "how_to",
+    "difficulty": "medium",
+    "relevant_paths": [
+      "guide/handle.md"
+    ],
+    "relevant_apis": [
+      "Handle",
+      "HandleConnectableFunc"
+    ],
+    "expected_answer": "You can pass a function to the connectable prop on the Handle component. This function receives the node and connectedEdges as arguments and should return a boolean indicating if the handle is still connectable.",
+    "intent": "howto",
+    "question": "How do I limit a handle to a maximum of 3 connections?",
+    "framework": "vue-flow"
+  },
+  {
+    "expected_answer": "The applyDefault prop should be set to false on the VueFlow component. Then you can use the onNodesChange event to manually call applyNodeChanges with your validated changes.",
+    "question": "How do I implement a custom confirmation dialog before deleting a node?",
+    "intent": "howto",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "applyDefault",
+      "onNodesChange",
+      "applyNodeChanges"
+    ],
+    "relevant_paths": [
+      "guide/controlled-flow.md"
+    ],
+    "framework": "vue-flow"
+  },
+  {
+    "difficulty": "medium",
+    "relevant_apis": [
+      "updateNodeData",
+      "useVueFlow"
+    ],
+    "relevant_paths": [
+      "guide/node.md"
+    ],
+    "expected_answer": "You can use the updateNodeData method from the useVueFlow composable to update a node's data object reactively. Alternatively, since nodes are reactive, you can directly mutate a node property if you have access to the node object.",
+    "question": "What is the best way to update a node's data reactively?",
+    "intent": "howto",
+    "framework": "vue-flow"
+  },
+  {
+    "intent": "conceptual",
+    "question": "Does Vue Flow provide an automatic node layouting system, and if not, how can I implement one?",
+    "expected_answer": "Vue Flow does not have a built-in layout system, but you can use third-party libraries like dagre to calculate positions and then update the nodes using the addNodes or updateNode methods.",
+    "relevant_paths": [
+      "examples/layout/simple.md"
+    ],
+    "relevant_apis": [
+      "addNodes",
+      "updateNode"
+    ],
     "difficulty": "medium",
     "framework": "vue-flow"
   },
   {
-    "question": "How do I make a node resizable?",
-    "expected_answer": "Install `@vue-flow/node-resizer`, render `<NodeResizer>` inside the custom node component. Pass props like `:min-width`, `:min-height`, `:is-visible`, `:keep-aspect-ratio`. For a single edge handle, use `<NodeResizeControl>`.",
-    "relevant_paths": ["guide/components/node-resizer.md"],
-    "relevant_apis": ["NodeResizer", "NodeResizeControl", "@vue-flow/node-resizer"],
-    "intent": "how_to",
+    "expected_answer": "You can use the noWheelClassName prop, which defaults to 'nowheel'. Any element with this class will not trigger zoom or pan actions when scrolled.",
+    "intent": "howto",
+    "question": "How do I allow scrolling inside a custom node without triggering the graph's zoom behavior?",
     "difficulty": "medium",
+    "relevant_paths": [
+      "guide/node.md"
+    ],
+    "relevant_apis": [
+      "noWheelClassName"
+    ],
     "framework": "vue-flow"
   },
   {
-    "question": "What's the difference between controlled and uncontrolled flow?",
-    "expected_answer": "Uncontrolled: pass initial `nodes`/`edges`, Vue Flow owns subsequent state internally. Controlled: pair `useNodesState` and `useEdgesState` with two-way binding (or call `applyNodeChanges`/`applyEdgeChanges` from `@vue-flow/core` against your own refs) so your store is the source of truth. Use controlled when persisting to a backend, syncing to a Pinia store, or driving from external state.",
-    "relevant_paths": ["guide/controlled-flow.md"],
-    "relevant_apis": ["useNodesState", "useEdgesState", "useVueFlow"],
+    "difficulty": "medium",
+    "relevant_apis": [
+      "useHandleConnections",
+      "useNodeConnections"
+    ],
+    "relevant_paths": [
+      "guide/composables.md"
+    ],
+    "expected_answer": "The difference is that useHandleConnections returns connections for a specific Handle, whereas useNodeConnections returns all connections for a Node, regardless of which handle they are attached to.",
+    "question": "What is the difference between useHandleConnections and useNodeConnections?",
     "intent": "comparison",
+    "framework": "vue-flow"
+  },
+  {
+    "question": "How do I register multiple custom edge types using an object?",
+    "intent": "howto",
+    "expected_answer": "You can pass an object to the edgeTypes prop of the VueFlow component, where keys are type names and values are the component definitions marked with markRaw to prevent unnecessary reactivity.",
+    "relevant_apis": [
+      "edgeTypes",
+      "markRaw"
+    ],
+    "relevant_paths": [
+      "guide/edge.md"
+    ],
     "difficulty": "medium",
     "framework": "vue-flow"
   },
   {
-    "question": "How do I implement drag-and-drop to add nodes from a sidebar?",
-    "expected_answer": "On the sidebar item, set `draggable=\"true\"` and `@dragstart=\"event => event.dataTransfer.setData('application/vueflow', nodeType)\"`. On the `<VueFlow>` wrapper, listen for `@drop` and call `useVueFlow().screenToFlowCoordinate({ x: event.clientX, y: event.clientY })` to get the drop position, then `addNodes([{ id, position, type, data }])`. The dnd example shows the full pattern.",
-    "relevant_paths": ["examples/dnd.md"],
-    "relevant_apis": ["useVueFlow"],
-    "intent": "how_to",
+    "intent": "api_lookup",
+    "question": "How do I set the initial zoom and position of the graph when it mounts?",
+    "expected_answer": "The default viewport is { zoom: 1, position: { x: 0, y: 0 } }. You can override this by passing the default-viewport prop to the VueFlow component.",
+    "relevant_paths": [
+      "guide/vue-flow/config.md"
+    ],
+    "relevant_apis": [
+      "default-viewport"
+    ],
+    "difficulty": "medium",
+    "framework": "vue-flow"
+  },
+  {
+    "relevant_paths": [
+      "guide/composables.md"
+    ],
+    "relevant_apis": [
+      "useNodesData",
+      "useHandleConnections"
+    ],
     "difficulty": "hard",
+    "intent": "howto",
+    "question": "How can I efficiently fetch data from multiple connected nodes and filter them by type?",
+    "expected_answer": "You can use the useNodesData composable to retrieve data for specific node IDs, and you can pass a guard function as the second argument to narrow the returned type based on your criteria.",
     "framework": "vue-flow"
   },
   {
-    "question": "How do I validate connections (e.g. only allow edges between specific node types)?",
-    "expected_answer": "Pass `:is-valid-connection` to `<VueFlow>` (or to a specific `<Handle>`). It receives the `Connection` object and returns boolean. Or use `<Handle>`'s `is-valid-connection` prop for handle-level rules. The validation example demonstrates both patterns.",
-    "relevant_paths": ["examples/edges/validation.md", "guide/handle.md"],
-    "relevant_apis": ["Connection", "Handle"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vue-flow"
-  },
-  {
-    "question": "How do I theme Vue Flow with custom CSS?",
-    "expected_answer": "Vue Flow exposes CSS custom properties (`--vf-node-color`, `--vf-edge-color`, `--vf-handle-color`, ...) — override them in your stylesheet to restyle. For dark mode, scope overrides under a `.dark` parent. Or fork the `theme-default.css` and import your own file instead.",
-    "relevant_paths": ["guide/theming.md"],
-    "relevant_apis": ["theming"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vue-flow"
-  },
-  {
-    "question": "How do I save and restore a flow?",
-    "expected_answer": "Call `useVueFlow().toObject()` to serialize the current state to a `FlowExportObject` (`{ nodes, edges, viewport }`). Stash that as JSON. To restore, parse the JSON and call `setNodes(...)`, `setEdges(...)`, and `setViewport(...)` from `useVueFlow()`.",
-    "relevant_paths": ["guide/composables.md"],
-    "relevant_apis": ["useVueFlow", "FlowExportObject"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vue-flow"
-  },
-  {
-    "question": "How do I auto-layout nodes with Dagre or ELK?",
-    "expected_answer": "Vue Flow doesn't ship a layout algorithm — use `@dagrejs/dagre` or `elkjs` directly. The layout examples (simple, animated) show feeding nodes/edges into Dagre, reading back computed positions, and writing them back via `setNodes` from `useVueFlow`. Use `useNodesInitialized` to wait until DOM measurements are available before laying out.",
-    "relevant_paths": ["examples/layout/simple.md", "examples/layout/animated.md"],
-    "relevant_apis": ["useVueFlow", "useNodesInitialized"],
-    "intent": "how_to",
     "difficulty": "hard",
+    "relevant_paths": [
+      "guide/edge.md"
+    ],
+    "relevant_apis": [
+      "onEdgeUpdate",
+      "updateEdge"
+    ],
+    "expected_answer": "You should use the onEdgeUpdate event handler, either on the VueFlow component or via the useVueFlow composable, to listen for the update start, update, and end events. Then use the updateEdge method from useVueFlow to apply the changes.",
+    "intent": "howto",
+    "question": "How can I implement interactive edge updates where I can drag an edge handle to a different target node?",
     "framework": "vue-flow"
   },
   {
-    "question": "How do I listen to node and edge events?",
-    "expected_answer": "Bind `@node-click`, `@node-drag-stop`, `@node-double-click`, `@edge-click`, `@connect`, `@selection-change`, `@viewport-change`, etc. on `<VueFlow>`. The `@connect` event fires when the user drags a new edge into existence and gives you the new `Connection` object — call `addEdges` to commit it.",
-    "relevant_paths": ["guide/vue-flow/events.md"],
-    "relevant_apis": ["events", "Connection", "useVueFlow"],
-    "intent": "api_lookup",
-    "difficulty": "medium",
-    "framework": "vue-flow"
-  },
-  {
-    "question": "How do I render edge labels with custom HTML?",
-    "expected_answer": "Inside a custom edge component, render `<EdgeLabelRenderer>` and inside it any HTML. Position it absolutely using a CSS transform that places it at the midpoint returned by `getBezierPath` (or your chosen path helper). The label is rendered in a portal so it sits above the SVG.",
-    "relevant_paths": ["guide/edge.md"],
-    "relevant_apis": ["EdgeLabelRenderer", "BaseEdge", "getBezierPath"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vue-flow"
-  },
-  {
-    "question": "How do I add arrow markers on edges?",
-    "expected_answer": "Set `markerEnd` (or `markerStart`) on the edge: `markerEnd: { type: MarkerType.ArrowClosed, color: '#fff' }`. The `MarkerType` enum from `@vue-flow/core` exposes `Arrow` and `ArrowClosed`. To use the same marker on every edge, pass `:default-edge-options=\"{ markerEnd: ... }\"` to `<VueFlow>`.",
-    "relevant_paths": ["examples/edges/markers.md"],
-    "relevant_apis": ["MarkerType", "Edge"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "vue-flow"
-  },
-  {
-    "question": "How do I create a connection line that only allows connections to nodes within a radius?",
-    "expected_answer": "Set `:connection-radius=\"50\"` on `<VueFlow>` to limit connections by distance to the nearest handle. Or implement custom logic via `is-valid-connection` that checks distance. The connection-radius example shows the radius-only pattern.",
-    "relevant_paths": ["examples/edges/connection-radius.md"],
-    "relevant_apis": ["VueFlow", "Connection"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vue-flow"
-  },
-  {
-    "question": "How do I draw a self-loop (an edge from a node to itself)?",
-    "expected_answer": "Set both `source` and `target` of the edge to the same node id, with different `sourceHandle` and `targetHandle` ids. Vue Flow's path helpers route the curve around the node; the loopback example shows a custom edge component using `getBezierPath` with offset control points to make the loop visible.",
-    "relevant_paths": ["examples/edges/loopback.md"],
-    "relevant_apis": ["Edge", "getBezierPath"],
-    "intent": "how_to",
+    "expected_answer": "You can use the useHandle composable within your custom node component to manually bind pointer-down and click handlers to the element you want to act as a handle, giving you full control over the DOM structure.",
+    "question": "How can I create a completely custom handle UI that doesn't use the default Handle component?",
+    "intent": "howto",
     "difficulty": "hard",
+    "relevant_apis": [
+      "useHandle"
+    ],
+    "relevant_paths": [
+      "guide/composables.md"
+    ],
     "framework": "vue-flow"
   },
   {
-    "question": "How do I make an edge updatable (drag its endpoint to another node)?",
-    "expected_answer": "Set `:updatable=\"true\"` on an edge or `:default-edge-options=\"{ updatable: true }\"` globally. Then handle `@edge-update` to validate and `@edge-update-end` to commit. Drag the endpoint to a new handle; the events fire when the user releases.",
-    "relevant_paths": ["examples/edges/updatable-edge.md"],
-    "relevant_apis": ["Edge", "useVueFlow"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vue-flow"
-  },
-  {
-    "question": "How do I customize the connection line that appears while the user drags a new edge?",
-    "expected_answer": "Pass `:connection-line-type` (a `ConnectionLineType` enum value) to `<VueFlow>`, or supply a fully custom Vue component via the `connection-line` slot. The slot receives `sourceX`, `sourceY`, `targetX`, `targetY` plus `connectionLineType` and `connectionLineStyle` so you can draw whatever you like.",
-    "relevant_paths": ["examples/edges/connection-line.md"],
-    "relevant_apis": ["ConnectionLineType"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vue-flow"
-  },
-  {
-    "question": "How do I make some nodes initially hidden and toggle them?",
-    "expected_answer": "Set `hidden: true` on a node — it stays in the data array but isn't rendered. Toggle it by mutating the node object (with controlled state) or via `useVueFlow().updateNode(id, { hidden: false })`. The hidden example shows toggle UI.",
-    "relevant_paths": ["examples/hidden.md"],
-    "relevant_apis": ["useVueFlow", "node"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "vue-flow"
-  },
-  {
-    "question": "How do I implement a confirm dialog before deleting a node or edge?",
-    "expected_answer": "Listen to `@nodes-delete` (or `@edges-delete`) on `<VueFlow>` and `event.preventDefault()` to cancel the default deletion. Show your dialog; on confirm, call `removeNodes(ids)` (or `removeEdges`) from `useVueFlow`. The confirm example walks through the pattern.",
-    "relevant_paths": ["examples/confirm.md"],
-    "relevant_apis": ["useVueFlow", "events"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vue-flow"
-  },
-  {
-    "question": "How do I draw helper / alignment lines while dragging a node?",
-    "expected_answer": "The helper-lines example documents the pattern: listen to `@node-drag` to get the current position, compute alignment with sibling nodes (matching x or y within a tolerance), and render absolute-positioned divs over the canvas as visual guides. Vue Flow doesn't ship this built in.",
-    "relevant_paths": ["examples/helper-lines.md"],
-    "relevant_apis": ["events", "useVueFlow"],
-    "intent": "how_to",
+    "relevant_paths": [
+      "guide/utils/instance.md"
+    ],
+    "relevant_apis": [
+      "onPaneReady",
+      "fitView"
+    ],
     "difficulty": "hard",
+    "intent": "howto",
+    "question": "How do I ensure the graph automatically fits to view once it has finished loading?",
+    "expected_answer": "You can use the onPaneReady event to get access to the VueFlow instance, then call the fitView method on that instance. This ensures the graph is fitted after the viewport is ready.",
     "framework": "vue-flow"
   },
   {
-    "question": "How do I disable certain interactions (panning, zooming, dragging)?",
-    "expected_answer": "Pass props on `<VueFlow>`: `:pan-on-drag=\"false\"`, `:zoom-on-scroll=\"false\"`, `:zoom-on-pinch=\"false\"`, `:nodes-draggable=\"false\"`, `:nodes-connectable=\"false\"`, `:elements-selectable=\"false\"`. The interaction example demonstrates each toggle.",
-    "relevant_paths": ["examples/interaction.md", "guide/vue-flow/config.md"],
-    "relevant_apis": ["VueFlow", "config"],
-    "intent": "how_to",
-    "difficulty": "easy",
+    "difficulty": "hard",
+    "relevant_apis": [
+      "addEdges",
+      "updateEdge"
+    ],
+    "relevant_paths": [
+      "guide/utils/graph.md"
+    ],
+    "expected_answer": "The old addEdge and updateEdge utilities are deprecated in favor of the addEdges and updateEdge methods available via the useVueFlow composable, which provide better integration with the Vue Flow store.",
+    "question": "Why are addEdge and updateEdge deprecated, and what should I use instead?",
+    "intent": "migration",
     "framework": "vue-flow"
   },
   {
-    "question": "How do I read a node's data and update it programmatically?",
-    "expected_answer": "Use `useNodesData([id1, id2])` to get a reactive array of node-data refs. To update a single node, call `useVueFlow().updateNodeData(id, { ...partial })` or `updateNode(id, { data: ... })`. For multiple, `setNodes(callback)` mutates by reference inside the function.",
-    "relevant_paths": ["guide/composables.md"],
-    "relevant_apis": ["useNodesData", "useVueFlow"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vue-flow"
-  },
-  {
-    "question": "How do I get the connections attached to a specific handle?",
-    "expected_answer": "Inside a custom node component, call `useHandleConnections({ id: handleId, type: 'source' | 'target' })`. It returns a reactive array of edges connected to that handle. To get all connections for the node regardless of handle, use `useNodeConnections({ id: nodeId })`.",
-    "relevant_paths": ["guide/composables.md"],
-    "relevant_apis": ["useHandleConnections", "useNodeConnections"],
+    "relevant_paths": [
+      "guide/utils/graph.md"
+    ],
+    "relevant_apis": [
+      "getNodesInside"
+    ],
+    "difficulty": "hard",
     "intent": "api_lookup",
-    "difficulty": "medium",
+    "question": "How do I find all nodes that are currently within a specific area of the graph?",
+    "expected_answer": "You can use the getNodesInside utility to query for nodes within a specific rectangle, which is useful for implementing custom selection logic or drag-and-drop operations.",
     "framework": "vue-flow"
   },
   {
-    "question": "How do I wait until all nodes have measured their dimensions?",
-    "expected_answer": "Watch `useNodesInitialized()` — it returns `true` once Vue Flow has measured every node's DOM size (which it needs for layout / fit-view). Run `fitView()` or your auto-layout algorithm only after it flips true.",
-    "relevant_paths": ["guide/composables.md"],
-    "relevant_apis": ["useNodesInitialized", "useVueFlow"],
+    "expected_answer": "Vue Flow uses Provide/Inject to share the store. When you call useVueFlow, it creates a new store instance if none exists in the current tree. To use a specific instance in deep components, you can pass an ID to useVueFlow.",
+    "question": "How does Vue Flow handle state sharing across components, and how can I ensure I'm using the correct instance?",
+    "intent": "conceptual",
+    "difficulty": "hard",
+    "relevant_apis": [
+      "useVueFlow"
+    ],
+    "relevant_paths": [
+      "guide/vue-flow/state.md"
+    ],
+    "framework": "vue-flow"
+  },
+  {
+    "relevant_apis": [
+      "toObject"
+    ],
+    "relevant_paths": [
+      "guide/utils/instance.md"
+    ],
+    "difficulty": "hard",
+    "question": "How can I serialize the current state of my graph for saving?",
+    "intent": "howto",
+    "expected_answer": "You can use the toObject method from the VueFlow instance, which returns the elements, current position, and zoom level as a serializable object.",
+    "framework": "vue-flow"
+  },
+  {
+    "expected_answer": "You can use the EdgeLabelRenderer component in your custom edge to escape the SVG coordinate space and render HTML labels in a div, which makes styling and interactivity much easier.",
+    "intent": "howto",
+    "question": "How do I create an interactive HTML label for an edge?",
+    "difficulty": "hard",
+    "relevant_paths": [
+      "guide/getting-started.md"
+    ],
+    "relevant_apis": [
+      "EdgeLabelRenderer"
+    ],
+    "framework": "vue-flow"
+  },
+  {
+    "difficulty": "hard",
+    "relevant_paths": [
+      "guide/vue-flow/config.md"
+    ],
+    "relevant_apis": [
+      "node-extent",
+      "extent"
+    ],
+    "expected_answer": "The node extent defines the boundary within which a node can be dragged. You can set this globally on the VueFlow component or individually per node using the extent property.",
     "intent": "api_lookup",
+    "question": "How do I constrain a node so it cannot be dragged outside of its parent?",
+    "framework": "vue-flow"
+  },
+  {
+    "relevant_apis": [
+      "noWheelClassName"
+    ],
+    "relevant_paths": [
+      "guide/node.md"
+    ],
+    "difficulty": "extreme",
+    "question": "I have a list inside my box, but when I try to scroll the list, the whole screen zooms in and out. How do I fix this?",
+    "intent": "howto",
+    "expected_answer": "You should use the 'nowheel' class on the container that holds the list. This tells the system to ignore scroll movements on that specific part.",
+    "framework": "vue-flow"
+  },
+  {
+    "difficulty": "extreme",
+    "relevant_apis": [
+      "noDragClassName"
+    ],
+    "relevant_paths": [
+      "guide/node.md"
+    ],
+    "expected_answer": "You need to use the 'nodrag' class on the element you want to interact with. This prevents the system from thinking you are trying to move the whole box when you click that specific thing.",
+    "question": "I have a text box inside my block, but whenever I try to type in it, the whole block starts moving around. How do I stop that?",
+    "intent": "howto",
+    "framework": "vue-flow"
+  },
+  {
+    "expected_answer": "You need to ensure the wrapper around your graph has a set width and height, otherwise, it doesn't know how big the drawing area should be.",
+    "intent": "debugging",
+    "question": "My page is blank and nothing shows up. Why is it not rendering anything?",
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/troubleshooting.md"
+    ],
+    "relevant_apis": [
+      "MISSING_VIEWPORT_DIMENSIONS"
+    ],
+    "framework": "vue-flow"
+  },
+  {
+    "relevant_apis": [
+      "MiniMap"
+    ],
+    "relevant_paths": [
+      "guide/components/minimap.md"
+    ],
+    "difficulty": "extreme",
+    "question": "How do I make the little map in the corner clickable and scrollable so I can move around the main view?",
+    "intent": "howto",
+    "expected_answer": "You can set the 'pannable' and 'zoomable' properties on the little overview box in the corner.",
+    "framework": "vue-flow"
+  },
+  {
+    "expected_answer": "You should use the 'fitView' function when the graph is ready. You can hook into the 'paneReady' event to call this.",
+    "intent": "howto",
+    "question": "Everything is way off-screen when I load the page. How do I make it automatically zoom and center to show all my items?",
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/utils/instance.md"
+    ],
+    "relevant_apis": [
+      "fitView",
+      "onPaneReady"
+    ],
+    "framework": "vue-flow"
+  },
+  {
+    "question": "I want to ask the user if they are sure before they delete a block. How do I intercept that action?",
+    "intent": "howto",
+    "expected_answer": "You can use the 'applyDefault' option and set it to false. Then you can listen to changes and decide yourself what to do with them before applying them manually.",
+    "relevant_apis": [
+      "applyDefault",
+      "applyNodeChanges"
+    ],
+    "relevant_paths": [
+      "guide/controlled-flow.md"
+    ],
+    "difficulty": "extreme",
+    "framework": "vue-flow"
+  },
+  {
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/vue-flow/slots.md"
+    ],
+    "relevant_apis": [
+      "connection-line"
+    ],
+    "expected_answer": "You can add a component that includes the specific drawing lines to the designated slot for custom connections.",
+    "intent": "howto",
+    "question": "The line that connects two items looks boring. Can I make it look different, like maybe thicker or a different color?",
+    "framework": "vue-flow"
+  },
+  {
+    "difficulty": "extreme",
+    "relevant_paths": [
+      "guide/handle.md"
+    ],
+    "relevant_apis": [
+      "updateNodeInternals"
+    ],
+    "expected_answer": "You need to manually tell the system to refresh the information about the connections because they have changed. Use the 'updateNodeInternals' function.",
+    "intent": "debugging",
+    "question": "I am adding new connection points to my item on the fly, but the lines still connect to the old spots. Why isn't it updating?",
+    "framework": "vue-flow"
+  },
+  {
+    "question": "I'm getting a warning in my console about my custom component being made reactive. How do I stop that?",
+    "intent": "debugging",
+    "expected_answer": "You can use the 'markRaw' function from Vue when you define your custom types. This tells the system not to try and watch every little thing about the component.",
+    "relevant_apis": [
+      "markRaw"
+    ],
+    "relevant_paths": [
+      "guide/edge.md"
+    ],
+    "difficulty": "extreme",
+    "framework": "vue-flow"
+  },
+  {
+    "expected_answer": "You can just add a new item to the list of items you are currently showing. If you want to use a specific action to do it, use the 'addNodes' function.",
+    "question": "How do I add a new item to the screen with a button click?",
+    "intent": "howto",
+    "difficulty": "extreme",
+    "relevant_apis": [
+      "addNodes"
+    ],
+    "relevant_paths": [
+      "guide/node.md"
+    ],
+    "framework": "vue-flow"
+  },
+  {
     "difficulty": "medium",
-    "framework": "vue-flow"
-  },
-  {
-    "question": "How do I bind keyboard shortcuts (e.g. Delete to remove selected)?",
-    "expected_answer": "Pass `:delete-key-code` to `<VueFlow>` (default `Delete` / `Backspace`) — selected nodes and edges are removed when the key is pressed. For custom shortcuts, use `useKeyPress(['Meta', 'z'])` which returns a reactive boolean. Combine with selection-change events to drive your own actions.",
-    "relevant_paths": ["guide/composables.md"],
-    "relevant_apis": ["useKeyPress", "useVueFlow"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "vue-flow"
-  },
-  {
-    "question": "How do I convert screen coordinates to flow coordinates (and vice versa)?",
-    "expected_answer": "Use `useVueFlow().screenToFlowCoordinate({ x, y })` and `flowToScreenCoordinate({ x, y })`. The first is essential for drop handlers — they receive client coords but need flow coords. Or call the lower-level `project({ x, y })` for the same effect.",
-    "relevant_paths": ["guide/composables.md", "examples/dnd.md"],
-    "relevant_apis": ["useVueFlow"],
+    "relevant_paths": [
+      "guide/components/controls.md"
+    ],
+    "relevant_apis": [
+      "Controls"
+    ],
+    "expected_answer": "The fitViewParams prop allows you to configure padding, min/max zoom, and whether to include hidden nodes when the fit-view button is clicked.",
     "intent": "api_lookup",
-    "difficulty": "medium",
+    "question": "What configuration can I pass to the fit-view button in the Controls component?",
     "framework": "vue-flow"
   },
   {
-    "question": "What does the Panel component do?",
-    "expected_answer": "`<Panel>` floats UI inside the `<VueFlow>` canvas at one of the corners. Pass `position=\"top-left\" | \"top-right\" | \"bottom-left\" | \"bottom-right\" | \"top-center\" | \"bottom-center\"`. Useful for custom toolbars, legends, or status indicators that should track the canvas rather than the page.",
-    "relevant_paths": ["guide/vue-flow/slots.md"],
-    "relevant_apis": ["Panel", "PanelPosition"],
+    "relevant_apis": [
+      "MiniMapNode"
+    ],
+    "relevant_paths": [
+      "guide/components/minimap-node.md"
+    ],
+    "difficulty": "medium",
+    "question": "How can I add an icon to a node in the MiniMap?",
     "intent": "api_lookup",
-    "difficulty": "easy",
+    "expected_answer": "The MiniMapNode component allows you to override the default rendering of minimap nodes, which is useful for adding icons or custom tooltips to the minimap.",
     "framework": "vue-flow"
   },
   {
-    "question": "How do I detect and handle errors raised by Vue Flow?",
-    "expected_answer": "Listen to the `@error` event on `<VueFlow>` — the handler receives a `VueFlowError` whose `code` matches `ErrorCode` enum values. Use `isErrorOfType(err, ErrorCode.MISSING_VIEWPORT_DIMENSIONS)` to branch on specific errors. Common cases include missing parent dimensions and invalid node references.",
-    "relevant_paths": ["guide/troubleshooting.md"],
-    "relevant_apis": ["VueFlowError", "ErrorCode", "isErrorOfType"],
-    "intent": "api_lookup",
     "difficulty": "medium",
+    "relevant_apis": [
+      "NodeToolbar"
+    ],
+    "relevant_paths": [
+      "guide/components/node-toolbar.md"
+    ],
+    "expected_answer": "You can use the NodeToolbar component and bind its visibility to a property in the node's data. You can also control its position using the position prop.",
+    "question": "How do I show a toolbar only when a node is selected?",
+    "intent": "howto",
     "framework": "vue-flow"
   },
   {
-    "question": "Why does my flow render at zero size or look broken?",
-    "expected_answer": "`<VueFlow>` needs a parent with explicit width and height — its container does NOT auto-size to content. Wrap it in `<div style=\"height: 600px; width: 100%\">` (or whatever fits your layout). The troubleshooting page calls this out as the most common cause of broken flows.",
-    "relevant_paths": ["guide/troubleshooting.md"],
-    "relevant_apis": ["VueFlow"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "vue-flow"
-  },
-  {
-    "question": "How do I use multiple Vue Flow instances on the same page?",
-    "expected_answer": "Pass a unique `:id` prop to each `<VueFlow>`. When calling `useVueFlow` from outside, pass `{ id }` to scope to a specific instance. Without an `id`, all instances share state and updates leak across them.",
-    "relevant_paths": ["guide/vue-flow/state.md", "guide/composables.md"],
-    "relevant_apis": ["VueFlow", "useVueFlow"],
-    "intent": "how_to",
+    "relevant_paths": [
+      "guide/components/node-resizer.md"
+    ],
+    "relevant_apis": [
+      "NodeResizer"
+    ],
     "difficulty": "medium",
+    "intent": "howto",
+    "question": "How do I allow users to resize a node but keep it within a specific size range?",
+    "expected_answer": "You can use the NodeResizer component inside your custom node and configure it with minWidth and minHeight props to restrict resizing.",
     "framework": "vue-flow"
   },
   {
-    "question": "How do I pass slots into the Vue Flow component?",
-    "expected_answer": "Vue Flow exposes named slots: `default` (renders inside the canvas, for `<Background>`/`<Controls>`/`<MiniMap>`/`<Panel>` and custom overlays), `connection-line`, `node` and `edge` slots for full custom rendering, `node-{type}` for per-type overrides. The slots page lists every slot and its scope.",
-    "relevant_paths": ["guide/vue-flow/slots.md"],
-    "relevant_apis": ["slots", "VueFlow"],
-    "intent": "api_lookup",
     "difficulty": "medium",
-    "framework": "vue-flow"
-  },
-  {
-    "question": "What configuration props does <VueFlow> accept?",
-    "expected_answer": "The `<VueFlow>` config props cover viewport (`fit-view-on-init`, `default-viewport`, `min-zoom`, `max-zoom`), interaction (`pan-on-drag`, `zoom-on-scroll`, `nodes-draggable`, `selection-mode`), connection (`connection-mode`, `connect-on-click`, `connection-radius`), behavior (`only-render-visible-elements`, `auto-pan-on-connect`, `delete-key-code`). The config page documents every prop.",
-    "relevant_paths": ["guide/vue-flow/config.md"],
-    "relevant_apis": ["VueFlow", "config"],
-    "intent": "api_lookup",
-    "difficulty": "medium",
-    "framework": "vue-flow"
-  },
-  {
-    "question": "How do I switch between strict and loose connection modes?",
-    "expected_answer": "Pass `:connection-mode=\"ConnectionMode.Loose\"` (allow handle-to-anything connections) or `ConnectionMode.Strict` (only source-to-target, the default). Looser mode is useful when handles aren't typed or when you want users to connect freely.",
-    "relevant_paths": ["guide/vue-flow/config.md", "guide/handle.md"],
-    "relevant_apis": ["ConnectionMode", "VueFlow"],
+    "relevant_apis": [
+      "v-model"
+    ],
+    "relevant_paths": [
+      "guide/controlled-flow.md"
+    ],
+    "expected_answer": "The difference is that v-model directly binds to the elements, while the nodes/edges props are one-way. Using v-model makes it easier to sync, but you must be careful as it can lead to performance issues in very large graphs compared to explicit change handling.",
+    "question": "When should I use v-model for nodes and edges versus using the nodes and edges props?",
     "intent": "comparison",
-    "difficulty": "medium",
     "framework": "vue-flow"
   },
   {
-    "question": "How do I render edges differently based on a property of the connected nodes?",
-    "expected_answer": "Compute the edge `type` (or `style`) reactively based on the source/target node data. Use `useNodesData([sourceId, targetId])` inside a custom edge component, or compute the property when constructing the `edges` array in your parent component. Re-renders happen automatically when node data changes.",
-    "relevant_paths": ["guide/edge.md"],
-    "relevant_apis": ["useNodesData", "Edge"],
-    "intent": "how_to",
     "difficulty": "medium",
+    "relevant_paths": [
+      "guide/utils/edge.md"
+    ],
+    "relevant_apis": [
+      "getBezierPath",
+      "getSmoothStepPath",
+      "getStraightPath"
+    ],
+    "expected_answer": "You should use the getBezierPath utility for bezier edges, getSmoothStepPath for smoothstep edges, or getStraightPath for straight edges. These functions calculate the path string and label positions for you.",
+    "intent": "howto",
+    "question": "How do I manually calculate the SVG path for a custom edge?",
     "framework": "vue-flow"
   },
   {
-    "question": "How do I batch-update many nodes efficiently?",
-    "expected_answer": "Call `useVueFlow().setNodes(callback)` where the callback receives the current array and returns the new one — Vue Flow applies the diff in a single render. Avoid calling `updateNode` in a loop; that triggers a render per call.",
-    "relevant_paths": ["guide/composables.md"],
-    "relevant_apis": ["useVueFlow"],
-    "intent": "how_to",
-    "difficulty": "medium",
-    "framework": "vue-flow"
-  },
-  {
-    "question": "How do I display a node id from inside a custom node component?",
-    "expected_answer": "Either accept `id` as a prop on the custom node (Vue Flow injects `id`, `data`, and the rest of the node props automatically) or call `useNodeId()` inside the setup — it returns the current node's id from injection context. The `useNodeId` form is useful when wrapping deeper components.",
-    "relevant_paths": ["guide/composables.md"],
-    "relevant_apis": ["useNodeId", "useNode"],
+    "expected_answer": "The isEdge and isNode functions are type-guard utilities that check if a given element is a node or an edge, which is useful when filtering or processing mixed element arrays.",
     "intent": "api_lookup",
-    "difficulty": "easy",
-    "framework": "vue-flow"
-  },
-  {
-    "question": "How do I set the initial viewport (zoom and offset) on first render?",
-    "expected_answer": "Pass `:default-viewport=\"{ x, y, zoom }\"` to `<VueFlow>` for the initial state, or `:fit-view-on-init=\"true\"` to auto-fit all nodes on mount. To programmatically set viewport later, call `useVueFlow().setViewport({ x, y, zoom })` or `fitView()`.",
-    "relevant_paths": ["guide/vue-flow/config.md", "guide/composables.md"],
-    "relevant_apis": ["VueFlow", "useVueFlow"],
-    "intent": "how_to",
-    "difficulty": "easy",
-    "framework": "vue-flow"
-  },
-  {
-    "question": "How do I integrate Vue Flow with Pinia?",
-    "expected_answer": "Store nodes and edges in a Pinia store. Use the controlled-flow pattern: bind the store's refs to `<VueFlow>`, then handle `@nodes-change` and `@edges-change` to write back via `applyNodeChanges` / `applyEdgeChanges` from `@vue-flow/core`. The store becomes the single source of truth.",
-    "relevant_paths": ["guide/controlled-flow.md"],
-    "relevant_apis": ["useVueFlow", "useNodesState", "useEdgesState"],
-    "intent": "how_to",
+    "question": "What are the isEdge and isNode functions used for?",
     "difficulty": "medium",
+    "relevant_paths": [
+      "guide/utils/graph.md"
+    ],
+    "relevant_apis": [
+      "isEdge",
+      "isNode"
+    ],
     "framework": "vue-flow"
   },
   {
-    "question": "How do I render a custom edge with multiple segments?",
-    "expected_answer": "Inside the custom edge, compute multiple sub-paths and render multiple `<path>` elements (or a single complex `d` attribute). For routed paths, use the `@vue-flow/pathfinding-edge` package which routes around obstacles automatically.",
-    "relevant_paths": ["guide/edge.md"],
-    "relevant_apis": ["BaseEdge", "@vue-flow/pathfinding-edge"],
-    "intent": "how_to",
-    "difficulty": "hard",
-    "framework": "vue-flow"
-  },
-  {
-    "question": "How do I prevent users from connecting a node to itself?",
-    "expected_answer": "Use `is-valid-connection` either at the `<VueFlow>` level or per `<Handle>`: return `connection.source !== connection.target`. Or rely on `connectionMode=\"strict\"` plus typed handles whose ids differ between source and target on the same node.",
-    "relevant_paths": ["examples/edges/validation.md", "guide/handle.md"],
-    "relevant_apis": ["Connection", "Handle"],
-    "intent": "how_to",
+    "expected_answer": "You can use the onEdgeClick, onEdgeDoubleClick, and other similar event handlers provided by the useVueFlow composable or by binding to the VueFlow component to handle various edge interactions.",
+    "question": "How do I detect a double-click on an edge?",
+    "intent": "howto",
     "difficulty": "medium",
+    "relevant_apis": [
+      "onEdgeDoubleClick",
+      "VueFlow"
+    ],
+    "relevant_paths": [
+      "guide/edge.md"
+    ],
     "framework": "vue-flow"
   },
   {
-    "question": "What's the difference between BezierEdge, SmoothStepEdge, StepEdge, and StraightEdge?",
-    "expected_answer": "All four are pre-built `<BaseEdge>` variants. `BezierEdge` (default) uses cubic Bezier curves between handles. `SmoothStepEdge` draws right-angle steps with rounded corners. `StepEdge` is the same but with sharp corners. `StraightEdge` draws a single straight line. Pick by aesthetics; pair with the matching `getXxxPath` helper if building a custom variant.",
-    "relevant_paths": ["guide/edge.md"],
-    "relevant_apis": ["BezierEdge", "SmoothStepEdge", "StepEdge", "StraightEdge", "BaseEdge"],
-    "intent": "comparison",
-    "difficulty": "easy",
-    "framework": "vue-flow"
-  },
-  {
-    "question": "How do I capture pointer position relative to the canvas?",
-    "expected_answer": "Use `useGetPointerPosition()` from `@vue-flow/core` — it returns a function `(event) => { x, y }` that maps a pointer event to flow coordinates. Useful for spawning new nodes at the click site or implementing custom selection rectangles.",
-    "relevant_paths": ["guide/composables.md"],
-    "relevant_apis": ["useGetPointerPosition"],
     "intent": "api_lookup",
+    "question": "How can I make sure edges are always rendered on top of nodes when selected?",
+    "expected_answer": "The elevateEdgesOnSelect prop, when set to true, causes edges to be grouped by z-index and elevated when the connected nodes are selected, ensuring edges stay visible on top.",
+    "relevant_paths": [
+      "guide/vue-flow/config.md"
+    ],
+    "relevant_apis": [
+      "elevate-edges-on-select"
+    ],
     "difficulty": "medium",
+    "framework": "vue-flow"
+  },
+  {
+    "expected_answer": "You can use the addNodes action from the useVueFlow composable to add multiple nodes at once, which is more efficient than calling addNodes individually in a loop.",
+    "question": "How can I add a batch of nodes to the graph efficiently?",
+    "intent": "howto",
+    "difficulty": "medium",
+    "relevant_apis": [
+      "addNodes",
+      "useVueFlow"
+    ],
+    "relevant_paths": [
+      "guide/node.md"
+    ],
     "framework": "vue-flow"
   }
 ]
