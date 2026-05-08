@@ -1,0 +1,16 @@
+{
+  "name": "vue-mcp-infographic",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "LinkedIn carousel about structure-aware RAG, built with HTML + CSS + Playwright",
+  "scripts": {
+    "dev": "node server.mjs",
+    "export": "node export.mjs",
+    "screenshot": "node screenshot.mjs",
+    "postinstall": "playwright install chromium"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.0"
+  }
+}

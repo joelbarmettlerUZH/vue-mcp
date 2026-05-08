@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=1080, initial-scale=0.5" />
+    <title>Structure-Aware RAG — Carousel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="theme.css" />
+    <link rel="stylesheet" href="base.css" />
+    <link rel="stylesheet" href="components.css" />
+    <link rel="stylesheet" href="slides.css" />
+  </head>
+  <body>
+    <div class="preview-toolbar">
+      <span>preview · 10 slides · 1080×1350</span>
+      <a href="javascript:window.print()">print</a>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- SLIDE 1 — HOOK                                               -->
+    <!-- ============================================================ -->
+    <section class="slide" id="slide-1">
+      <div class="slide-header">
+        
+        <span class="slide-section">RAG Architecture · Case study</span>
+      </div>
+      <div class="slide-body s1-body">
+        <h1 class="s1-headline">
+          Most RAG pipelines<br />
+          treat your docs<br />
+          as a <span class="s1-strike">bag of text.</span><br />
+          <span class="accent">The good ones don't.</span>
+        </h1>
+        <p class="s1-sub">
+          Sub-second latency. Zero LLM calls at query time.
+          Under <span class="code-inline">$0.001</span> per query.
+        </p>
+      </div>
+      <div class="slide-footer">
+        <span class="brand">vue-mcp.org</span>
+        <span>01</span>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SLIDE 2 — ARCHITECTURE                                       -->
+    <!-- ============================================================ -->
+    <section class="slide" id="slide-2">
+      <div class="slide-header">
+        
+        <span class="slide-section">Architecture</span>
+      </div>
+      <div class="slide-body">
+        <h2 class="slide-title">
+          Two pipelines.<br />
+          One <span class="accent">shared data layer.</span>
+        </h2>
+        <p class="slide-subtitle">
+          Push the LLM-heavy work offline. Keep query-time fast and cheap.
+        </p>
+
+        <div class="s2-diagram">
+          <!-- Ingestion -->
+          <div class="s2-pipe ingest">
+            <div class="s2-pipe-head">
+              <h3>Ingestion pipeline</h3>
+              <span class="chip accent">Offline · Daily · LLM-heavy</span>
+            </div>
+            <div class="s2-steps">
+              <div class="s2-step">Parse</div>
+              <div class="s2-step-arrow">→</div>
+              <div class="s2-step">Enrich</div>
+              <div class="s2-step-arrow">→</div>
+              <div class="s2-step">Embed</div>
+              <div class="s2-step-arrow">→</div>
+              <div class="s2-step">Store</div>
+            </div>
+          </div>
+
+          <!-- writes connector -->
+          <div class="s2-connector">↓ writes</div>
+
+          <!-- Two side-by-side data stores -->
+          <div class="s2-data-row">
+            <div class="s2-db">
+              <div class="s2-db-head">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="32" height="32"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
+                <div class="s2-db-name">PostgreSQL</div>
+              </div>
+              <div class="s2-db-desc">entities, synonyms</div>
+            </div>
+            <div class="s2-db">
+              <div class="s2-db-head">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="32" height="32"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>
+                <div class="s2-db-name">Qdrant</div>
+              </div>
+              <div class="s2-db-desc">vectors, filters</div>
+            </div>
+          </div>
+
+          <!-- reads connector -->
+          <div class="s2-connector">↑ reads</div>
+
+          <!-- Retrieval -->
+          <div class="s2-pipe retrieve">
+            <div class="s2-pipe-head">
+              <h3>Retrieval pipeline</h3>
+              <span class="chip accent">Online · Per-request · LLM-free</span>
+            </div>
+            <div class="s2-steps">
+              <div class="s2-step">Embed</div>
+              <div class="s2-step-arrow">→</div>
+              <div class="s2-step">Search</div>
+              <div class="s2-step-arrow">→</div>
+              <div class="s2-step">Expand</div>
+              <div class="s2-step-arrow">→</div>
+              <div class="s2-step">Rerank</div>
+              <div class="s2-step-arrow">→</div>
+              <div class="s2-step">Reconstruct</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="slide-footer">
+        <span class="brand">vue-mcp.org</span>
+        <span>02</span>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SLIDE 3 — STRUCTURE-AWARE CHUNKING                           -->
+    <!-- ============================================================ -->
+    <section class="slide" id="slide-3">
+      <div class="slide-header">
+        
+        <span class="slide-section">Ingestion · Principle 01</span>
+      </div>
+      <div class="slide-body">
+        <h2 class="slide-title">
+          Chunk at structure,<br />
+          not <span class="accent">token windows.</span>
+        </h2>
+        <p class="slide-subtitle">
+          Slicing through headings and code fences destroys the unit you want.
+        </p>
+
+        <div class="compare s3-compare">
+          <div class="s3-col">
+            <div class="s3-col-label s3-col-label--danger">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="20" height="20"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>
+              512-token slices
+            </div>
+            <div class="card danger">
+              <div class="s3-doc">
+                <p class="s3-head">## Reactivity</p>
+                <p class="s3-text">A ref holds a reactive value.</p>
+                <div class="s3-cut">cut at token 512</div>
+                <pre class="s3-code">const count = ref(0)
+count.value</pre>
+                <div class="s3-cut">cut at token 1024</div>
+                <pre class="s3-code">++</pre>
+                <p class="s3-head s3-head--faint">## Computed</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="s3-col">
+            <div class="s3-col-label s3-col-label--success">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="20 6 9 17 4 12"/></svg>
+              H2 sections + sort keys
+            </div>
+            <div class="card accent">
+              <div class="s3-doc">
+                <div class="s3-section">
+                  <div class="s3-section-tag">chunk</div>
+                  <p class="s3-head">## Reactivity</p>
+                  <p class="s3-text">A ref holds a reactive value.</p>
+                  <pre class="s3-code">const count = ref(0)
+count.value++</pre>
+                </div>
+                <div class="s3-section">
+                  <div class="s3-section-tag">chunk</div>
+                  <p class="s3-head">## Computed</p>
+                  <pre class="s3-code">computed(() =&gt; count.value * 2)</pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span class="brand">vue-mcp.org</span>
+        <span>03</span>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SLIDE 4 — CONTEXTUAL RETRIEVAL                               -->
+    <!-- ============================================================ -->
+    <section class="slide" id="slide-4">
+      <div class="slide-header">
+        
+        <span class="slide-section">Ingestion · Principle 02</span>
+      </div>
+      <div class="slide-body">        <h2 class="slide-title">
+          Embed each chunk<br />
+          <span class="accent">in context.</span>
+        </h2>
+        <p class="slide-subtitle">
+          A tiny LLM-written preamble situates the chunk inside its page.
+        </p>
+
+        <div class="s4-flow">
+          <!-- Before -->
+          <div class="s4-card">
+            <div class="card-label">Raw chunk</div>
+            <pre class="s4-code">const count = ref(0)
+count.value++</pre>
+          </div>
+
+          <!-- Plus / Gemini step -->
+          <div class="s4-plus">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+            <span>Gemini adds context</span>
+          </div>
+
+          <!-- After -->
+          <div class="s4-card s4-card--enriched">
+            <div class="card-label success">Enriched for embedding</div>
+            <div class="s4-prefix">
+              This snippet shows how to declare reactive state with
+              <code>ref()</code> in Vue's Composition API. Section:
+              <em>Reactivity Fundamentals</em>.
+            </div>
+            <pre class="s4-code">const count = ref(0)
+count.value++</pre>
+          </div>
+
+        </div>
+
+      </div>
+      <div class="slide-footer">
+        <span class="brand">vue-mcp.org</span>
+        <span>04</span>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SLIDE 5 — HYPE                                                -->
+    <!-- ============================================================ -->
+    <section class="slide" id="slide-5">
+      <div class="slide-header">
+        
+        <span class="slide-section">Ingestion · Principle 03</span>
+      </div>
+      <div class="slide-body">
+        <h2 class="slide-title">
+          5 questions per chunk.<br />
+          <span class="accent">Routed to the parent.</span>
+        </h2>
+        <p class="slide-subtitle">
+          Users don't search in your docs' vocabulary. Embed the questions
+          they actually ask.
+        </p>
+
+        <div class="s5-diagram">
+          <div class="s5-chunk">
+            <div class="card-label">1 chunk</div>
+            <div class="s5-chunk-title">Reactivity Fundamentals → ref()</div>
+            <div class="s5-chunk-body">
+              ref() takes a value and returns a reactive ref object whose .value
+              property points to the inner value...
+            </div>
+          </div>
+
+          <div class="s5-fanout">
+            <svg viewBox="0 0 100 240" preserveAspectRatio="none" class="s5-fanout-svg">
+              <path d="M 0 120 Q 50 120 100 40" />
+              <path d="M 0 120 Q 50 120 100 90" />
+              <path d="M 0 120 Q 50 120 100 150" />
+              <path d="M 0 120 Q 50 120 100 210" />
+            </svg>
+          </div>
+
+          <div class="s5-questions">
+            <div class="card-label">5 hypothetical questions</div>
+            <ul class="s5-q-list">
+              <li>"How do I make state reactive in Vue?"</li>
+              <li>"What's the difference between ref and reactive?"</li>
+              <li>"Why is my ref not updating in the template?"</li>
+              <li>"How do I unwrap a ref in TypeScript?"</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+      <div class="slide-footer">
+        <span class="brand">vue-mcp.org</span>
+        <span>05</span>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SLIDE 6 — RAPTOR                                              -->
+    <!-- ============================================================ -->
+    <section class="slide" id="slide-6">
+      <div class="slide-header">
+        
+        <span class="slide-section">Ingestion · Principle 04</span>
+      </div>
+      <div class="slide-body">
+        <h2 class="slide-title">
+          Summaries,<br />
+          <span class="accent">same vector space.</span>
+        </h2>
+        <p class="slide-subtitle">
+          Vague queries hit a top-level summary. Specific queries hit a leaf chunk.
+          One retrieval call returns both.
+        </p>
+
+        <div class="s6-pyramid">
+          <div class="s6-layer s6-layer-3">
+            <div class="s6-layer-text">
+              <div class="s6-layer-name">L3 · Top summaries</div>
+              <div class="s6-layer-count">~3 chunks</div>
+            </div>          </div>
+          <div class="s6-layer s6-layer-2">
+            <div class="s6-layer-text">
+              <div class="s6-layer-name">L2 · Folder summaries</div>
+              <div class="s6-layer-count">~10 chunks</div>
+            </div>          </div>
+          <div class="s6-layer s6-layer-1">
+            <div class="s6-layer-text">
+              <div class="s6-layer-name">L1 · Page summaries</div>
+              <div class="s6-layer-count">~50 chunks</div>
+            </div>          </div>
+          <div class="s6-layer s6-layer-0">
+            <div class="s6-layer-text">
+              <div class="s6-layer-name">L0 · Leaf chunks (the actual docs)</div>
+              <div class="s6-layer-count">~500–2000 chunks</div>
+            </div>          </div>
+        </div>
+
+      </div>
+      <div class="slide-footer">
+        <span class="brand">vue-mcp.org</span>
+        <span>06</span>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SLIDE 7 — HYBRID SEARCH                                       -->
+    <!-- ============================================================ -->
+    <section class="slide" id="slide-7">
+      <div class="slide-header">
+        
+        <span class="slide-section">Retrieval · Principle 05</span>
+      </div>
+      <div class="slide-body">        <h2 class="slide-title">
+          Dense misses rare terms.<br />
+          Sparse misses <span class="accent">intent.</span>
+        </h2>
+        <p class="slide-subtitle">
+          Combine both retrievals. Fuse them with RRF inside Qdrant.
+        </p>
+
+        <div class="s7-diagram">
+          <div class="s7-paths">
+            <div class="s7-path">
+              <div class="s7-path-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+              </div>
+              <div class="s7-path-name">Dense vector</div>
+              <div class="s7-path-tech">Jina v5 · 1024d · cosine</div>
+              <div class="s7-path-desc">Captures intent. "share state" ≈ "global store"</div>
+              <div class="s7-path-out">→ top 50 candidates</div>
+            </div>
+
+            <div class="s7-path">
+              <div class="s7-path-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>
+              </div>
+              <div class="s7-path-name">BM25 sparse vector</div>
+              <div class="s7-path-tech">bm25s · per-source vocab</div>
+              <div class="s7-path-desc">Catches exact API names. "provide", "inject", "Pinia"</div>
+              <div class="s7-path-out">→ top 50 candidates</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span class="brand">vue-mcp.org</span>
+        <span>07</span>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SLIDE 8 — DOMAIN-AWARE EXPANSION (PUNCHLINE)                 -->
+    <!-- ============================================================ -->
+    <section class="slide" id="slide-8">
+      <div class="slide-header">
+        
+        <span class="slide-section">Retrieval · The thesis</span>
+      </div>
+      <div class="slide-body">        <h2 class="slide-title">
+          Your link graph<br />
+          <span class="accent">IS retrieval signal.</span>
+        </h2>
+        <p class="slide-subtitle">
+          Generic RAG ignores cross-references. Structure-aware RAG treats
+          them as a domain-specific signal you mined for free at indexing time.
+        </p>
+
+        <div class="s8-graph">
+          <svg class="s8-edges" viewBox="0 0 900 400" preserveAspectRatio="none">
+            <line x1="450" y1="80" x2="150" y2="340" class="s8-edge s8-edge-high" />
+            <line x1="450" y1="80" x2="450" y2="340" class="s8-edge s8-edge-medium" />
+            <line x1="450" y1="80" x2="750" y2="340" class="s8-edge s8-edge-low" />
+          </svg>
+
+          <div class="s8-node s8-node-top">
+            <div class="s8-node-title">Top hit</div>
+            <div class="s8-node-sub">guide/state-mgmt</div>
+          </div>
+
+          <div class="s8-nodes-row">
+            <div class="s8-node">
+              <div class="s8-node-title">api/provide</div>
+              <div class="s8-node-sub">guide ↔ api</div>
+            </div>
+            <div class="s8-node">
+              <div class="s8-node-title">guide/composables</div>
+              <div class="s8-node-sub">same folder</div>
+            </div>
+            <div class="s8-node">
+              <div class="s8-node-title">examples/store</div>
+              <div class="s8-node-sub">cross folder</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="s8-rules">
+          <div class="s8-rule">
+            <span class="s8-rule-pill s8-rule-pill--high">HIGH</span>
+            <strong>guide ↔ api</strong>
+            <span class="s8-rule-cond">always follow</span>
+          </div>
+          <div class="s8-rule">
+            <span class="s8-rule-pill s8-rule-pill--medium">MED</span>
+            <strong>same folder</strong>
+            <span class="s8-rule-cond">only for top 10 candidates</span>
+          </div>
+          <div class="s8-rule">
+            <span class="s8-rule-pill s8-rule-pill--low">LOW</span>
+            <strong>cross folder</strong>
+            <span class="s8-rule-cond">only for top 5 candidates</span>
+          </div>
+        </div>
+
+      </div>
+      <div class="slide-footer">
+        <span class="brand">vue-mcp.org</span>
+        <span>08</span>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SLIDE 9 — RECONSTRUCTION                                      -->
+    <!-- ============================================================ -->
+    <section class="slide" id="slide-9">
+      <div class="slide-header">
+        
+        <span class="slide-section">Retrieval · Principle 07</span>
+      </div>
+      <div class="slide-body">        <h2 class="slide-title">
+          Reorder by <span class="accent">position.</span>
+        </h2>
+        <p class="slide-subtitle">
+          The reranker tells you which chunks are relevant. The sort key tells
+          you which order they belong in. Use both.
+        </p>
+
+        <div class="compare s9-compare">
+          <div class="card danger">
+            <div class="card-label danger">Typical RAG output</div>
+            <div class="s9-fragments">
+              <div class="s9-frag">
+                <span class="s9-frag-tag">score 0.94</span>
+                §3.4 · "...you can also pass a watcher..."
+              </div>
+              <div class="s9-frag">
+                <span class="s9-frag-tag">score 0.91</span>
+                §1.1 · "Reactive state is..."
+              </div>
+              <div class="s9-frag">
+                <span class="s9-frag-tag">score 0.87</span>
+                §3.3 · "...the second argument..."
+              </div>
+              <div class="s9-frag">
+                <span class="s9-frag-tag">score 0.82</span>
+                §2.1 · "computed() takes..."
+              </div>
+            </div>
+          </div>
+
+          <div class="card accent">
+            <div class="card-label success">Reconstructed output</div>
+            <div class="s9-output">
+              <div class="s9-page">
+                <div class="s9-page-head">## Reactivity Fundamentals</div>
+                <div class="s9-page-meta">
+                  source: vuejs.org/guide/...
+                </div>
+                <div class="s9-page-section">
+                  <div class="s9-fm">apis: [ref, computed, watch]</div>
+                  <div class="s9-content">### §1.1 — Reactive state</div>
+                </div>
+                <div class="s9-page-section">
+                  <div class="s9-fm">apis: [computed]</div>
+                  <div class="s9-content">### §2.1 — computed()</div>
+                </div>
+                <div class="s9-page-section s9-merged">
+                  <div class="s9-fm">apis: [watch] · merged ×2</div>
+                  <div class="s9-content">### §3.3 + §3.4 — watching state</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span class="brand">vue-mcp.org</span>
+        <span>09</span>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SLIDE 10 — RESULTS + CTA                                      -->
+    <!-- ============================================================ -->
+    <section class="slide" id="slide-10">
+      <div class="slide-header">
+        
+        <span class="slide-section">Results · Recap · Resources</span>
+      </div>
+      <div class="slide-body">
+        <h2 class="slide-title s10-title">
+          The point isn't the<br />
+          <span class="accent">stack.</span> It's the <span class="accent">structure.</span>
+        </h2>
+        <p class="slide-subtitle">
+          Five principles for RAG that respects the shape of your data.
+        </p>
+
+        <ol class="s10-recap-list">
+          <li>Chunk at structural boundaries</li>
+          <li>Embed each chunk in context</li>
+          <li>Generate hypothetical questions</li>
+          <li>Combine dense + sparse retrieval</li>
+          <li>Treat your link graph as signal</li>
+        </ol>
+
+        <div class="s10-cta">
+          <div class="s10-cta-row">
+            <span class="chip dark">vue-mcp.org</span>
+            <span class="chip">github.com/joelbarmettler/vue-mcp</span>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span class="brand">vue-mcp.org</span>
+        <span>10</span>
+      </div>
+    </section>
+  </body>
+</html>

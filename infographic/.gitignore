@@ -1,0 +1,5 @@
+node_modules/
+screenshots/
+carousel.pdf
+*.log
+.DS_Store

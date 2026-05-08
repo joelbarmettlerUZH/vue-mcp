@@ -1,0 +1,105 @@
+/*
+ * DESIGN SYSTEM — single source of truth for the carousel.
+ * Tweak any token here and every slide updates.
+ */
+
+:root {
+  /* ----- Colors ----- */
+  --color-bg-page: #f4f4f5;          /* outside-slide page background (preview only) */
+  --color-bg-slide: #fafafa;          /* slide canvas */
+  --color-bg-card: #ffffff;           /* card surfaces */
+  --color-bg-subtle: #f8fafc;         /* faint surfaces (callouts, code blocks) */
+  --color-bg-muted: #f1f5f9;          /* slightly stronger subtle bg */
+  --color-bg-inverse: #0f172a;        /* dark surfaces */
+
+  --color-text: #0f172a;              /* primary text */
+  --color-text-muted: #475569;        /* secondary text */
+  --color-text-subtle: #94a3b8;       /* tertiary / labels */
+  --color-text-inverse: #f8fafc;      /* text on dark surfaces */
+
+  --color-border: #e2e8f0;            /* default border */
+  --color-border-strong: #cbd5e1;     /* emphasized border */
+
+  --color-accent: #10b981;            /* primary accent (emerald-500) */
+  --color-accent-dark: #047857;       /* accent dark (emerald-700) */
+  --color-accent-bg: #ecfdf5;         /* accent tinted background */
+  --color-accent-border: #a7f3d0;     /* accent border */
+
+  --color-danger: #dc2626;            /* for ❌ comparisons */
+  --color-danger-bg: #fef2f2;
+  --color-danger-border: #fecaca;
+
+  /* ----- Typography ----- */
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Consolas, monospace;
+
+  /* Type scale tuned for LinkedIn mobile.
+     A 1080px slide shrinks to ~390px on a phone (~0.36×). Body text at
+     22px → ~8px on phone. So everything has to be ~25% bigger than feels
+     right on desktop. Bump --base-scale for an even larger global step. */
+  --base-scale: 1.6;
+
+  /* Base values (at scale 1) are calibrated so that scale 1.25 yields readable
+     mobile text without making titles overflow. Multiplied values shown for ref. */
+  --text-hero: calc(74px * var(--base-scale));       /* × 1.25 = 92.5 — slide 1 only */
+  --text-display: calc(60px * var(--base-scale));    /* × 1.25 = 75 */
+  --text-title: calc(48px * var(--base-scale));      /* × 1.25 = 60 — slide titles */
+  --text-subtitle: calc(28px * var(--base-scale));   /* × 1.25 = 35 */
+  --text-h3: calc(24px * var(--base-scale));         /* × 1.25 = 30 */
+  --text-lg: calc(20px * var(--base-scale));         /* × 1.25 = 25 */
+  --text-body: calc(19px * var(--base-scale));       /* × 1.25 = 24 */
+  --text-sm: calc(16px * var(--base-scale));         /* × 1.25 = 20 */
+  --text-xs: calc(14px * var(--base-scale));         /* × 1.25 = 17.5 */
+  --text-chip: calc(13px * var(--base-scale));       /* × 1.25 = 16.25 */
+  --text-ui: calc(11px * var(--base-scale));         /* × 1.25 = 13.75 — footer/metadata */
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-black: 800;
+
+  --leading-tight: 1.1;
+  --leading-snug: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.04em;
+  --tracking-widest: 0.12em;
+
+  /* ----- Layout ----- */
+  --slide-width: 1080px;
+  --slide-height: 1350px;
+  --slide-padding-x: 88px;
+  --slide-padding-y: 72px;
+
+  --gap-xs: 8px;
+  --gap-sm: 16px;
+  --gap-md: 24px;
+  --gap-lg: 32px;
+  --gap-xl: 48px;
+  --gap-2xl: 72px;
+
+  /* ----- Borders / radii ----- */
+  --border-thin: 1px;
+  --border-medium: 1.5px;
+  --border-thick: 2px;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-pill: 9999px;
+
+  /* ----- Shadows ----- */
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.03);
+  --shadow-elevated: 0 4px 12px rgba(15, 23, 42, 0.06), 0 2px 4px rgba(15, 23, 42, 0.03);
+  --shadow-preview: 0 24px 48px rgba(15, 23, 42, 0.08);
+
+  /* ----- Stroke widths for lines/arrows ----- */
+  --stroke-thin: 1.5;
+  --stroke-medium: 2;
+  --stroke-thick: 2.5;
+}
