@@ -106,8 +106,8 @@ export default defineConfig({
 
     footer: {
       message:
-        'Released under the <a href="https://github.com/joelbarmettlerUZH/vue-mcp/blob/main/LICENSE.md">FSL-1.1-ALv2 License</a>.',
-      copyright: "Copyright &copy; 2026 Joel Barmettler",
+        'Released under the <a href="https://github.com/joelbarmettlerUZH/vue-mcp/blob/main/LICENSE.md">FSL-1.1-ALv2 License</a>. &middot; <a href="/impressum">Legal Notice (Impressum)</a>',
+      copyright: "Copyright &copy; 2026 LatentSpace Labs GmbH",
     },
 
     search: {
