@@ -5,8 +5,8 @@ import { onMounted, ref } from "vue";
 // appears as a parseable e-mail in the statically rendered HTML that crawlers
 // fetch. It is decoded only in the browser, after mount, and turned into a
 // real mailto link. Decode locally with:  atob(PAYLOAD) -> reverse.
-//   reverse("latentspace@pm.me") -> base64
-const PAYLOAD = "ZW0ubXBAZWNhcHN0bmV0YWw=";
+//   reverse("hello.latentspace@pm.me") -> base64
+const PAYLOAD = "ZW0ubXBAZWNhcHN0bmV0YWwub2xsZWg=";
 
 const email = ref<string | null>(null);
 
@@ -23,6 +23,6 @@ onMounted(() => {
     reachable even with JavaScript disabled.
   -->
   <span v-else aria-label="contact e-mail address"
-    >latentspace<!-- -->&#32;[at]&#32;pm<!-- -->&#32;[dot]&#32;me</span
+    >hello.latentspace<!-- -->&#32;[at]&#32;pm<!-- -->&#32;[dot]&#32;me</span
   >
 </template>
