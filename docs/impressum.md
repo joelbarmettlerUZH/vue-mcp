@@ -17,7 +17,7 @@ Joel Barmettler — Managing Director (Geschäftsführer), with sole signing aut
 
 ## Contact
 
-- Email: [joel.barmettler@gmail.com](mailto:joel.barmettler@gmail.com)
+- Email: <ObfuscatedEmail />
 - Website: [https://vue-mcp.org](https://vue-mcp.org)
 
 ## Commercial Register
