@@ -106,7 +106,7 @@ export default defineConfig({
 
     footer: {
       message:
-        'Released under the <a href="https://github.com/joelbarmettlerUZH/vue-mcp/blob/main/LICENSE.md">FSL-1.1-ALv2 License</a>. &middot; <a href="/impressum">Legal Notice (Impressum)</a>',
+        'Released under the <a href="https://github.com/joelbarmettlerUZH/vue-mcp/blob/main/LICENSE.md">FSL-1.1-ALv2 License</a>. &middot; <a href="/impressum">Legal Notice (Impressum)</a> &middot; Built by <a href="https://souverana.ch" target="_blank" rel="noopener">Souverana</a> — AI Consulting',
       copyright: "Copyright &copy; 2026 LatentSpace Labs GmbH",
     },
 
