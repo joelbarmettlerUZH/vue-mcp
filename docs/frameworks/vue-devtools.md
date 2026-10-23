@@ -4,43 +4,42 @@
 
 Vue Docs MCP provides deep access to the official [Vue DevTools documentation](https://devtools.vuejs.org), covering installation (Vite plugin, browser extension, standalone), features, plugin API (addCustomTab, addCustomCommand), and migration guides.
 
-## Activation
+## Usage
 
-Vue DevTools is not enabled by default. Call `set_framework_preferences` to activate it:
-
-```
-set_framework_preferences(vue_devtools=true)
-```
+Pass `framework: "vue-devtools"` to `docs_search`, `api_lookup` and `get_related`. No activation is needed: every framework is always available.
 
 ## Tools
 
-### `vue_devtools_docs_search`
+### `docs_search`
 
 Semantic search over Vue DevTools documentation.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
+| `framework` | `string` | | Always `"vue-devtools"` |
 | `query` | `string` | | Developer question or topic (max 2000 chars) |
 | `scope` | `string` | `"all"` | Documentation section to search within |
 | `max_results` | `integer` | `3` | Number of sections to return (1-20) |
 
 **Scope values:** `all`, `getting-started`, `guide`, `plugins`, `help`
 
-### `vue_devtools_api_lookup`
+### `api_lookup`
 
 Fast exact-match API reference lookup with fuzzy fallback.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
-| `name` | `string` | | API name to look up (e.g. `addCustomTab`, `onDevToolsClientConnected`) |
+| `framework` | `string` | | Always `"vue-devtools"` |
+| `api_name` | `string` | | API name to look up (e.g. `addCustomTab`, `onDevToolsClientConnected`) |
 
-### `vue_devtools_get_related`
+### `get_related`
 
 Find related APIs, concepts, and documentation pages for a given API or topic.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
-| `name` | `string` | | API name or concept to explore |
+| `framework` | `string` | | Always `"vue-devtools"` |
+| `topic` | `string` | | API name or concept to explore |
 
 ## Resources
 
@@ -55,9 +54,9 @@ Find related APIs, concepts, and documentation pages for a given API or topic.
 
 | Prompt | Parameters | Description |
 |---|---|---|
-| `debug_vue_devtools_issue` | `symptom`, `code_snippet` (optional) | Systematic debugging workflow |
-| `compare_vue_devtools_apis` | `items` (comma-separated) | Side-by-side comparison |
-| `migrate_vue_devtools_pattern` | `from_pattern`, `to_pattern` | Migration guide (e.g. v6 to v7) |
+| `debug_issue` | `framework`, `symptom`, `code_snippet` (optional) | Systematic debugging workflow |
+| `compare_apis` | `framework`, `items` (comma-separated) | Side-by-side comparison |
+| `migrate_pattern` | `framework`, `from_pattern`, `to_pattern` | Migration guide (e.g. v6 to v7) |
 
 ## Benchmarks vs Context7
 

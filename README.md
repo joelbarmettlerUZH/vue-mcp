@@ -62,7 +62,7 @@ The hosted server at **`mcp.vue-mcp.org`** is free. No API keys, no setup requir
 | [Vue Flow](https://vueflow.dev) | Available |
 | [6 more](https://vue-mcp.org/frameworks/) | Planned |
 
-Each framework gets its own tools, resources, and prompts. [See all frameworks](https://vue-mcp.org/frameworks/).
+Every framework is always available through the same tools and prompts. Pass the framework as the `framework` argument. [See all frameworks](https://vue-mcp.org/frameworks/).
 
 ## Quick Start
 
@@ -100,16 +100,16 @@ https://mcp.vue-mcp.org/mcp
 
 ## What's Included
 
-**Tools** (per framework):
+**Tools** (all take a `framework` argument):
 
 | Tool | Description |
 |---|---|
-| `{framework}_docs_search` | Semantic search over the framework's documentation |
-| `{framework}_api_lookup` | Instant API reference lookup with fuzzy matching |
-| `{framework}_get_related` | Discover related APIs, concepts, and documentation pages |
-| `ecosystem_search` | Cross-framework search (when 2+ frameworks enabled) |
+| `docs_search` | Semantic search over the framework's documentation |
+| `api_lookup` | Instant API reference lookup with fuzzy matching |
+| `get_related` | Discover related APIs, concepts, and documentation pages |
+| `ecosystem_search` | Cross-framework search |
 
-**Resources** (per framework):
+**Resources** (under each framework's URI scheme):
 
 | Resource | Description |
 |---|---|
@@ -119,13 +119,13 @@ https://mcp.vue-mcp.org/mcp
 | `{framework}://api/entities/{name}` | Detailed info for a specific API |
 | `{framework}://scopes` | Available search scopes |
 
-**Prompts** (per framework):
+**Prompts** (all take a `framework` argument):
 
 | Prompt | Description |
 |---|---|
-| `debug_{framework}_issue` | Systematic debugging workflow |
-| `compare_{framework}_apis` | Side-by-side API comparison |
-| `migrate_{framework}_pattern` | Migration guide between patterns |
+| `debug_issue` | Systematic debugging workflow |
+| `compare_apis` | Side-by-side API comparison |
+| `migrate_pattern` | Migration guide between patterns |
 
 ## Benchmarks
 

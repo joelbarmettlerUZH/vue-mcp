@@ -4,43 +4,42 @@
 
 Vue Docs MCP provides deep access to the official [Vite documentation](https://vite.dev), covering the build tool's configuration reference, plugin API, HMR API, JavaScript API, Environment API, and migration guides.
 
-## Activation
+## Usage
 
-Vite is not enabled by default. Call `set_framework_preferences` to activate it:
-
-```
-set_framework_preferences(vite=true)
-```
+Pass `framework: "vite"` to `docs_search`, `api_lookup` and `get_related`. No activation is needed: every framework is always available.
 
 ## Tools
 
-### `vite_docs_search`
+### `docs_search`
 
 Semantic search over Vite documentation. Uses a 6-step pipeline: embed query, hybrid search (dense + BM25), resolve HyPE hits, expand cross-references, rerank, and reconstruct into readable markdown.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
+| `framework` | `string` | | Always `"vite"` |
 | `query` | `string` | | Developer question or topic (max 2000 chars) |
 | `scope` | `string` | `"all"` | Documentation section to search within |
 | `max_results` | `integer` | `3` | Number of sections to return (1-20) |
 
 **Scope values:** `all`, `guide`, `config`, `changes`, `plugins`
 
-### `vite_api_lookup`
+### `api_lookup`
 
 Fast exact-match API reference lookup with fuzzy fallback. Returns type signatures, descriptions, and usage examples directly from the documentation.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
-| `name` | `string` | | API name to look up (e.g. `defineConfig`, `createServer`, `server.proxy`) |
+| `framework` | `string` | | Always `"vite"` |
+| `api_name` | `string` | | API name to look up (e.g. `defineConfig`, `createServer`, `server.proxy`) |
 
-### `vite_get_related`
+### `get_related`
 
 Find related APIs, concepts, and documentation pages for a given API or topic.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
-| `name` | `string` | | API name or concept to explore |
+| `framework` | `string` | | Always `"vite"` |
+| `topic` | `string` | | API name or concept to explore |
 
 ## Resources
 
@@ -57,9 +56,9 @@ Find related APIs, concepts, and documentation pages for a given API or topic.
 
 | Prompt | Parameters | Description |
 |---|---|---|
-| `debug_vite_issue` | `symptom`, `code_snippet` (optional) | Systematic debugging workflow: identifies the concept, searches docs, looks up APIs, and provides a fix |
-| `compare_vite_apis` | `items` (comma-separated) | Side-by-side comparison of APIs or patterns (e.g. `server.proxy, server.middlewareMode`) |
-| `migrate_vite_pattern` | `from_pattern`, `to_pattern` | Migration guide between patterns (e.g. Vite 5 to Vite 6) |
+| `debug_issue` | `framework`, `symptom`, `code_snippet` (optional) | Systematic debugging workflow: identifies the concept, searches docs, looks up APIs, and provides a fix |
+| `compare_apis` | `framework`, `items` (comma-separated) | Side-by-side comparison of APIs or patterns (e.g. `server.proxy, server.middlewareMode`) |
+| `migrate_pattern` | `framework`, `from_pattern`, `to_pattern` | Migration guide between patterns (e.g. Vite 5 to Vite 6) |
 
 ## Benchmarks vs Context7
 

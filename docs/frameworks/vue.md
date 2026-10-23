@@ -4,39 +4,42 @@
 
 Vue Docs MCP provides deep access to the official [Vue.js documentation](https://vuejs.org), covering the core framework, Composition API, Options API, built-in components, directives, and the full API reference.
 
-## Activation
+## Usage
 
-Vue.js is enabled by default. No action needed.
+Pass `framework: "vue"` to `docs_search`, `api_lookup` and `get_related`. No activation is needed: every framework is always available.
 
 ## Tools
 
-### `vue_docs_search`
+### `docs_search`
 
 Semantic search over Vue.js documentation. Uses a 6-step pipeline: embed query, hybrid search (dense + BM25), resolve HyPE hits, expand cross-references, rerank, and reconstruct into readable markdown.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
+| `framework` | `string` | | Always `"vue"` |
 | `query` | `string` | | Developer question or topic (max 2000 chars) |
 | `scope` | `string` | `"all"` | Documentation section to search within |
 | `max_results` | `integer` | `3` | Number of sections to return (1-20) |
 
 **Scope values:** `all`, `guide`, `guide/essentials`, `guide/components`, `guide/reusability`, `guide/built-ins`, `guide/scaling-up`, `guide/best-practices`, `guide/typescript`, `guide/extras`, `api`, `tutorial`, `examples`, `glossary`, `style-guide`
 
-### `vue_api_lookup`
+### `api_lookup`
 
 Fast exact-match API reference lookup with fuzzy fallback. Returns type signatures, descriptions, and usage examples directly from the API reference.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
-| `name` | `string` | | API name to look up (e.g. `ref`, `onMounted`, `v-model`) |
+| `framework` | `string` | | Always `"vue"` |
+| `api_name` | `string` | | API name to look up (e.g. `ref`, `onMounted`, `v-model`) |
 
-### `vue_get_related`
+### `get_related`
 
 Find related APIs, concepts, and documentation pages for a given API or topic.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
-| `name` | `string` | | API name or concept to explore |
+| `framework` | `string` | | Always `"vue"` |
+| `topic` | `string` | | API name or concept to explore |
 
 ## Resources
 
@@ -53,9 +56,9 @@ Find related APIs, concepts, and documentation pages for a given API or topic.
 
 | Prompt | Parameters | Description |
 |---|---|---|
-| `debug_vue_issue` | `symptom`, `code_snippet` (optional) | Systematic debugging workflow: identifies the concept, searches docs, looks up APIs, and provides a fix |
-| `compare_vue_apis` | `items` (comma-separated) | Side-by-side comparison of APIs or patterns (e.g. `ref, reactive` or `v-if, v-show`) |
-| `migrate_vue_pattern` | `from_pattern`, `to_pattern` | Migration guide between patterns (e.g. Options API to Composition API) |
+| `debug_issue` | `framework`, `symptom`, `code_snippet` (optional) | Systematic debugging workflow: identifies the concept, searches docs, looks up APIs, and provides a fix |
+| `compare_apis` | `framework`, `items` (comma-separated) | Side-by-side comparison of APIs or patterns (e.g. `ref, reactive` or `v-if, v-show`) |
+| `migrate_pattern` | `framework`, `from_pattern`, `to_pattern` | Migration guide between patterns (e.g. Options API to Composition API) |
 
 ## Benchmarks vs Context7
 

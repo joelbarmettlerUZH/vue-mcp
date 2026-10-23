@@ -7,14 +7,13 @@ from fastmcp.exceptions import ResourceError
 from vue_docs_core.data.sources import SourceDefinition
 from vue_docs_server.startup import state
 from vue_docs_server.tools.api_lookup import _clean_section_title, _find_entity, _page_path_to_url
-from vue_docs_server.tools.search import _tool_prefix
+from vue_docs_server.tools.common import tool_ref
 
 
 def make_api_index_resource(source_def: SourceDefinition):
     """Create a source-specific API index resource function."""
     source_name = source_def.name
     display = source_def.display_name
-    prefix = _tool_prefix(source_name)
 
     async def api_index() -> str:
         entity_index = state.entity_indices.get(source_name)
@@ -34,7 +33,7 @@ def make_api_index_resource(source_def: SourceDefinition):
         lines: list[str] = [
             f"# {display} API Index\n",
             f"> **{total}** API entities across **{categories}** categories\n",
-            f"Use `{prefix}_api_lookup` to get details for any entity, or read "
+            f"Use {tool_ref('api_lookup', source_name)} to get details for any entity, or read "
             f"`{source_name}://api/entities/{{name}}` as a resource.\n",
         ]
 

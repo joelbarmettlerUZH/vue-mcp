@@ -45,7 +45,7 @@ All results include source references so you can verify them.
 | [Vue Flow](https://vueflow.dev) | :white_check_mark: Available | Node-based interactive diagrams and graphs |
 | 6 more frameworks | :calendar: Planned | |
 
-See the full list on the [Supported Frameworks](/frameworks/) page. Each framework gets its own tools, resources, prompts, and benchmarks.
+See the full list on the [Supported Frameworks](/frameworks/) page. Each framework has its own resources and benchmarks, and is queried through the shared tools by passing `framework`.
 
 ## How It Works
 

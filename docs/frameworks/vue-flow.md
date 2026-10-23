@@ -4,42 +4,41 @@
 
 Vue Docs MCP provides deep access to the official [Vue Flow documentation](https://vueflow.dev), covering the node-based diagram library: the `<VueFlow>` container, the `<Handle>` connection point, the addon packages (`Background`, `Controls`, `MiniMap`, `NodeToolbar`, `NodeResizer`), the composables (`useVueFlow`, `useNode`, `useEdge`, `useHandle`, `useNodesData`, `useNodesInitialized`, `useKeyPress`, ...), the edge primitives + path helpers (`BaseEdge`, `BezierEdge`, `getBezierPath`, `getSmoothStepPath`), controlled-flow patterns, custom node/edge authoring, theming, and the worked examples (drag-and-drop, dagre/elk auto-layout, validation, helper lines, multi-step wizards).
 
-## Activation
+## Usage
 
-Vue Flow is not enabled by default. Call `set_framework_preferences` to activate it:
-
-```
-set_framework_preferences(vue_flow=true)
-```
+Pass `framework: "vue-flow"` to `docs_search`, `api_lookup` and `get_related`. No activation is needed: every framework is always available.
 
 ## Tools
 
-### `vue_flow_docs_search`
+### `docs_search`
 
 Semantic search over Vue Flow documentation. Uses the standard 6-step retrieval pipeline: embed query, hybrid search (dense + BM25), resolve HyPE hits, expand cross-references, rerank, and reconstruct into readable markdown.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
+| `framework` | `string` | | Always `"vue-flow"` |
 | `query` | `string` | | Developer question or topic (max 2000 chars) |
 | `scope` | `string` | `"all"` | Documentation section to search within |
 | `max_results` | `integer` | `3` | Number of sections to return (1-20) |
 
 **Scope values:** `all`, `guide`, `examples`
 
-### `vue_flow_api_lookup`
+### `api_lookup`
 
 Fast exact-match API reference lookup with fuzzy fallback. Returns type signatures, descriptions, and usage examples directly from the documentation.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
+| `framework` | `string` | | Always `"vue-flow"` |
 | `api_name` | `string` | | API name to look up (e.g. `VueFlow`, `useVueFlow`, `Handle`, `BaseEdge`) |
 
-### `vue_flow_get_related`
+### `get_related`
 
 Find related APIs, concepts, and documentation pages for a given API or topic.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
+| `framework` | `string` | | Always `"vue-flow"` |
 | `topic` | `string` | | API name or concept to explore |
 
 ## Resources
@@ -57,9 +56,9 @@ Find related APIs, concepts, and documentation pages for a given API or topic.
 
 | Prompt | Parameters | Description |
 |---|---|---|
-| `debug_vue_flow_issue` | `symptom`, `code_snippet` (optional) | Systematic debugging workflow |
-| `compare_vue_flow_apis` | `items` (comma-separated) | Side-by-side comparison (e.g. `BezierEdge, SmoothStepEdge, StraightEdge`) |
-| `migrate_vue_flow_pattern` | `from_pattern`, `to_pattern` | Migration guide between patterns |
+| `debug_issue` | `framework`, `symptom`, `code_snippet` (optional) | Systematic debugging workflow |
+| `compare_apis` | `framework`, `items` (comma-separated) | Side-by-side comparison (e.g. `BezierEdge, SmoothStepEdge, StraightEdge`) |
+| `migrate_pattern` | `framework`, `from_pattern`, `to_pattern` | Migration guide between patterns |
 
 ## Coverage
 

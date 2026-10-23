@@ -1,24 +1,24 @@
 # Tools
 
-Vue Docs MCP exposes tools for each enabled framework. Each framework page documents its specific tools, parameters, and scope values in detail.
+Vue Docs MCP exposes a small, fixed set of tools. Each takes the framework to query as an argument, and each framework page documents its parameters and scope values in detail.
 
-## Per-Framework Tools
+## Tools
 
-Every framework registers three tools:
+Three tools cover every framework. Each takes a required `framework` argument (for example `vue`, `vue-router` or `pinia`; see [Frameworks](/frameworks/)):
 
-| Tool Pattern | Purpose |
+| Tool | Purpose |
 |---|---|
-| `{framework}_docs_search` | Semantic search over the framework's documentation |
-| `{framework}_api_lookup` | Instant API reference lookup with fuzzy fallback |
-| `{framework}_get_related` | Discover related APIs, concepts, and documentation pages |
+| `docs_search` | Semantic search over the framework's documentation |
+| `api_lookup` | Instant API reference lookup with fuzzy fallback |
+| `get_related` | Discover related APIs, concepts, and documentation pages |
 
-See the framework pages for concrete tool names, parameters, and examples:
+See the framework pages for parameters and examples:
 - [Vue.js tools](/frameworks/vue#tools)
 - [Vue Router tools](/frameworks/vue-router#tools)
 
 ## How Search Works
 
-Each `{framework}_docs_search` call runs a 6-step pipeline:
+Each `docs_search` call runs a 6-step pipeline:
 
 1. **Embed & detect entities.** Query is embedded via Jina, BM25 sparse vector generated locally, API names detected deterministically.
 2. **Hybrid search.** Dense + BM25 search in Qdrant, retrieving up to 50 candidates.
@@ -31,7 +31,7 @@ No LLM is used at query time. Only embedding and reranking API calls are made.
 
 ## Cross-Framework Search
 
-When two or more frameworks are enabled, an `ecosystem_search` tool becomes available that searches across all active frameworks simultaneously.
+The `ecosystem_search` tool searches across all frameworks simultaneously.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
@@ -39,4 +39,4 @@ When two or more frameworks are enabled, an `ecosystem_search` tool becomes avai
 | `scope` | `string` | `"all"` | Documentation section to search |
 | `max_results` | `integer` | `5` | Number of sections to return (1-20) |
 
-Results are tagged by source framework and ordered by relevance. Enable frameworks via [`set_framework_preferences`](/frameworks/#activating-frameworks).
+Results are tagged by source framework and ordered by relevance.

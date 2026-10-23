@@ -190,8 +190,8 @@ def shutdown():
     logger.info("Server shutdown complete")
 
 
-async def hot_reload_loop(register_resources_fn):
-    """Background task: reload data from PG and refresh concrete resources hourly."""
+async def hot_reload_loop():
+    """Background task: reload data from PG whenever ingestion has written new data."""
     global _last_reload_ts
 
     while True:
@@ -206,8 +206,7 @@ async def hot_reload_loop(register_resources_fn):
                 )
                 await asyncio.to_thread(_load_from_pg, state.db)
                 _last_reload_ts = max_updated
-                await asyncio.to_thread(register_resources_fn)
-                logger.info("Hot reload complete (data + resources)")
+                logger.info("Hot reload complete")
         except asyncio.CancelledError:
             break
         except Exception:

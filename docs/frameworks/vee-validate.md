@@ -4,42 +4,41 @@
 
 Vue Docs MCP provides deep access to the official [VeeValidate documentation](https://vee-validate.logaretm.com/v4), covering Vue's leading form-validation library: the components API (`<Form>`, `<Field>`, `<FieldArray>`, `<ErrorMessage>`), the composition API (`useForm`, `useField`, `useFieldArray`, plus 20+ granular helpers), schema integrations (yup, zod, valibot, joi), the `defineRule` / `configure` global helpers, the i18n package, the Nuxt module, and migration paths from v3.
 
-## Activation
+## Usage
 
-VeeValidate is not enabled by default. Call `set_framework_preferences` to activate it:
-
-```
-set_framework_preferences(vee_validate=true)
-```
+Pass `framework: "vee-validate"` to `docs_search`, `api_lookup` and `get_related`. No activation is needed: every framework is always available.
 
 ## Tools
 
-### `vee_validate_docs_search`
+### `docs_search`
 
 Semantic search over VeeValidate documentation. Uses the standard 6-step retrieval pipeline: embed query, hybrid search (dense + BM25), resolve HyPE hits, expand cross-references, rerank, and reconstruct into readable markdown.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
+| `framework` | `string` | | Always `"vee-validate"` |
 | `query` | `string` | | Developer question or topic (max 2000 chars) |
 | `scope` | `string` | `"all"` | Documentation section to search within |
 | `max_results` | `integer` | `3` | Number of sections to return (1-20) |
 
 **Scope values:** `all`, `guide`, `api`, `tutorials`, `examples`, `integrations`
 
-### `vee_validate_api_lookup`
+### `api_lookup`
 
 Fast exact-match API reference lookup with fuzzy fallback. Returns type signatures, descriptions, and usage examples directly from the documentation.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
+| `framework` | `string` | | Always `"vee-validate"` |
 | `api_name` | `string` | | API name to look up (e.g. `useField`, `useForm`, `Form`, `defineRule`, `useResetForm`) |
 
-### `vee_validate_get_related`
+### `get_related`
 
 Find related APIs, concepts, and documentation pages for a given API or topic.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
+| `framework` | `string` | | Always `"vee-validate"` |
 | `topic` | `string` | | API name or concept to explore |
 
 ## Resources
@@ -57,9 +56,9 @@ Find related APIs, concepts, and documentation pages for a given API or topic.
 
 | Prompt | Parameters | Description |
 |---|---|---|
-| `debug_vee_validate_issue` | `symptom`, `code_snippet` (optional) | Systematic debugging workflow: identifies the concept, searches docs, looks up APIs, and provides a fix |
-| `compare_vee_validate_apis` | `items` (comma-separated) | Side-by-side comparison of APIs or patterns (e.g. `useField, Field`) |
-| `migrate_vee_validate_pattern` | `from_pattern`, `to_pattern` | Migration guide between patterns (e.g. v3 directives to v4 components) |
+| `debug_issue` | `framework`, `symptom`, `code_snippet` (optional) | Systematic debugging workflow: identifies the concept, searches docs, looks up APIs, and provides a fix |
+| `compare_apis` | `framework`, `items` (comma-separated) | Side-by-side comparison of APIs or patterns (e.g. `useField, Field`) |
+| `migrate_pattern` | `framework`, `from_pattern`, `to_pattern` | Migration guide between patterns (e.g. v3 directives to v4 components) |
 
 ## Coverage
 

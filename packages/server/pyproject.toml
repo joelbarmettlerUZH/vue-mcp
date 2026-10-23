@@ -5,7 +5,7 @@ description = "MCP server — online query handling for Vue docs"
 requires-python = ">=3.13"
 dependencies = [
     "vue-docs-core",
-    "fastmcp>=3.1",
+    "fastmcp>=4.1",
 ]
 
 [project.optional-dependencies]

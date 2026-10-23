@@ -48,8 +48,8 @@ Just ask Claude anything about Vue. It will call the MCP tools automatically:
 You can also be explicit:
 
 ```
-> Use vue_docs_search to find documentation about Transition animations
-> Look up the onMounted lifecycle hook using vue_api_lookup
+> Use docs_search to find documentation about Transition animations
+> Look up the onMounted lifecycle hook using api_lookup
 ```
 
 ## Self-Hosted Server

@@ -8,42 +8,41 @@ Vue Docs MCP provides deep access to the official [VitePress documentation](http
 This very documentation site is built with VitePress, so the MCP can answer questions about the tool you're reading right now.
 :::
 
-## Activation
+## Usage
 
-VitePress is not enabled by default. Call `set_framework_preferences` to activate it:
-
-```
-set_framework_preferences(vitepress=true)
-```
+Pass `framework: "vitepress"` to `docs_search`, `api_lookup` and `get_related`. No activation is needed: every framework is always available.
 
 ## Tools
 
-### `vitepress_docs_search`
+### `docs_search`
 
 Semantic search over VitePress documentation. Uses the standard 6-step retrieval pipeline: embed query, hybrid search (dense + BM25), resolve HyPE hits, expand cross-references, rerank, and reconstruct into readable markdown.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
+| `framework` | `string` | | Always `"vitepress"` |
 | `query` | `string` | | Developer question or topic (max 2000 chars) |
 | `scope` | `string` | `"all"` | Documentation section to search within |
 | `max_results` | `integer` | `3` | Number of sections to return (1-20) |
 
 **Scope values:** `all`, `guide`, `reference`
 
-### `vitepress_api_lookup`
+### `api_lookup`
 
 Fast exact-match API reference lookup with fuzzy fallback. Returns type signatures, descriptions, and usage examples directly from the documentation.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
+| `framework` | `string` | | Always `"vitepress"` |
 | `api_name` | `string` | | API name to look up (e.g. `useData`, `defineConfig`, `createContentLoader`, `withBase`) |
 
-### `vitepress_get_related`
+### `get_related`
 
 Find related APIs, concepts, and documentation pages for a given API or topic.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
+| `framework` | `string` | | Always `"vitepress"` |
 | `topic` | `string` | | API name or concept to explore |
 
 ## Resources
@@ -61,9 +60,9 @@ Find related APIs, concepts, and documentation pages for a given API or topic.
 
 | Prompt | Parameters | Description |
 |---|---|---|
-| `debug_vitepress_issue` | `symptom`, `code_snippet` (optional) | Systematic debugging workflow: identifies the concept, searches docs, looks up APIs, and provides a fix |
-| `compare_vitepress_apis` | `items` (comma-separated) | Side-by-side comparison of APIs or patterns (e.g. `createContentLoader, defineLoader`) |
-| `migrate_vitepress_pattern` | `from_pattern`, `to_pattern` | Migration guide between patterns (e.g. VuePress to VitePress) |
+| `debug_issue` | `framework`, `symptom`, `code_snippet` (optional) | Systematic debugging workflow: identifies the concept, searches docs, looks up APIs, and provides a fix |
+| `compare_apis` | `framework`, `items` (comma-separated) | Side-by-side comparison of APIs or patterns (e.g. `createContentLoader, defineLoader`) |
+| `migrate_pattern` | `framework`, `from_pattern`, `to_pattern` | Migration guide between patterns (e.g. VuePress to VitePress) |
 
 ## Coverage
 

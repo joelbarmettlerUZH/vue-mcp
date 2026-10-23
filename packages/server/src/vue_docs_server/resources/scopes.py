@@ -4,14 +4,13 @@ from fastmcp.exceptions import ResourceError
 
 from vue_docs_core.data.sources import SourceDefinition
 from vue_docs_server.startup import state
-from vue_docs_server.tools.search import _tool_prefix
+from vue_docs_server.tools.common import tool_ref
 
 
 def make_scopes_resource(source_def: SourceDefinition):
     """Create a source-specific search scopes resource function."""
     source_name = source_def.name
     display = source_def.display_name
-    prefix = _tool_prefix(source_name)
 
     async def search_scopes() -> str:
         folders_map = state.folder_structures_by_source.get(source_name, {})
@@ -41,7 +40,8 @@ def make_scopes_resource(source_def: SourceDefinition):
 
         lines: list[str] = [
             f"# {display} — Valid Search Scopes\n",
-            f"Use these values for the `scope` parameter of `{prefix}_docs_search`.\n",
+            f"Use these values for the `scope` parameter of "
+            f"{tool_ref('docs_search', source_name)}.\n",
             "| Scope | Pages | Description |",
             "|-------|-------|-------------|",
             f'| `"all"` | {len(page_paths)} | Search all {display} documentation |',
@@ -55,5 +55,5 @@ def make_scopes_resource(source_def: SourceDefinition):
         return "\n".join(lines)
 
     search_scopes.__name__ = f"{source_name}_search_scopes"
-    search_scopes.__doc__ = f"List all valid scope values for the {prefix}_docs_search tool."
+    search_scopes.__doc__ = f"List all valid scope values for the {display} docs_search tool."
     return search_scopes

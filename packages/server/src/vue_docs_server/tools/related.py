@@ -8,7 +8,7 @@ from pydantic import Field
 
 from vue_docs_core.data.sources import SOURCE_REGISTRY, SourceDefinition
 from vue_docs_server.startup import state
-from vue_docs_server.tools.search import _tool_prefix
+from vue_docs_server.tools.common import framework_param, tool_ref
 from vue_docs_server.usage import log_tool_call
 
 
@@ -31,13 +31,12 @@ async def _do_get_related(
 
     match_result = entity_matcher.match(topic)
 
-    prefix = _tool_prefix(source) if source else "ecosystem"
-    search_tool = f"{prefix}_docs_search" if source else "ecosystem_search"
+    search_tool = tool_ref("docs_search", source)
 
     if not match_result.entities:
         return (
             f"No matching APIs or concepts found for `{topic}`.\n\n"
-            f'**Next step:** Use `{search_tool}` with query `"{topic}"` '
+            f'**Next step:** Use {search_tool} with query `"{topic}"` '
             f"for a broader documentation search."
         )
 
@@ -100,10 +99,10 @@ async def _do_get_related(
     lines.append("---\n")
     lines.append("**Next steps:**")
     api_names = list(seen)[:3]
-    lines.append(f'- `{search_tool}` with query `"{topic}"` for full documentation content')
-    lookup_tool = f"{_tool_prefix(source)}_api_lookup" if source else search_tool
+    lines.append(f'- {search_tool} with query `"{topic}"` for full documentation content')
+    lookup_tool = tool_ref("api_lookup", source)
     for name in api_names:
-        lines.append(f'- `{lookup_tool}` on `"{name}"` for API details')
+        lines.append(f'- {lookup_tool} on `"{name}"` for API details')
 
     result = "\n".join(lines)
     log_tool_call(
@@ -117,28 +116,23 @@ async def _do_get_related(
 # ---------------------------------------------------------------------------
 
 
-def make_related_tool(source_def: SourceDefinition):
-    """Create a source-specific get-related tool function."""
-    source_name = source_def.name
-    display = source_def.display_name
-    prefix = _tool_prefix(source_name)
+def make_related_tool(sources: list[SourceDefinition]):
+    """Create the framework-parameterised get-related tool."""
+    Framework = framework_param(sources)
 
     async def get_related(
+        framework: Framework,
         topic: Annotated[
             str,
-            Field(
-                description=f"A {display} API name, concept, or topic to find related "
-                f"documentation for."
-            ),
+            Field(description="An API name, concept, or topic to find related documentation for."),
         ],
         ctx: Context = None,
     ) -> str:
-        return await _do_get_related(topic, source=source_name, ctx=ctx)
+        """Find related documentation for a topic or API name in one framework.
 
-    get_related.__name__ = f"{prefix}_get_related"
-    get_related.__doc__ = (
-        f"Find related {display} documentation for a given topic or API name.\n\n"
-        f"Uses entity matching, synonym resolution, and the API relationship "
-        f"graph to discover related concepts, APIs, and documentation pages."
-    )
+        Uses entity matching, synonym resolution, and the API relationship
+        graph to discover related concepts, APIs, and documentation pages.
+        """
+        return await _do_get_related(topic, source=framework, ctx=ctx)
+
     return get_related

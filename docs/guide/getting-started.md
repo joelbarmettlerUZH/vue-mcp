@@ -49,7 +49,7 @@ Once connected, ask your AI assistant a Vue question. It will use the MCP tools 
 - "Show me the `defineProps` API"
 - "Compare `watch` vs `watchEffect`"
 
-Look for tool calls like `vue_docs_search` or `vue_api_lookup` in the response.
+Look for tool calls like `docs_search` or `api_lookup` in the response.
 
 ## What's Available
 

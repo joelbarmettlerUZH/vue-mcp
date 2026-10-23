@@ -6,17 +6,17 @@ Prompts are guided workflows that structure how your AI assistant approaches com
 Prompt support varies by MCP client. Claude Desktop and Claude Code support prompts natively. Other clients may expose them differently or not at all.
 :::
 
-## Per-Framework Prompts
+## Prompts
 
-Every framework registers three prompts:
+Three prompts cover every framework. Each takes a required `framework` argument:
 
-| Prompt Pattern | Purpose |
+| Prompt | Purpose |
 |---|---|
-| `debug_{framework}_issue` | Systematic debugging workflow for framework-specific issues |
-| `compare_{framework}_apis` | Side-by-side comparison of APIs or patterns |
-| `migrate_{framework}_pattern` | Step-by-step migration guide between patterns |
+| `debug_issue` | Systematic debugging workflow for framework-specific issues |
+| `compare_apis` | Side-by-side comparison of APIs or patterns |
+| `migrate_pattern` | Step-by-step migration guide between patterns |
 
-See the framework pages for concrete prompt names, parameters, and examples:
+See the framework pages for parameters and examples:
 - [Vue.js prompts](/frameworks/vue#prompts)
 - [Vue Router prompts](/frameworks/vue-router#prompts)
 
@@ -27,9 +27,9 @@ See the framework pages for concrete prompt names, parameters, and examples:
 Given a symptom and optional code snippet, the assistant will:
 
 1. Identify the concept involved
-2. Search the documentation with `{framework}_docs_search`
-3. Look up specific APIs using `{framework}_api_lookup`
-4. Explore related patterns with `{framework}_get_related`
+2. Search the documentation with `docs_search`
+3. Look up specific APIs using `api_lookup`
+4. Explore related patterns with `get_related`
 5. Explain the root cause with documentation references
 6. Provide a fix and prevention tip
 
