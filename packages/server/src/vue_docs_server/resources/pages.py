@@ -10,7 +10,12 @@ from vue_docs_server.usage import log_resource_read
 async def _do_read_page(path: str, source: str) -> str:
     """Shared page read implementation."""
     if state.db:
-        content = state.db.read_page(path, source=source)
+        # TOC and entity links advertise extension-less URIs; stored keys keep their extension.
+        candidates = [path] if path.endswith((".md", ".mdx")) else [f"{path}.md", f"{path}.mdx"]
+        content = next(
+            (c for p in candidates if (c := state.db.read_page(p, source=source)) is not None),
+            None,
+        )
         if content is None:
             page_paths = state.page_paths_by_source.get(source, [])
             available = ", ".join(

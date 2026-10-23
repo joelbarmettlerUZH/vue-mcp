@@ -1576,9 +1576,26 @@ class TestReadPage:
         server_state.db = MagicMock()
         server_state.db.read_page.return_value = "# Page Title\n\nContent here."
 
-        result = await _do_read_page("guide/essentials/computed", source="vue")
+        result = await _do_read_page("guide/essentials/computed.md", source="vue")
         assert "Page Title" in result
-        server_state.db.read_page.assert_called_once_with("guide/essentials/computed", source="vue")
+        server_state.db.read_page.assert_called_once_with(
+            "guide/essentials/computed.md", source="vue"
+        )
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("stored_key", ["guide/essentials/computed.md", "guide/forms.mdx"])
+    async def test_read_page_resolves_extensionless_uri(self, stored_key):
+        """TOC links omit the extension; the stored page key keeps .md or .mdx."""
+        from vue_docs_server.resources.pages import _do_read_page
+        from vue_docs_server.startup import state as server_state
+
+        server_state.db = MagicMock()
+        server_state.db.read_page.side_effect = lambda path, source: (
+            "# Found" if path == stored_key else None
+        )
+
+        result = await _do_read_page(stored_key.rsplit(".", 1)[0], source="vue")
+        assert result == "# Found"
 
     @pytest.mark.asyncio
     async def test_read_page_not_found_raises(self):
