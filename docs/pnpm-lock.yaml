@@ -9,11 +9,11 @@ importers:
   .:
     dependencies:
       apexcharts:
-        specifier: ^5.10.4
-        version: 5.10.4
+        specifier: ^8.3.1
+        version: 8.3.1
       vue3-apexcharts:
         specifier: ^1.11.1
-        version: 1.11.1(apexcharts@5.10.4)(vue@3.5.30)
+        version: 1.11.1(apexcharts@8.3.1)(vue@3.5.30)
     devDependencies:
       vitepress:
         specifier: 2.0.0-alpha.17
@@ -508,8 +508,12 @@ packages:
     resolution: {integrity: sha512-zbB9rCJAT1rbjiVDb2hqKFHNYLxgtk8NURxZ3IZwD3F6NtxbXZQCnnSi1Lkx+IDohdPlFp222wVALIheZJQSEg==}
     engines: {node: '>=8'}
 
-  apexcharts@5.10.4:
-    resolution: {integrity: sha512-gt0VUqZ2+mr25ScbUcKZgJr96jKYm4vjOcxEWCEh/E5F4dWqhyo3dBhPRvNNnkKiWxkMd2cBwj3ZYH3rK39fkA==}
+  apex-commons@0.8.2:
+    resolution: {integrity: sha512-XTaIc8S8YEJ6gjNMvnY2Eq5X8UM2IstpYaVSh7iERBUXIefJ8hjUR2nGhWr9guZuQpFvG9NFca9arhrDdYSgIQ==}
+
+  apexcharts@8.3.1:
+    resolution: {integrity: sha512-Z0LX1rPyXBe85082t9EqUWzikOdLy3Z184cvL+4uYS7J4kyLAzK50JBtAGKH5OU8Y6EOPqiH8BqjxjMIBF2+gw==}
+    engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
 
   argparse@1.0.10:
     resolution: {integrity: sha512-o5Roy6tNG4SL/FOkCAN6RzjiakZS25RLYFrcMttJqbdd8BWrnA+fGz57iN5Pb06pvBGvl5gQ0B48dJlslXvoTg==}
@@ -1395,7 +1399,11 @@ snapshots:
     dependencies:
       color-convert: 2.0.1
 
-  apexcharts@5.10.4: {}
+  apex-commons@0.8.2: {}
+
+  apexcharts@8.3.1:
+    dependencies:
+      apex-commons: 0.8.2
 
   argparse@1.0.10:
     dependencies:
@@ -2086,9 +2094,9 @@ snapshots:
       - universal-cookie
       - yaml
 
-  vue3-apexcharts@1.11.1(apexcharts@5.10.4)(vue@3.5.30):
+  vue3-apexcharts@1.11.1(apexcharts@8.3.1)(vue@3.5.30):
     dependencies:
-      apexcharts: 5.10.4
+      apexcharts: 8.3.1
       vue: 3.5.30
 
   vue@3.5.30:
