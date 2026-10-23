@@ -1,0 +1,46 @@
+name: Security scan
+
+on:
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  images:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: server
+            build_target: server
+          - name: ingestion
+            build_target: ingestion
+          - name: postgres
+            image: postgres:17-alpine
+          - name: qdrant
+            image: qdrant/qdrant:v1.17.0
+          - name: traefik
+            image: traefik:v3.6
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        if: matrix.build_target
+        run: docker build --target ${{ matrix.build_target }} -t scan-target:${{ matrix.name }} .
+
+      - name: Resolve image ref
+        id: ref
+        run: echo "ref=${{ matrix.image || format('scan-target:{0}', matrix.name) }}" >> "$GITHUB_OUTPUT"
+
+      - name: Trivy scan (fixable HIGH/CRITICAL only)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ steps.ref.outputs.ref }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "0"

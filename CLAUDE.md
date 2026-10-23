@@ -426,7 +426,7 @@ To restore from a GitHub Actions artifact, use the manual restore workflow:
 | Service | Purpose | Client |
 |---|---|---|
 | Jina AI | Embeddings (jina-embeddings-v5-text-small) + reranking (jina-reranker-v3) | `httpx` |
-| Google Gemini | Contextual enrichment, HyPE generation, RAPTOR summaries (ingestion only, gemini-2.5-flash) | `google-genai` |
+| Google Gemini | Contextual enrichment, HyPE generation, RAPTOR summaries (ingestion only, gemini-3.1-flash-lite) | `google-genai` |
 | Qdrant | Vector database (dense + sparse hybrid search), collection `vue_ecosystem` | `qdrant-client` |
 | PostgreSQL | Shared data layer (entities, synonyms, pages, index state, BM25 model) | `sqlalchemy` + `psycopg` |
 
