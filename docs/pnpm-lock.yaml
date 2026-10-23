@@ -12,8 +12,8 @@ importers:
         specifier: ^5.10.4
         version: 5.10.4
       vue3-apexcharts:
-        specifier: ^1.11.1
-        version: 1.11.1(apexcharts@5.10.4)(vue@3.5.30)
+        specifier: ^1.11.3
+        version: 1.11.3(apexcharts@5.10.4)(vue@3.5.30)
     devDependencies:
       vitepress:
         specifier: 2.0.0-alpha.17
@@ -1009,8 +1009,8 @@ packages:
       postcss:
         optional: true
 
-  vue3-apexcharts@1.11.1:
-    resolution: {integrity: sha512-MbN3vg8bMG19wc0Lm1HkeQvODgLm56DgpIxtNUO0xpf/JCzYWVGE4jzXp2JISzy2s3Kul1yOxNQUYsLvKQ5L9g==}
+  vue3-apexcharts@1.11.3:
+    resolution: {integrity: sha512-YmXi+cslU5XYg3uNF30R3B2MS7TfHsx1bcemi389GipELpzS4jGCs/iZjeXm8R3Brgrlp/ZqOpwemd39AmGWVQ==}
     peerDependencies:
       apexcharts: '>=5.10.0'
       vue: '>=3.0.0'
@@ -2086,7 +2086,7 @@ snapshots:
       - universal-cookie
       - yaml
 
-  vue3-apexcharts@1.11.1(apexcharts@5.10.4)(vue@3.5.30):
+  vue3-apexcharts@1.11.3(apexcharts@5.10.4)(vue@3.5.30):
     dependencies:
       apexcharts: 5.10.4
       vue: 3.5.30

@@ -13,6 +13,6 @@
   },
   "dependencies": {
     "apexcharts": "^5.10.4",
-    "vue3-apexcharts": "^1.11.1"
+    "vue3-apexcharts": "^1.11.3"
   }
 }
