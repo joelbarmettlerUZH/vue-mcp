@@ -9,7 +9,7 @@
   },
   "devDependencies": {
     "vitepress": "2.0.0-alpha.17",
-    "vitepress-plugin-llms": "^1.11.1"
+    "vitepress-plugin-llms": "^1.14.0"
   },
   "dependencies": {
     "apexcharts": "^5.10.4",
