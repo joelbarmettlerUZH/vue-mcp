@@ -102,7 +102,7 @@ services:
     restart: unless-stopped
 
   qdrant:
-    image: qdrant/qdrant:v1.17.0
+    image: qdrant/qdrant:v1.17.1
     volumes:
       - qdrant-data:/qdrant/storage
     networks:
