@@ -193,6 +193,26 @@ See the **[Self-Hosting guide](https://vue-mcp.org/guide/self-hosting)** for Doc
 
 ## Development
 
+### Local development
+
+Start PostgreSQL and Qdrant via Docker Compose:
+
+```bash
+make docker-dev-up
+```
+
+Run the MCP server:
+
+```bash
+uv run vue-docs-server
+```
+
+The server returns empty results until you run ingestion at least once:
+
+```bash
+uv run vue-docs-ingest run --source vue
+```
+
 ```bash
 make help         # Show all available commands
 make test         # Run tests (skips integration tests)
