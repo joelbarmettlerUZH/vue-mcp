@@ -298,7 +298,8 @@ All registered sources are enabled by default. No `ENABLED_SOURCES` env var is n
 
 The server supports two transport modes via `SERVER_TRANSPORT` env var:
 - `stdio` (default): for local MCP client connections
-- `streamable-http`: for production, serves on `SERVER_HOST:SERVER_PORT/mcp`
+- `streamable-http`: for production, serves on `SERVER_HOST:SERVER_PORT/mcp`, stateless (no `Mcp-Session-Id`; requests are independent, so restarts and
+  multiple replicas never invalidate clients). Serves both the 2026-07-28 spec and older handshake clients.
 
 ### Hot Reload
 
@@ -414,6 +415,7 @@ To restore from a GitHub Actions artifact, use the manual restore workflow:
 | `markdown-it-py` for parsing | Token/tree API, heading hierarchy, code blocks, links, images |
 | `rapidfuzz` for entity matching | Sub-millisecond fuzzy matching with typo tolerance |
 | FastMCP with middleware | Error handling, timing, response limiting as composable layers |
+| Framework-parameterised tools, no per-session visibility | The 2026-07-28 MCP spec removed sessions. 4 tools (`docs_search`, `api_lookup`, `get_related`, `ecosystem_search`) take a `framework` enum instead of ~44 per-framework tools. Listings are identical for every connection. |
 | PostgreSQL as shared data layer | Decouples ingestion and server containers, atomic writes, simple backup (`pg_dump`) |
 | SQLAlchemy ORM | Typed models, `create_tables()` for schema management, no raw SQL |
 | Two Docker images from one Dockerfile | Shared base layer, separate concerns (server vs ingestion), independent restart |
@@ -469,6 +471,9 @@ order, merge adjacent, format). No LLM calls at query time.
 - Add `init-db.sql` or migration scripts. SQLAlchemy `create_tables()` is the source of truth for schema.
 - Add source-specific conditionals in the pipeline. Use the SourceAdapter pattern instead.
 - Hardcode Vue-specific logic in the generic markdown parser. Put it in the adapter's `clean_content()`.
-- Add Traefik's `buffering` middleware. It breaks SSE streaming, which MCP needs for `tools/list_changed` notifications.
-- Use `ENABLED_SOURCES` to gate framework availability. All sources in `SOURCE_REGISTRY` are always enabled.
-  Session visibility is controlled by `set_framework_preferences`.
+- Add Traefik's `buffering` middleware. It breaks SSE streaming, which MCP uses for progress notifications.
+- Use `ENABLED_SOURCES` to gate framework availability. All sources in `SOURCE_REGISTRY` are always enabled and always visible.
+- Hide or show tools, resources or prompts per session (`Visibility`, `ctx.enable_components`). The 2026-07-28 MCP spec has
+  no sessions, so listings must be identical for every connection. Tools take a `framework` argument instead.
+- Register per-page or per-entity concrete resources. Across all frameworks `resources/list` would be unmanageable; use the
+  URI templates and the `{framework}://topics` / `{framework}://api/index` resources.

@@ -17,6 +17,7 @@ from qdrant_client.models import SparseVector
 
 from vue_docs_core.clients.jina import RerankResult
 from vue_docs_core.clients.qdrant import SearchHit
+from vue_docs_core.config import settings
 from vue_docs_core.models.entity import ApiEntity, EntityIndex, EntityType
 from vue_docs_core.retrieval.entity_matcher import (
     EntityMatcher,
@@ -719,7 +720,7 @@ class TestApiLookup:
     async def test_lookup_not_found(self):
         result = await _do_api_lookup("nonExistentApi", source="vue", ctx=_mock_ctx())
         assert "No API entity found" in result
-        assert "vue_docs_search" in result
+        assert "docs_search" in result
 
     @pytest.mark.asyncio
     async def test_lookup_not_ready(self):
@@ -982,9 +983,12 @@ class TestMCPIntegration:
                 tools = await client.list_tools()
 
         tool_names = [t.name for t in tools]
-        assert "vue_docs_search" in tool_names
-        assert "vue_api_lookup" in tool_names
-        assert "vue_get_related" in tool_names
+        assert sorted(tool_names) == [
+            "api_lookup",
+            "docs_search",
+            "ecosystem_search",
+            "get_related",
+        ]
 
     @pytest.mark.asyncio
     async def test_tool_schema(self):
@@ -995,8 +999,11 @@ class TestMCPIntegration:
             async with Client(mcp) as client:
                 tools = await client.list_tools()
 
-        search_tool = next(t for t in tools if t.name == "vue_docs_search")
-        params = search_tool.inputSchema
+        search_tool = next(t for t in tools if t.name == "docs_search")
+        params = search_tool.input_schema
+        assert "framework" in params["properties"]
+        assert "framework" in params.get("required", [])
+        assert "vue-router" in params["properties"]["framework"]["enum"]
         assert "query" in params["properties"]
         assert "scope" in params["properties"]
         assert "max_results" in params["properties"]
@@ -1011,8 +1018,9 @@ class TestMCPIntegration:
             async with Client(mcp) as client:
                 tools = await client.list_tools()
 
-        lookup_tool = next(t for t in tools if t.name == "vue_api_lookup")
-        params = lookup_tool.inputSchema
+        lookup_tool = next(t for t in tools if t.name == "api_lookup")
+        params = lookup_tool.input_schema
+        assert "framework" in params.get("required", [])
         assert "api_name" in params["properties"]
         assert "api_name" in params.get("required", [])
 
@@ -1043,8 +1051,8 @@ class TestMCPIntegration:
 
             async with Client(mcp) as client:
                 result = await client.call_tool(
-                    "vue_docs_search",
-                    {"query": "how does computed caching work"},
+                    "docs_search",
+                    {"framework": "vue", "query": "how does computed caching work"},
                 )
 
         assert not result.is_error
@@ -1066,8 +1074,8 @@ class TestMCPIntegration:
         ):
             async with Client(mcp) as client:
                 result = await client.call_tool(
-                    "vue_api_lookup",
-                    {"api_name": "ref"},
+                    "api_lookup",
+                    {"framework": "vue", "api_name": "ref"},
                 )
 
         assert not result.is_error
@@ -1098,8 +1106,13 @@ class TestMCPIntegration:
 
             async with Client(mcp) as client:
                 await client.call_tool(
-                    "vue_docs_search",
-                    {"query": "ref basics", "scope": "guide/essentials", "max_results": 5},
+                    "docs_search",
+                    {
+                        "framework": "vue",
+                        "query": "ref basics",
+                        "scope": "guide/essentials",
+                        "max_results": 5,
+                    },
                 )
 
         # Verify Qdrant was called with the scope filter and source
@@ -1130,8 +1143,8 @@ class TestMCPIntegration:
 
             async with Client(mcp) as client:
                 await client.call_tool(
-                    "vue_docs_search",
-                    {"query": "how does computed work"},
+                    "docs_search",
+                    {"framework": "vue", "query": "how does computed work"},
                 )
 
         call_kwargs = server_state.qdrant.hybrid_search.call_args
@@ -1145,9 +1158,9 @@ class TestMCPIntegration:
 
         with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
             async with Client(mcp) as client:
-                info = client.initialize_result
-                assert info is not None
-                assert info.serverInfo.name == "Vue Ecosystem MCP Server"
+                assert client.server_info.name == "Vue Ecosystem MCP Server"
+                assert "docs_search" in client.instructions
+                assert "set_framework_preferences" not in client.instructions
 
 
 # ---------------------------------------------------------------------------
@@ -1258,62 +1271,6 @@ class TestMCPResources:
         # Should NOT include api pages
         assert "api/reactivity-core" not in text
 
-    @pytest.mark.asyncio
-    async def test_preferences_tool_registered(self):
-        """The set_framework_preferences tool is always visible."""
-        from vue_docs_server.main import mcp
-
-        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
-            async with Client(mcp) as client:
-                tools = await client.list_tools()
-
-        tool_names = [t.name for t in tools]
-        assert "set_framework_preferences" in tool_names
-
-    @pytest.mark.asyncio
-    async def test_preferences_resource_registered(self):
-        """The ecosystem://preferences resource is always visible."""
-        from vue_docs_server.main import mcp
-
-        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
-            async with Client(mcp) as client:
-                resources = await client.list_resources()
-
-        resource_uris = [str(r.uri) for r in resources]
-        assert "ecosystem://preferences" in resource_uris
-
-    @pytest.mark.asyncio
-    async def test_read_preferences_resource(self):
-        """Preferences resource returns framework activation status."""
-        from vue_docs_server.main import mcp
-
-        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
-            async with Client(mcp) as client:
-                result = await client.read_resource("ecosystem://preferences")
-
-        text = result[0].text if hasattr(result[0], "text") else str(result[0])
-        assert "Framework Preferences" in text
-        assert "Vue.js" in text
-
-    @pytest.mark.asyncio
-    async def test_call_set_framework_preferences(self):
-        """Calling set_framework_preferences returns confirmation."""
-        from vue_docs_server.main import mcp
-
-        _setup_server_state()
-
-        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
-            async with Client(mcp) as client:
-                result = await client.call_tool(
-                    "set_framework_preferences",
-                    {"vue": True},
-                )
-
-        assert not result.is_error
-        text = result.content[0].text
-        assert "Preferences Updated" in text
-        assert "Vue.js" in text
-
     """Test MCP prompt registration and rendering via fastmcp.Client."""
 
     @pytest.mark.asyncio
@@ -1326,9 +1283,7 @@ class TestMCPResources:
                 prompts = await client.list_prompts()
 
         prompt_names = [p.name for p in prompts]
-        assert "debug_vue_issue" in prompt_names
-        assert "compare_vue_apis" in prompt_names
-        assert "migrate_vue_pattern" in prompt_names
+        assert sorted(prompt_names) == ["compare_apis", "debug_issue", "migrate_pattern"]
 
     @pytest.mark.asyncio
     async def test_debug_prompt_renders(self):
@@ -1338,14 +1293,15 @@ class TestMCPResources:
         with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
             async with Client(mcp) as client:
                 result = await client.get_prompt(
-                    "debug_vue_issue",
-                    arguments={"symptom": "computed not updating"},
+                    "debug_issue",
+                    arguments={"framework": "vue", "symptom": "computed not updating"},
                 )
 
         assert len(result.messages) == 2
         all_text = " ".join(m.content.text for m in result.messages)
         assert "computed not updating" in all_text
-        assert "vue_docs_search" in all_text
+        assert "docs_search" in all_text
+        assert "Vue.js" in all_text
         # First message is assistant context, second is user request
         assert result.messages[0].role == "assistant"
         assert result.messages[1].role == "user"
@@ -1358,8 +1314,8 @@ class TestMCPResources:
         with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
             async with Client(mcp) as client:
                 result = await client.get_prompt(
-                    "compare_vue_apis",
-                    arguments={"items": "ref, reactive"},
+                    "compare_apis",
+                    arguments={"framework": "vue", "items": "ref, reactive"},
                 )
 
         all_text = " ".join(m.content.text for m in result.messages)
@@ -1374,8 +1330,9 @@ class TestMCPResources:
         with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
             async with Client(mcp) as client:
                 result = await client.get_prompt(
-                    "migrate_vue_pattern",
+                    "migrate_pattern",
                     arguments={
+                        "framework": "vue",
                         "from_pattern": "Options API",
                         "to_pattern": "Composition API",
                     },
@@ -1442,212 +1399,6 @@ class TestGetRelated:
         server_state.bm25 = None
         with pytest.raises(ToolError, match="not initialized"):
             await _do_get_related("ref", source="vue", ctx=_mock_ctx())
-
-
-# ---------------------------------------------------------------------------
-# Tests: Concrete resource enumeration (Gap 1)
-# ---------------------------------------------------------------------------
-
-
-class TestConcreteResources:
-    """Verify that _register_concrete_resources creates concrete resources from state."""
-
-    @pytest.mark.asyncio
-    async def test_concrete_page_resources_listed(self):
-        """Concrete page resources appear in list_resources."""
-        from vue_docs_server.main import mcp
-
-        _setup_server_state()
-
-        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
-            async with Client(mcp) as client:
-                resources = await client.list_resources()
-
-        uris = [str(r.uri) for r in resources]
-        # Pages from _setup_server_state have .md stripped
-        assert "vue://pages/guide/essentials/computed" in uris
-        assert "vue://pages/api/reactivity-core" in uris
-
-    @pytest.mark.asyncio
-    async def test_concrete_entity_resources_listed(self):
-        """Concrete API entity resources appear in list_resources."""
-        from vue_docs_server.main import mcp
-
-        _setup_server_state()
-
-        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
-            async with Client(mcp) as client:
-                resources = await client.list_resources()
-
-        uris = [str(r.uri) for r in resources]
-        assert "vue://api/entities/ref" in uris
-        assert "vue://api/entities/computed" in uris
-
-    @pytest.mark.asyncio
-    async def test_concrete_section_resources_listed(self):
-        """Concrete section topics resources appear in list_resources."""
-        from vue_docs_server.main import mcp
-
-        _setup_server_state()
-
-        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
-            async with Client(mcp) as client:
-                resources = await client.list_resources()
-
-        uris = [str(r.uri) for r in resources]
-        # Sections are top-level folders: "guide" and "api"
-        assert "vue://topics/guide" in uris
-        assert "vue://topics/api" in uris
-
-    @pytest.mark.asyncio
-    async def test_concrete_page_resource_readable(self):
-        """A concrete page resource returns content when read."""
-        from vue_docs_server.main import mcp
-
-        server_state = _setup_server_state()
-        server_state.db = MagicMock()
-        server_state.db.read_page.return_value = "# Computed Properties\n\nContent here."
-
-        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
-            async with Client(mcp) as client:
-                result = await client.read_resource("vue://pages/guide/essentials/computed")
-
-        text = result[0].text if hasattr(result[0], "text") else str(result[0])
-        assert "Computed Properties" in text
-
-    @pytest.mark.asyncio
-    async def test_concrete_entity_resource_readable(self):
-        """A concrete entity resource returns entity details when read."""
-        from vue_docs_server.main import mcp
-
-        _setup_server_state()
-
-        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
-            async with Client(mcp) as client:
-                result = await client.read_resource("vue://api/entities/ref")
-
-        text = result[0].text if hasattr(result[0], "text") else str(result[0])
-        assert "`ref`" in text
-        assert "Composable" in text
-
-    def test_register_concrete_resources_empty_state(self):
-        """_register_concrete_resources adds nothing when state is empty."""
-        from vue_docs_server.main import _register_concrete_resources
-        from vue_docs_server.startup import state as server_state
-
-        server_state.page_paths_by_source = {"vue": []}
-        server_state.entity_indices = {"vue": EntityIndex()}
-        server_state.folder_structures_by_source = {"vue": {}}
-
-        mock_app = MagicMock()
-        _register_concrete_resources(mock_app)
-
-        mock_app.add_resource.assert_not_called()
-
-
-# ---------------------------------------------------------------------------
-# Tests: Framework preferences visibility (Gap 2)
-# ---------------------------------------------------------------------------
-
-
-class TestFrameworkPreferences:
-    """Verify the set_framework_preferences tool and ecosystem://preferences resource."""
-
-    @pytest.mark.asyncio
-    async def test_preferences_tool_enables_vue(self):
-        """set_framework_preferences enables vue when vue=True."""
-        from vue_docs_server.main import set_framework_preferences
-
-        ctx = _mock_ctx()
-        ctx.enable_components = AsyncMock()
-        ctx.disable_components = AsyncMock()
-
-        result = await set_framework_preferences(vue=True, ctx=ctx)
-
-        assert "Preferences Updated" in result
-        ctx.enable_components.assert_any_call(tags={"vue"})
-
-    @pytest.mark.asyncio
-    async def test_preferences_tool_disables_vue(self):
-        """set_framework_preferences disables vue when vue=False."""
-        from vue_docs_server.main import set_framework_preferences
-
-        ctx = _mock_ctx()
-        ctx.enable_components = AsyncMock()
-        ctx.disable_components = AsyncMock()
-
-        result = await set_framework_preferences(vue=False, ctx=ctx)
-
-        ctx.disable_components.assert_any_call(tags={"vue"})
-        assert "Inactive" in result
-
-    @pytest.mark.asyncio
-    async def test_preferences_activates_all_requested(self):
-        """All requested sources are activated."""
-        from vue_docs_server.main import set_framework_preferences
-
-        ctx = _mock_ctx()
-        ctx.enable_components = AsyncMock()
-        ctx.disable_components = AsyncMock()
-
-        result = await set_framework_preferences(vue=True, vue_router=True, vueuse=False, ctx=ctx)
-
-        assert "Vue.js" in result
-        assert "Vue Router" in result
-        assert ctx.enable_components.call_count == 2
-        ctx.enable_components.assert_any_call(tags={"vue"})
-        ctx.enable_components.assert_any_call(tags={"vue-router"})
-        ctx.disable_components.assert_any_call(tags={"vueuse"})
-        ctx.disable_components.assert_any_call(tags={"vite"})
-        ctx.disable_components.assert_any_call(tags={"vitest"})
-        ctx.disable_components.assert_any_call(tags={"nuxt"})
-        ctx.disable_components.assert_any_call(tags={"pinia"})
-        ctx.disable_components.assert_any_call(tags={"vue-devtools"})
-
-    @pytest.mark.asyncio
-    async def test_preferences_stores_state(self):
-        """Preferences are stored in session state."""
-        from vue_docs_server.main import set_framework_preferences
-
-        ctx = _mock_ctx()
-        ctx.enable_components = AsyncMock()
-        ctx.disable_components = AsyncMock()
-
-        await set_framework_preferences(vue=True, vue_router=False, vueuse=False, ctx=ctx)
-
-        ctx.set_state.assert_called_once_with(
-            "framework_preferences",
-            {
-                "vue": True,
-                "vue-router": False,
-                "vueuse": False,
-                "vite": False,
-                "vitest": False,
-                "nuxt": False,
-                "pinia": False,
-                "vue-devtools": False,
-                "vitepress": False,
-                "pinia-colada": False,
-                "vee-validate": False,
-                "formkit": False,
-                "shadcn-vue": False,
-                "vue-flow": False,
-            },
-        )
-
-    @pytest.mark.asyncio
-    async def test_preferences_resource_content(self):
-        """ecosystem://preferences resource shows framework info."""
-        from vue_docs_server.main import mcp
-
-        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
-            async with Client(mcp) as client:
-                result = await client.read_resource("ecosystem://preferences")
-
-        text = result[0].text if hasattr(result[0], "text") else str(result[0])
-        assert "Framework Preferences" in text
-        assert "Vue.js" in text
-        assert "set_framework_preferences" in text
 
 
 # ---------------------------------------------------------------------------
@@ -1935,7 +1686,7 @@ class TestStartupPaths:
 
     @pytest.mark.asyncio
     async def test_hot_reload_loop_reloads_on_change(self):
-        """hot_reload_loop triggers data reload and resource refresh when PG timestamps change."""
+        """hot_reload_loop triggers a data reload when PG timestamps change."""
         import vue_docs_server.startup as startup_module
         from vue_docs_server.startup import state
 
@@ -1954,15 +1705,10 @@ class TestStartupPaths:
         startup_module._last_reload_ts = datetime(2025, 1, 1, tzinfo=UTC)
 
         reload_called = False
-        resources_refreshed = False
 
         def mock_load(db):
             nonlocal reload_called
             reload_called = True
-
-        def mock_register():
-            nonlocal resources_refreshed
-            resources_refreshed = True
 
         try:
             with (
@@ -1970,7 +1716,7 @@ class TestStartupPaths:
                 patch.object(startup_module, "settings") as mock_settings,
             ):
                 mock_settings.database_url = "postgresql://test"
-                task = asyncio.create_task(startup_module.hot_reload_loop(mock_register))
+                task = asyncio.create_task(startup_module.hot_reload_loop())
                 await asyncio.sleep(0.1)
                 task.cancel()
                 with contextlib.suppress(asyncio.CancelledError):
@@ -1979,7 +1725,6 @@ class TestStartupPaths:
             startup_module._HOT_RELOAD_INTERVAL = original_interval
 
         assert reload_called
-        assert resources_refreshed
 
 
 # ---------------------------------------------------------------------------
@@ -2078,8 +1823,8 @@ class TestMCPEndToEnd:
 
             async with Client(mcp) as client:
                 result = await client.call_tool(
-                    "vue_docs_search",
-                    {"query": "nonexistent topic xyz"},
+                    "docs_search",
+                    {"framework": "vue", "query": "nonexistent topic xyz"},
                 )
 
         assert not result.is_error
@@ -2118,8 +1863,8 @@ class TestMCPEndToEnd:
 
             async with Client(mcp) as client:
                 result = await client.call_tool(
-                    "vue_docs_search",
-                    {"query": "ref basics", "scope": "guide/advanced"},
+                    "docs_search",
+                    {"framework": "vue", "query": "ref basics", "scope": "guide/advanced"},
                 )
 
         assert not result.is_error
@@ -2140,8 +1885,8 @@ class TestMCPEndToEnd:
         ):
             async with Client(mcp) as client:
                 result = await client.call_tool(
-                    "vue_api_lookup",
-                    {"api_name": "nonExistentApi"},
+                    "api_lookup",
+                    {"framework": "vue", "api_name": "nonExistentApi"},
                 )
 
         assert not result.is_error
@@ -2253,8 +1998,8 @@ class TestMCPEndToEnd:
 
             async with Client(mcp) as client:
                 result = await client.call_tool(
-                    "vue_docs_search",
-                    {"query": "computed caching"},
+                    "docs_search",
+                    {"framework": "vue", "query": "computed caching"},
                 )
 
         assert not result.is_error
@@ -2272,9 +2017,7 @@ class TestMCPEndToEnd:
                 prompts = await client.list_prompts()
 
         prompt_names = [p.name for p in prompts]
-        assert "debug_vue_issue" in prompt_names
-        assert "compare_vue_apis" in prompt_names
-        assert "migrate_vue_pattern" in prompt_names
+        assert sorted(prompt_names) == ["compare_apis", "debug_issue", "migrate_pattern"]
 
     @pytest.mark.asyncio
     async def test_get_prompt_debug(self):
@@ -2284,8 +2027,8 @@ class TestMCPEndToEnd:
         with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
             async with Client(mcp) as client:
                 result = await client.get_prompt(
-                    "debug_vue_issue",
-                    {"symptom": "Component not rendering"},
+                    "debug_issue",
+                    {"framework": "vue", "symptom": "Component not rendering"},
                 )
 
         assert len(result.messages) >= 2
@@ -2293,185 +2036,117 @@ class TestMCPEndToEnd:
         all_text = " ".join(m.content.text for m in result.messages)
         assert "Component not rendering" in all_text
 
+
+# ---------------------------------------------------------------------------
+# Tests: framework-parameterised tools (no per-session visibility)
+# ---------------------------------------------------------------------------
+
+
+class TestFrameworkParameterisedTools:
+    """Tools, prompts and resources are the same for every connection and cover all sources."""
+
     @pytest.mark.asyncio
-    async def test_search_stores_query_history(self):
-        """Search tool stores query history in session state."""
+    async def test_framework_enum_matches_registry(self):
+        from vue_docs_core.data.sources import get_enabled_sources
         from vue_docs_server.main import mcp
 
-        _setup_server_state()
-
-        mock_embed_result = MagicMock()
-        mock_embed_result.embeddings = [[0.1] * 1024]
-
-        with (
-            patch("vue_docs_server.main.startup"),
-            patch("vue_docs_server.main.shutdown"),
-            patch("vue_docs_server.tools.search.JinaClient") as MockJina,
-        ):
-            mock_jina = AsyncMock()
-            mock_jina.embed.return_value = mock_embed_result
-            mock_jina.rerank.return_value = RerankResult(
-                indices=[0], scores=[0.9], total_tokens=100
-            )
-            mock_jina.close = AsyncMock()
-            MockJina.return_value = mock_jina
-
+        expected = [s.name for s in get_enabled_sources(settings.enabled_sources)]
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
             async with Client(mcp) as client:
-                # First search
-                await client.call_tool("vue_docs_search", {"query": "computed properties"})
-                # Second search
-                await client.call_tool("vue_docs_search", {"query": "ref vs reactive"})
-                # The query history is stored in session state —
-                # verify through a third call (state accumulates)
-                result = await client.call_tool("vue_docs_search", {"query": "watch effect"})
+                tools = await client.list_tools()
 
-        assert not result.is_error
-
-
-# ---------------------------------------------------------------------------
-# Tests: Session isolation (multi-user)
-# ---------------------------------------------------------------------------
-
-
-class TestSessionIsolation:
-    """Verify that two concurrent MCP sessions have isolated state.
-
-    FastMCP prefixes state keys with ``session_id``, which is a UUID
-    generated per ``Client`` connection.  These tests prove that
-    tool-call side-effects in one session are invisible to another.
-    """
+        for name in ("docs_search", "api_lookup", "get_related"):
+            tool = next(t for t in tools if t.name == name)
+            assert tool.input_schema["properties"]["framework"]["enum"] == expected
 
     @pytest.mark.asyncio
-    async def test_query_history_isolated_between_sessions(self):
-        """Query history accumulated in session A is not visible in session B."""
+    async def test_listings_identical_across_connections(self):
         from vue_docs_server.main import mcp
 
-        _setup_server_state()
+        async def snapshot() -> tuple[list[str], list[str], list[str]]:
+            async with Client(mcp) as client:
+                return (
+                    sorted(t.name for t in await client.list_tools()),
+                    sorted(p.name for p in await client.list_prompts()),
+                    sorted(str(r.uri) for r in await client.list_resources()),
+                )
 
-        mock_embed_result = MagicMock()
-        mock_embed_result.embeddings = [[0.1] * 1024]
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            first = await snapshot()
+            second = await snapshot()
+
+        assert first == second
+
+    @pytest.mark.asyncio
+    async def test_every_framework_has_resources(self):
+        from vue_docs_core.data.sources import get_enabled_sources
+        from vue_docs_server.main import mcp
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                uris = {str(r.uri) for r in await client.list_resources()}
+                templates = {t.uriTemplate for t in await client.list_resource_templates()}
+
+        for source in get_enabled_sources(settings.enabled_sources):
+            assert f"{source.name}://topics" in uris
+            assert f"{source.name}://api/index" in uris
+            assert f"{source.name}://pages/{{path*}}" in templates
+
+    @pytest.mark.asyncio
+    async def test_no_concrete_page_resources(self):
+        """Per-page resources would make resources/list unmanageable across all frameworks."""
+        from vue_docs_server.main import mcp
+
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                uris = [str(r.uri) for r in await client.list_resources()]
+
+        assert not [u for u in uris if "://pages/" in u or "://api/entities/" in u]
+
+    @pytest.mark.asyncio
+    async def test_search_dispatches_to_requested_framework(self):
+        from vue_docs_server.main import mcp
 
         with (
             patch("vue_docs_server.main.startup"),
             patch("vue_docs_server.main.shutdown"),
-            patch("vue_docs_server.tools.search.JinaClient") as MockJina,
+            patch("vue_docs_server.tools.search._do_search", new_callable=AsyncMock) as do_search,
         ):
-            mock_jina = AsyncMock()
-            mock_jina.embed.return_value = mock_embed_result
-            mock_jina.rerank.return_value = RerankResult(
-                indices=[0], scores=[0.9], total_tokens=100
-            )
-            mock_jina.close = AsyncMock()
-            MockJina.return_value = mock_jina
+            do_search.return_value = "ok"
+            async with Client(mcp) as client:
+                await client.call_tool(
+                    "docs_search", {"framework": "vue-router", "query": "navigation guards"}
+                )
 
-            # Session A: run searches to build up history
-            async with Client(mcp) as client_a:
-                await client_a.call_tool("vue_docs_search", {"query": "session A query 1"})
-                await client_a.call_tool("vue_docs_search", {"query": "session A query 2"})
-
-            # Session B: fresh session should have no history from A
-            async with Client(mcp) as client_b:
-                result_b = await client_b.call_tool("vue_docs_search", {"query": "session B query"})
-
-        assert not result_b.is_error
-        # If state leaked, session B would see A's history.
-        # The fact that the call succeeds cleanly (no prior state) is the proof.
-        # We verify it produces a valid result (not corrupted by A's state).
-        assert len(result_b.content) > 0
+        assert do_search.call_args.kwargs["source"] == "vue-router"
 
     @pytest.mark.asyncio
-    async def test_preferences_isolated_between_sessions(self):
-        """Framework preferences set in session A are not visible in session B."""
+    async def test_unknown_framework_rejected(self):
         from vue_docs_server.main import mcp
 
-        _setup_server_state()
+        with patch("vue_docs_server.main.startup"), patch("vue_docs_server.main.shutdown"):
+            async with Client(mcp) as client:
+                with pytest.raises(Exception, match="framework"):
+                    await client.call_tool("docs_search", {"framework": "angular", "query": "x"})
+
+    def test_http_transport_is_stateless(self):
+        from vue_docs_server import main as main_module
 
         with (
-            patch("vue_docs_server.main.startup"),
-            patch("vue_docs_server.main.shutdown"),
+            patch.object(main_module.settings, "server_transport", "streamable-http"),
+            patch.object(main_module.mcp, "run") as run,
         ):
-            # Session A: disable Vue (unusual but tests isolation)
-            async with Client(mcp) as client_a:
-                result_a = await client_a.call_tool("set_framework_preferences", {"vue": False})
-                text_a = result_a.content[0].text
-                assert "Inactive" in text_a
+            main_module.main()
 
-                # After disabling vue, session A should see fewer tools
-                tools_a = await client_a.list_tools()
-                tool_names_a = {t.name for t in tools_a}
+        assert run.call_args.kwargs["stateless_http"] is True
 
-            # Session B: fresh session, should see default (vue active)
-            async with Client(mcp) as client_b:
-                tools_b = await client_b.list_tools()
-                tool_names_b = {t.name for t in tools_b}
-
-        # Session A disabled vue, so vue-tagged tools should be hidden
-        assert "vue_docs_search" not in tool_names_a
-        # Session B is fresh — vue tools should be visible (default)
-        assert "vue_docs_search" in tool_names_b
-
-    @pytest.mark.asyncio
-    async def test_concurrent_sessions_independent(self):
-        """Two sessions open simultaneously maintain independent state."""
-        from vue_docs_server.main import mcp
-
-        _setup_server_state()
-
-        mock_embed_result = MagicMock()
-        mock_embed_result.embeddings = [[0.1] * 1024]
+    def test_stdio_transport_gets_no_http_options(self):
+        from vue_docs_server import main as main_module
 
         with (
-            patch("vue_docs_server.main.startup"),
-            patch("vue_docs_server.main.shutdown"),
-            patch("vue_docs_server.tools.search.JinaClient") as MockJina,
+            patch.object(main_module.settings, "server_transport", "stdio"),
+            patch.object(main_module.mcp, "run") as run,
         ):
-            mock_jina = AsyncMock()
-            mock_jina.embed.return_value = mock_embed_result
-            mock_jina.rerank.return_value = RerankResult(
-                indices=[0], scores=[0.9], total_tokens=100
-            )
-            mock_jina.close = AsyncMock()
-            MockJina.return_value = mock_jina
+            main_module.main()
 
-            # Open both sessions at the same time
-            async with Client(mcp) as client_a, Client(mcp) as client_b:
-                # Session A: disable vue
-                await client_a.call_tool("set_framework_preferences", {"vue": False})
-                # Session B: should still have vue enabled (default)
-                tools_b = await client_b.list_tools()
-                tool_names_b = {t.name for t in tools_b}
-
-                # Verify A's preference change didn't affect B
-                assert "vue_docs_search" in tool_names_b
-
-                # Session A should have vue disabled
-                tools_a = await client_a.list_tools()
-                tool_names_a = {t.name for t in tools_a}
-                assert "vue_docs_search" not in tool_names_a
-
-    @pytest.mark.asyncio
-    async def test_visibility_resets_on_new_session(self):
-        """A new session does not inherit visibility rules from a prior session."""
-        from vue_docs_server.main import mcp
-
-        _setup_server_state()
-
-        with (
-            patch("vue_docs_server.main.startup"),
-            patch("vue_docs_server.main.shutdown"),
-        ):
-            # Session 1: disable vue
-            async with Client(mcp) as client1:
-                await client1.call_tool("set_framework_preferences", {"vue": False})
-                tools1 = await client1.list_tools()
-                assert "vue_docs_search" not in {t.name for t in tools1}
-
-            # Session 2: fresh — should see vue tools
-            async with Client(mcp) as client2:
-                tools2 = await client2.list_tools()
-                assert "vue_docs_search" in {t.name for t in tools2}
-
-            # Session 3: also fresh
-            async with Client(mcp) as client3:
-                tools3 = await client3.list_tools()
-                assert "vue_docs_search" in {t.name for t in tools3}
+        run.assert_called_once_with(transport="stdio")

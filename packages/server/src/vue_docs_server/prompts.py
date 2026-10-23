@@ -1,4 +1,4 @@
-"""MCP prompt templates — per-source factories for Vue ecosystem workflows."""
+"""MCP prompt templates — framework-parameterised workflows for the Vue ecosystem."""
 
 from typing import Annotated
 
@@ -6,15 +6,16 @@ from fastmcp.prompts import Message, PromptResult
 from pydantic import Field
 
 from vue_docs_core.data.sources import SourceDefinition
-from vue_docs_server.tools.search import _tool_prefix
+from vue_docs_server.tools.common import framework_param, tool_ref
 
 
-def make_debug_prompt(source_def: SourceDefinition):
-    """Create a source-specific debug prompt function."""
-    display = source_def.display_name
-    prefix = _tool_prefix(source_def.name)
+def make_debug_prompt(sources: list[SourceDefinition]):
+    """Create the framework-parameterised debug prompt function."""
+    Framework = framework_param(sources)
+    display_names = {s.name: s.display_name for s in sources}
 
     def debug_issue(
+        framework: Framework,
         symptom: Annotated[
             str, Field(description="Description of the unexpected behavior or error message.")
         ],
@@ -26,6 +27,8 @@ def make_debug_prompt(source_def: SourceDefinition):
             ),
         ] = "",
     ) -> PromptResult:
+        """Structured prompt for debugging an issue using the framework's documentation."""
+        display = display_names[framework]
         code_block = ""
         if code_snippet:
             code_block = f"\n\n```\n{code_snippet}\n```"
@@ -44,10 +47,11 @@ def make_debug_prompt(source_def: SourceDefinition):
                     f"## Debugging workflow\n\n"
                     f"Please follow these steps:\n\n"
                     f"1. **Identify the concept** — Determine which {display} concept "
-                    f"is involved, then search with `{prefix}_docs_search`\n"
+                    f"is involved, then search with {tool_ref('docs_search', framework)}\n"
                     f"2. **Check API details** — Look up the specific APIs using "
-                    f"`{prefix}_api_lookup` to find known gotchas or constraints\n"
-                    f"3. **Explore related patterns** — Use `{prefix}_get_related` to "
+                    f"{tool_ref('api_lookup', framework)} to find known gotchas or constraints\n"
+                    f"3. **Explore related patterns** — Use "
+                    f"{tool_ref('get_related', framework)} to "
                     f"discover if alternative approaches exist\n"
                     f"4. **Explain and fix** — Provide:\n"
                     f"   - **Root cause** with a reference to the relevant doc section\n"
@@ -57,28 +61,29 @@ def make_debug_prompt(source_def: SourceDefinition):
             ],
         )
 
-    debug_issue.__name__ = f"debug_{prefix}_issue"
-    debug_issue.__doc__ = (
-        f"Structured prompt for debugging a {display} issue using the documentation."
-    )
     return debug_issue
 
 
-def make_compare_prompt(source_def: SourceDefinition):
-    """Create a source-specific comparison prompt function."""
-    display = source_def.display_name
-    prefix = _tool_prefix(source_def.name)
+def make_compare_prompt(sources: list[SourceDefinition]):
+    """Create the framework-parameterised comparison prompt function."""
+    Framework = framework_param(sources)
+    display_names = {s.name: s.display_name for s in sources}
 
     def compare_apis(
+        framework: Framework,
         items: Annotated[
             str,
-            Field(description=f"Comma-separated list of {display} APIs or patterns to compare."),
+            Field(description="Comma-separated list of APIs or patterns to compare."),
         ],
     ) -> PromptResult:
+        """Compare two or more APIs or patterns using the framework's documentation."""
+        display = display_names[framework]
         api_list = [item.strip() for item in items.split(",") if item.strip()]
         formatted = ", ".join(f"`{a}`" for a in api_list)
 
-        lookup_steps = "\n".join(f'   - `{prefix}_api_lookup` → `"{a}"`' for a in api_list)
+        lookup_steps = "\n".join(
+            f'   - {tool_ref("api_lookup", framework)} → `"{a}"`' for a in api_list
+        )
 
         return PromptResult(
             messages=[
@@ -91,9 +96,10 @@ def make_compare_prompt(source_def: SourceDefinition):
                     f"## Compare: {formatted}\n\n"
                     f"### Research steps\n\n"
                     f"1. **Look up each API:**\n{lookup_steps}\n"
-                    f"2. **Search for usage context** — `{prefix}_docs_search` for each API\n"
-                    f"3. **Find connections** — `{prefix}_get_related` to discover shared "
-                    f"patterns\n\n"
+                    f"2. **Search for usage context** — {tool_ref('docs_search', framework)} "
+                    f"for each API\n"
+                    f"3. **Find connections** — {tool_ref('get_related', framework)} to "
+                    f"discover shared patterns\n\n"
                     f"### Output format\n\n"
                     f"Present the comparison as:\n\n"
                     f"| Aspect | {' | '.join(f'`{a}`' for a in api_list)} |\n"
@@ -110,28 +116,27 @@ def make_compare_prompt(source_def: SourceDefinition):
             ],
         )
 
-    compare_apis.__name__ = f"compare_{prefix}_apis"
-    compare_apis.__doc__ = (
-        f"Compare two or more {display} APIs or patterns using the official documentation."
-    )
     return compare_apis
 
 
-def make_migrate_prompt(source_def: SourceDefinition):
-    """Create a source-specific migration prompt function."""
-    display = source_def.display_name
-    prefix = _tool_prefix(source_def.name)
+def make_migrate_prompt(sources: list[SourceDefinition]):
+    """Create the framework-parameterised migration prompt function."""
+    Framework = framework_param(sources)
+    display_names = {s.name: s.display_name for s in sources}
 
     def migrate_pattern(
+        framework: Framework,
         from_pattern: Annotated[
             str,
-            Field(description=f"The current {display} pattern or API being migrated from."),
+            Field(description="The current pattern or API being migrated from."),
         ],
         to_pattern: Annotated[
             str,
-            Field(description=f"The target {display} pattern or API to migrate to."),
+            Field(description="The target pattern or API to migrate to."),
         ],
     ) -> PromptResult:
+        """Guide for migrating between patterns using the framework's documentation."""
+        display = display_names[framework]
         return PromptResult(
             messages=[
                 Message(
@@ -143,14 +148,14 @@ def make_migrate_prompt(source_def: SourceDefinition):
                 Message(
                     f"## Migrate: {from_pattern} → {to_pattern}\n\n"
                     f"### Research steps\n\n"
-                    f"1. **Understand the source** — `{prefix}_docs_search` for "
+                    f"1. **Understand the source** — {tool_ref('docs_search', framework)} for "
                     f'`"{from_pattern}"`\n'
-                    f"2. **Understand the target** — `{prefix}_docs_search` for "
+                    f"2. **Understand the target** — {tool_ref('docs_search', framework)} for "
                     f'`"{to_pattern}"`\n'
-                    f"3. **Look up relevant APIs** — `{prefix}_api_lookup` for key APIs "
-                    f"in both patterns\n"
-                    f"4. **Find related concepts** — `{prefix}_get_related` to discover "
-                    f"the full migration surface\n\n"
+                    f"3. **Look up relevant APIs** — {tool_ref('api_lookup', framework)} for "
+                    f"key APIs in both patterns\n"
+                    f"4. **Find related concepts** — {tool_ref('get_related', framework)} to "
+                    f"discover the full migration surface\n\n"
                     f"### Output format\n\n"
                     f"Structure the migration guide as:\n\n"
                     f"1. **Why migrate** — Benefits of `{to_pattern}` over "
@@ -167,8 +172,4 @@ def make_migrate_prompt(source_def: SourceDefinition):
             ],
         )
 
-    migrate_pattern.__name__ = f"migrate_{prefix}_pattern"
-    migrate_pattern.__doc__ = (
-        f"Guide for migrating between {display} patterns using the official documentation."
-    )
     return migrate_pattern

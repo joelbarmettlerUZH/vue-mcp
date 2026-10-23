@@ -45,7 +45,7 @@ All content is embedded using Jina's unified embedding model (`jina-embeddings-v
 
 ## Query Pipeline
 
-When your AI assistant calls `vue_docs_search`, the query goes through a 6-step pipeline:
+When your AI assistant calls `docs_search`, the query goes through a 6-step pipeline:
 
 ```
 Query -> Embed & Detect -> Hybrid Search -> Resolve HyPE -> Expand -> Rerank -> Reconstruct

@@ -5,45 +5,44 @@
 Vue Docs MCP provides deep access to the official [Pinia Colada documentation](https://pinia-colada.esm.dev), covering the smart data-fetching layer for Vue: queries, mutations, infinite queries, the query/mutation cache, the `defineQuery` factory pattern, the official plugin set, and migration paths from TanStack Query (Vue Query).
 
 ::: tip Pairs with Pinia
-Pinia Colada is built on Pinia and shares its devtools and reactivity. Activate both frameworks together for the best experience: `set_framework_preferences(pinia=true, pinia_colada=true)`.
+Pinia Colada is built on Pinia and shares its devtools and reactivity. Both are always available: call `docs_search` with `framework: "pinia"` or `framework: "pinia-colada"`, or use `ecosystem_search` to search them together.
 :::
 
-## Activation
+## Usage
 
-Pinia Colada is not enabled by default. Call `set_framework_preferences` to activate it:
-
-```
-set_framework_preferences(pinia_colada=true)
-```
+Pass `framework: "pinia-colada"` to `docs_search`, `api_lookup` and `get_related`. No activation is needed: every framework is always available.
 
 ## Tools
 
-### `pinia_colada_docs_search`
+### `docs_search`
 
 Semantic search over Pinia Colada documentation. Uses the standard 6-step retrieval pipeline: embed query, hybrid search (dense + BM25), resolve HyPE hits, expand cross-references, rerank, and reconstruct into readable markdown.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
+| `framework` | `string` | | Always `"pinia-colada"` |
 | `query` | `string` | | Developer question or topic (max 2000 chars) |
 | `scope` | `string` | `"all"` | Documentation section to search within |
 | `max_results` | `integer` | `3` | Number of sections to return (1-20) |
 
 **Scope values:** `all`, `guide`, `advanced`, `cookbook`, `plugins`
 
-### `pinia_colada_api_lookup`
+### `api_lookup`
 
 Fast exact-match API reference lookup with fuzzy fallback. Returns type signatures, descriptions, and usage examples directly from the documentation.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
+| `framework` | `string` | | Always `"pinia-colada"` |
 | `api_name` | `string` | | API name to look up (e.g. `useQuery`, `defineQuery`, `useQueryCache`, `PiniaColadaRetry`) |
 
-### `pinia_colada_get_related`
+### `get_related`
 
 Find related APIs, concepts, and documentation pages for a given API or topic.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
+| `framework` | `string` | | Always `"pinia-colada"` |
 | `topic` | `string` | | API name or concept to explore |
 
 ## Resources
@@ -61,9 +60,9 @@ Find related APIs, concepts, and documentation pages for a given API or topic.
 
 | Prompt | Parameters | Description |
 |---|---|---|
-| `debug_pinia_colada_issue` | `symptom`, `code_snippet` (optional) | Systematic debugging workflow: identifies the concept, searches docs, looks up APIs, and provides a fix |
-| `compare_pinia_colada_apis` | `items` (comma-separated) | Side-by-side comparison of APIs or patterns (e.g. `useQuery, defineQuery`) |
-| `migrate_pinia_colada_pattern` | `from_pattern`, `to_pattern` | Migration guide between patterns (e.g. TanStack Query to Pinia Colada) |
+| `debug_issue` | `framework`, `symptom`, `code_snippet` (optional) | Systematic debugging workflow: identifies the concept, searches docs, looks up APIs, and provides a fix |
+| `compare_apis` | `framework`, `items` (comma-separated) | Side-by-side comparison of APIs or patterns (e.g. `useQuery, defineQuery`) |
+| `migrate_pattern` | `framework`, `from_pattern`, `to_pattern` | Migration guide between patterns (e.g. TanStack Query to Pinia Colada) |
 
 ## Coverage
 

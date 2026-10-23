@@ -8,42 +8,41 @@ Vue Docs MCP provides deep access to the official [FormKit documentation](https:
 FormKit ships 12 packages. The MCP indexes them all: `@formkit/vue`, `@formkit/core`, `@formkit/inputs`, `@formkit/validation`, `@formkit/i18n`, `@formkit/icons`, `@formkit/themes`, `@formkit/utils`, `@formkit/observer`, `@formkit/schema`, `@formkit/addons`, plus the official plugin packages.
 :::
 
-## Activation
+## Usage
 
-FormKit is not enabled by default. Call `set_framework_preferences` to activate it:
-
-```
-set_framework_preferences(formkit=true)
-```
+Pass `framework: "formkit"` to `docs_search`, `api_lookup` and `get_related`. No activation is needed: every framework is always available.
 
 ## Tools
 
-### `formkit_docs_search`
+### `docs_search`
 
 Semantic search over FormKit documentation. Uses the standard 6-step retrieval pipeline: embed query, hybrid search (dense + BM25), resolve HyPE hits, expand cross-references, rerank, and reconstruct into readable markdown.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
+| `framework` | `string` | | Always `"formkit"` |
 | `query` | `string` | | Developer question or topic (max 2000 chars) |
 | `scope` | `string` | `"all"` | Documentation section to search within |
 | `max_results` | `integer` | `3` | Number of sections to return (1-20) |
 
 **Scope values:** `all`, `1.getting-started`, `2.essentials`, `3.inputs`, `4.plugins`, `5.guides`, `6.api-reference`
 
-### `formkit_api_lookup`
+### `api_lookup`
 
 Fast exact-match API reference lookup with fuzzy fallback. Returns type signatures, descriptions, and usage examples directly from the documentation.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
+| `framework` | `string` | | Always `"formkit"` |
 | `api_name` | `string` | | API name to look up (e.g. `FormKit`, `createInput`, `createNode`, `useFormKitNodeById`) |
 
-### `formkit_get_related`
+### `get_related`
 
 Find related APIs, concepts, and documentation pages for a given API or topic.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
+| `framework` | `string` | | Always `"formkit"` |
 | `topic` | `string` | | API name or concept to explore |
 
 ## Resources
@@ -61,9 +60,9 @@ Find related APIs, concepts, and documentation pages for a given API or topic.
 
 | Prompt | Parameters | Description |
 |---|---|---|
-| `debug_formkit_issue` | `symptom`, `code_snippet` (optional) | Systematic debugging workflow |
-| `compare_formkit_apis` | `items` (comma-separated) | Side-by-side comparison (e.g. `group, list`) |
-| `migrate_formkit_pattern` | `from_pattern`, `to_pattern` | Migration guide between patterns |
+| `debug_issue` | `framework`, `symptom`, `code_snippet` (optional) | Systematic debugging workflow |
+| `compare_apis` | `framework`, `items` (comma-separated) | Side-by-side comparison (e.g. `group, list`) |
+| `migrate_pattern` | `framework`, `from_pattern`, `to_pattern` | Migration guide between patterns |
 
 ## Coverage
 

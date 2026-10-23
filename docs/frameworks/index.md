@@ -29,38 +29,34 @@ When a framework is enabled, your AI assistant gains:
 - **5+ resources** for browsing the table of contents, reading pages, and exploring the API index
 - **3 prompts** for guided debugging, API comparison, and migration workflows
 
-When two or more frameworks are active, a cross-framework `ecosystem_search` tool becomes available.
+A cross-framework `ecosystem_search` tool searches all of them at once.
 
-## Activating Frameworks
+## Choosing a Framework
 
-Only **Vue.js** is enabled by default. Call `set_framework_preferences` to activate additional frameworks for the current session:
+Every framework is always available. All tools and prompts take a `framework` argument naming the documentation source:
 
 ```
-set_framework_preferences(vue=true, vue_router=true, vueuse=true, vite=true, vitest=true, nuxt=true, pinia=true, vitepress=true, pinia_colada=true, vee_validate=true, formkit=true, shadcn_vue=true, vue_flow=true)
+docs_search(framework="vue-router", query="navigation guards")
 ```
 
-### Parameters
+| `framework` | Documentation |
+|---|---|
+| `vue` | Vue.js |
+| `vue-router` | Vue Router |
+| `vueuse` | VueUse |
+| `vite` | Vite |
+| `vitest` | Vitest |
+| `vue-devtools` | Vue DevTools |
+| `pinia` | Pinia |
+| `nuxt` | Nuxt |
+| `vitepress` | VitePress |
+| `pinia-colada` | Pinia Colada |
+| `vee-validate` | VeeValidate |
+| `shadcn-vue` | shadcn-vue |
+| `vue-flow` | Vue Flow |
+| `formkit` | FormKit |
 
-| Parameter | Type | Default | Description |
-|---|---|---|---|
-| `vue` | `boolean` | `true` | Enable Vue.js core documentation |
-| `vue_router` | `boolean` | `false` | Enable Vue Router documentation |
-| `vueuse` | `boolean` | `false` | Enable VueUse documentation |
-| `vite` | `boolean` | `false` | Enable Vite documentation |
-| `vitest` | `boolean` | `false` | Enable Vitest documentation |
-| `nuxt` | `boolean` | `false` | Enable Nuxt documentation |
-| `pinia` | `boolean` | `false` | Enable Pinia documentation |
-| `vue_devtools` | `boolean` | `false` | Enable Vue DevTools documentation |
-| `vitepress` | `boolean` | `false` | Enable VitePress documentation |
-| `pinia_colada` | `boolean` | `false` | Enable Pinia Colada documentation |
-| `vee_validate` | `boolean` | `false` | Enable VeeValidate documentation |
-| `formkit` | `boolean` | `false` | Enable FormKit documentation |
-| `shadcn_vue` | `boolean` | `false` | Enable shadcn-vue documentation |
-| `vue_flow` | `boolean` | `false` | Enable Vue Flow documentation |
-
-After calling this, your AI assistant will have access to tools, resources, and prompts for all enabled frameworks. When more than one framework is active, an `ecosystem_search` tool becomes available that searches across all frameworks simultaneously.
-
-Read `ecosystem://preferences` to check which frameworks are currently active. Read `ecosystem://sources` to see all supported frameworks and their status.
+Read `ecosystem://sources` to see all supported frameworks and their documentation URLs.
 
 ## Roadmap
 

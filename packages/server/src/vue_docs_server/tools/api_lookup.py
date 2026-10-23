@@ -10,7 +10,7 @@ from pydantic import Field
 from vue_docs_core.data.sources import SOURCE_REGISTRY, SourceDefinition
 from vue_docs_core.models.entity import EntityIndex
 from vue_docs_server.startup import state
-from vue_docs_server.tools.search import _tool_prefix
+from vue_docs_server.tools.common import framework_param, tool_ref
 from vue_docs_server.usage import log_tool_call
 
 
@@ -69,14 +69,12 @@ async def _do_api_lookup(
         if match_result.entities:
             entity = _find_entity(match_result.entities[0], entity_index)
 
-    # Determine tool names based on source
-    prefix = _tool_prefix(source) if source else "ecosystem"
-    search_tool = f"{prefix}_docs_search" if source else "ecosystem_search"
+    search_tool = tool_ref("docs_search", source)
 
     if entity is None:
         return (
             f"No API entity found for `{api_name}`.\n\n"
-            f'**Next step:** Use `{search_tool}` with query `"{api_name}"` '
+            f'**Next step:** Use {search_tool} with query `"{api_name}"` '
             f"for a broader documentation search."
         )
 
@@ -114,11 +112,11 @@ async def _do_api_lookup(
         lines.append("")
 
     lines.append("**Next steps:**")
-    lines.append(f'- `{search_tool}` with query `"{entity.name}"` for full documentation content')
+    lines.append(f'- {search_tool} with query `"{entity.name}"` for full documentation content')
     if entity.related:
-        lookup_tool = f"{_tool_prefix(source)}_api_lookup" if source else search_tool
+        lookup_tool = tool_ref("api_lookup", source)
         related_names = ", ".join(f"`{r}`" for r in entity.related[:3])
-        lines.append(f"- `{lookup_tool}` on related APIs: {related_names}")
+        lines.append(f"- {lookup_tool} on related APIs: {related_names}")
 
     result = "\n".join(lines)
     log_tool_call(
@@ -132,29 +130,27 @@ async def _do_api_lookup(
 # ---------------------------------------------------------------------------
 
 
-def make_api_lookup_tool(source_def: SourceDefinition):
-    """Create a source-specific API lookup tool function."""
-    source_name = source_def.name
-    display = source_def.display_name
-    prefix = _tool_prefix(source_name)
+def make_api_lookup_tool(sources: list[SourceDefinition]):
+    """Create the framework-parameterised API lookup tool."""
+    Framework = framework_param(sources)
 
     async def api_lookup(
+        framework: Framework,
         api_name: Annotated[
             str,
             Field(
-                description=f"The {display} API name to look up. "
-                f"Read the {source_name}://api/index resource to browse all available API names."
+                description="The API name to look up. "
+                "Read the {framework}://api/index resource to browse all available API names."
             ),
         ],
         ctx: Context = None,
     ) -> str:
-        return await _do_api_lookup(api_name, source=source_name, ctx=ctx)
+        """Look up an API of one Vue ecosystem framework by exact name.
 
-    api_lookup.__name__ = f"{prefix}_api_lookup"
-    api_lookup.__doc__ = (
-        f"Look up a {display} API by exact name.\n\n"
-        f"Fast-path for API references — returns the API's type, documentation "
-        f"page, section, and related APIs. Much faster than a full search when "
-        f"you know the API name."
-    )
+        Fast-path for API references: returns the API's type, documentation
+        page, section, and related APIs. Much faster than a full search when
+        you know the API name.
+        """
+        return await _do_api_lookup(api_name, source=framework, ctx=ctx)
+
     return api_lookup

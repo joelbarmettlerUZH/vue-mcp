@@ -4,42 +4,41 @@
 
 Vue Docs MCP provides deep access to the official [shadcn-vue documentation](https://www.shadcn-vue.com), covering the copy-paste component library built on `reka-ui` primitives: 64 documented components, the `npx shadcn-vue@latest add` CLI, `components.json` configuration, theming via Tailwind CSS variables, framework-specific installation guides (Vite, Nuxt, Astro, Laravel), form-library integration recipes (vee-validate, TanStack Form), and the custom-registry workflow.
 
-## Activation
+## Usage
 
-shadcn-vue is not enabled by default. Call `set_framework_preferences` to activate it:
-
-```
-set_framework_preferences(shadcn_vue=true)
-```
+Pass `framework: "shadcn-vue"` to `docs_search`, `api_lookup` and `get_related`. No activation is needed: every framework is always available.
 
 ## Tools
 
-### `shadcn_vue_docs_search`
+### `docs_search`
 
 Semantic search over shadcn-vue documentation. Uses the standard 6-step retrieval pipeline: embed query, hybrid search (dense + BM25), resolve HyPE hits, expand cross-references, rerank, and reconstruct into readable markdown.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
+| `framework` | `string` | | Always `"shadcn-vue"` |
 | `query` | `string` | | Developer question or topic (max 2000 chars) |
 | `scope` | `string` | `"all"` | Documentation section to search within |
 | `max_results` | `integer` | `3` | Number of sections to return (1-20) |
 
 **Scope values:** `all`, `components`, `installation`, `forms`, `dark-mode`, `registry`
 
-### `shadcn_vue_api_lookup`
+### `api_lookup`
 
 Fast exact-match API reference lookup with fuzzy fallback. Returns type signatures, descriptions, and usage examples directly from the documentation. Component names work in both kebab-case (`alert-dialog`) and PascalCase (`AlertDialog`).
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
+| `framework` | `string` | | Always `"shadcn-vue"` |
 | `api_name` | `string` | | Component name to look up (e.g. `Button`, `data-table`, `Sidebar`) |
 
-### `shadcn_vue_get_related`
+### `get_related`
 
 Find related APIs, concepts, and documentation pages for a given API or topic.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
+| `framework` | `string` | | Always `"shadcn-vue"` |
 | `topic` | `string` | | Component or concept to explore |
 
 ## Resources
@@ -57,9 +56,9 @@ Find related APIs, concepts, and documentation pages for a given API or topic.
 
 | Prompt | Parameters | Description |
 |---|---|---|
-| `debug_shadcn_vue_issue` | `symptom`, `code_snippet` (optional) | Systematic debugging workflow |
-| `compare_shadcn_vue_apis` | `items` (comma-separated) | Side-by-side comparison (e.g. `Dialog, Sheet, Drawer`) |
-| `migrate_shadcn_vue_pattern` | `from_pattern`, `to_pattern` | Migration guide between patterns |
+| `debug_issue` | `framework`, `symptom`, `code_snippet` (optional) | Systematic debugging workflow |
+| `compare_apis` | `framework`, `items` (comma-separated) | Side-by-side comparison (e.g. `Dialog, Sheet, Drawer`) |
+| `migrate_pattern` | `framework`, `from_pattern`, `to_pattern` | Migration guide between patterns |
 
 ## Coverage
 

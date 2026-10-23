@@ -17,6 +17,7 @@ from vue_docs_core.data.sources import SourceDefinition
 from vue_docs_core.retrieval.expansion import expand_cross_references
 from vue_docs_core.retrieval.reconstruction import reconstruct_results
 from vue_docs_server.startup import state
+from vue_docs_server.tools.common import framework_param
 from vue_docs_server.usage import log_tool_call
 
 logger = logging.getLogger(__name__)
@@ -116,11 +117,6 @@ async def _do_search(
     await ctx.report_progress(6, TOTAL_STEPS)
     await ctx.info("Reconstructing results")
 
-    # Track query in session history
-    history = await ctx.get_state("query_history") or []
-    history.append({"query": query, "scope": scope, "source": source, "results": len(hits)})
-    await ctx.set_state("query_history", history[-10:])
-
     result = reconstruct_results(hits, max_results=max_results)
     log_tool_call(
         "docs_search",
@@ -137,32 +133,26 @@ async def _do_search(
 # ---------------------------------------------------------------------------
 
 
-def _tool_prefix(source_name: str) -> str:
-    """Convert source name to tool prefix: 'vue-router' -> 'vue_router'."""
-    return source_name.replace("-", "_")
+def make_search_tool(sources: list[SourceDefinition]):
+    """Create the framework-parameterised search tool."""
+    Framework = framework_param(sources)
 
-
-def make_search_tool(source_def: SourceDefinition):
-    """Create a source-specific search tool function."""
-    source_name = source_def.name
-    display = source_def.display_name
-    prefix = _tool_prefix(source_name)
-
-    async def search(
+    async def docs_search(
+        framework: Framework,
         query: Annotated[
             str,
             Field(
                 max_length=2000,
-                description=f"A developer question or topic about {display}.",
+                description="A developer question or topic about the chosen framework.",
             ),
         ],
         scope: Annotated[
             str,
             Field(
                 default="all",
-                description=f"Documentation section to search within. Use 'all' for the "
-                f"full docs, or narrow with a folder path. "
-                f"Read the {source_name}://scopes resource for the complete list.",
+                description="Documentation section to search within. Use 'all' for the "
+                "full docs, or narrow with a folder path. "
+                "Read the {framework}://scopes resource for the complete list.",
             ),
         ] = "all",
         max_results: Annotated[
@@ -176,16 +166,16 @@ def make_search_tool(source_def: SourceDefinition):
         ] = 3,
         ctx: Context = None,
     ) -> str:
-        return await _do_search(query, scope, max_results, source=source_name, ctx=ctx)
+        """Search the documentation of one Vue ecosystem framework.
 
-    search.__name__ = f"{prefix}_docs_search"
-    search.__doc__ = (
-        f"Search the {display} documentation.\n\n"
-        f"Performs hybrid semantic + keyword search over the indexed {display} documentation, "
-        f"reranks candidates, and returns reconstructed, readable documentation "
-        f"fragments ordered by the documentation's natural reading flow."
-    )
-    return search
+        Performs hybrid semantic + keyword search over the indexed documentation,
+        reranks candidates, and returns reconstructed, readable documentation
+        fragments ordered by the documentation's natural reading flow. To search
+        several frameworks at once, use `ecosystem_search`.
+        """
+        return await _do_search(query, scope, max_results, source=framework, ctx=ctx)
+
+    return docs_search
 
 
 def make_ecosystem_search_tool():

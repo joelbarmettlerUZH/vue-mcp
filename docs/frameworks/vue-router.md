@@ -4,45 +4,44 @@
 
 Vue Docs MCP provides deep access to the official [Vue Router documentation](https://router.vuejs.org), covering route configuration, navigation guards, dynamic routing, lazy loading, data loaders, file-based routing, and the full API reference.
 
-## Activation
+## Usage
 
-Vue Router is not enabled by default. Activate it with:
-
-```
-set_framework_preferences(vue_router=true)
-```
+Pass `framework: "vue-router"` to `docs_search`, `api_lookup` and `get_related`. No activation is needed: every framework is always available.
 
 ## Tools
 
-### `vue_router_docs_search`
+### `docs_search`
 
 Semantic search over Vue Router documentation. Covers guide pages, data loaders, file-based routing, migration guides, and API reference.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
+| `framework` | `string` | | Always `"vue-router"` |
 | `query` | `string` | | Developer question or topic (max 2000 chars) |
 | `scope` | `string` | `"all"` | Documentation section to search within |
 | `max_results` | `integer` | `3` | Number of sections to return (1-20) |
 
 **Scope values:** `all`, `guide`, `guide/essentials`, `guide/advanced`, `guide/migration`, `data-loaders`, `file-based-routing`
 
-### `vue_router_api_lookup`
+### `api_lookup`
 
 Fast exact-match API reference lookup for Vue Router APIs.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
-| `name` | `string` | | API name to look up (e.g. `useRouter`, `createRouter`, `beforeEach`) |
+| `framework` | `string` | | Always `"vue-router"` |
+| `api_name` | `string` | | API name to look up (e.g. `useRouter`, `createRouter`, `beforeEach`) |
 
 **Example API names:** `useRouter`, `useRoute`, `useLink`, `createRouter`, `createWebHistory`, `createWebHashHistory`, `createMemoryHistory`, `RouterLink`, `RouterView`, `beforeEach`, `beforeResolve`, `afterEach`, `onBeforeRouteLeave`, `onBeforeRouteUpdate`, `scrollBehavior`
 
-### `vue_router_get_related`
+### `get_related`
 
 Find related APIs, concepts, and documentation pages for a given Vue Router API or topic.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
-| `name` | `string` | | API name or concept to explore |
+| `framework` | `string` | | Always `"vue-router"` |
+| `topic` | `string` | | API name or concept to explore |
 
 ## Resources
 
@@ -59,9 +58,9 @@ Find related APIs, concepts, and documentation pages for a given Vue Router API 
 
 | Prompt | Parameters | Description |
 |---|---|---|
-| `debug_vue_router_issue` | `symptom`, `code_snippet` (optional) | Systematic debugging for routing issues: navigation failures, guard problems, params not updating |
-| `compare_vue_router_apis` | `items` (comma-separated) | Side-by-side comparison (e.g. `router.push, router.replace` or `beforeEach, beforeEnter`) |
-| `migrate_vue_router_pattern` | `from_pattern`, `to_pattern` | Migration guide (e.g. Vue Router 3 to 4, Options API guards to Composition API) |
+| `debug_issue` | `framework`, `symptom`, `code_snippet` (optional) | Systematic debugging for routing issues: navigation failures, guard problems, params not updating |
+| `compare_apis` | `framework`, `items` (comma-separated) | Side-by-side comparison (e.g. `router.push, router.replace` or `beforeEach, beforeEnter`) |
+| `migrate_pattern` | `framework`, `from_pattern`, `to_pattern` | Migration guide (e.g. Vue Router 3 to 4, Options API guards to Composition API) |
 
 ## Benchmarks vs Context7
 
