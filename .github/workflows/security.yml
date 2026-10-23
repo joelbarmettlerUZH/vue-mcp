@@ -38,7 +38,7 @@ jobs:
         run: echo "ref=${{ matrix.image || format('scan-target:{0}', matrix.name) }}" >> "$GITHUB_OUTPUT"
 
       - name: Trivy scan (fixable HIGH/CRITICAL only)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ steps.ref.outputs.ref }}
           severity: HIGH,CRITICAL
