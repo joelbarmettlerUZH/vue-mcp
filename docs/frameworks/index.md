@@ -1,6 +1,6 @@
 # Supported Frameworks
 
-Vue Docs MCP provides deep, structured access to the Vue ecosystem documentation. Each framework gets its own set of tools, resources, and prompts, purpose-built for that library's API surface.
+Vue Docs MCP provides deep, structured access to the Vue ecosystem documentation. Every framework has its own documentation index, resources, and benchmarks, and is searched through the same small set of tools.
 
 ## Available
 
@@ -23,11 +23,11 @@ Vue Docs MCP provides deep, structured access to the Vue ecosystem documentation
 
 ## What Each Framework Provides
 
-When a framework is enabled, your AI assistant gains:
+For every framework, your AI assistant can use:
 
-- **3 tools** for searching, looking up APIs, and discovering related concepts
-- **5+ resources** for browsing the table of contents, reading pages, and exploring the API index
-- **3 prompts** for guided debugging, API comparison, and migration workflows
+- **3 tools** (`docs_search`, `api_lookup`, `get_related`) for searching, looking up APIs, and discovering related concepts. Pass the framework as the `framework` argument.
+- **6 resources** under the framework's own URI scheme for browsing the table of contents, reading pages, and exploring the API index
+- **3 prompts** (`debug_issue`, `compare_apis`, `migrate_pattern`) for guided debugging, API comparison, and migration workflows
 
 A cross-framework `ecosystem_search` tool searches all of them at once.
 

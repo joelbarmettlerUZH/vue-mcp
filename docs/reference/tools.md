@@ -1,6 +1,6 @@
 # Tools
 
-Vue Docs MCP exposes tools for each enabled framework. Each framework page documents its specific tools, parameters, and scope values in detail.
+Vue Docs MCP exposes a small, fixed set of tools. Each takes the framework to query as an argument, and each framework page documents its parameters and scope values in detail.
 
 ## Tools
 

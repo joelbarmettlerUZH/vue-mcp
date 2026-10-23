@@ -62,7 +62,7 @@ The hosted server at **`mcp.vue-mcp.org`** is free. No API keys, no setup requir
 | [Vue Flow](https://vueflow.dev) | Available |
 | [6 more](https://vue-mcp.org/frameworks/) | Planned |
 
-Each framework gets its own tools, resources, and prompts. [See all frameworks](https://vue-mcp.org/frameworks/).
+Every framework is always available through the same tools and prompts. Pass the framework as the `framework` argument. [See all frameworks](https://vue-mcp.org/frameworks/).
 
 ## Quick Start
 
@@ -109,7 +109,7 @@ https://mcp.vue-mcp.org/mcp
 | `get_related` | Discover related APIs, concepts, and documentation pages |
 | `ecosystem_search` | Cross-framework search |
 
-**Resources** (per framework):
+**Resources** (under each framework's URI scheme):
 
 | Resource | Description |
 |---|---|
