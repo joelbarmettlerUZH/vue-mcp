@@ -4,6 +4,14 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      python-minor-patch:
+        update-types: [minor, patch]
+    ignore:
+      # Qdrant client and server must move together, one minor at a time (see below).
+      - dependency-name: qdrant-client
+        update-types: [version-update:semver-minor, version-update:semver-major]
 
   - package-ecosystem: docker
     directory: /
@@ -14,13 +22,24 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # Qdrant single-node upgrades cannot skip minor versions and need a snapshot first.
+      # Upgrade by hand: 1.17 -> latest 1.18.x -> 1.19.x.
+      - dependency-name: qdrant/qdrant
+        update-types: [version-update:semver-minor, version-update:semver-major]
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
 
   - package-ecosystem: npm
     directory: /docs
     schedule:
       interval: weekly
+    groups:
+      docs-minor-patch:
+        update-types: [minor, patch]
