@@ -119,7 +119,7 @@ async def _do_search(
 
     result = reconstruct_results(hits, max_results=max_results)
     log_tool_call(
-        "docs_search",
+        "docs_search" if source else "ecosystem_search",
         query=query,
         framework=source,
         latency_ms=int((time.monotonic() - t0) * 1000),

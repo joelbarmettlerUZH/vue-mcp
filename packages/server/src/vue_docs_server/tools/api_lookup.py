@@ -1,6 +1,7 @@
 """API lookup tool — fast exact-match for API references, per-source or combined."""
 
 import re
+import time
 from typing import Annotated
 
 from fastmcp import Context
@@ -54,6 +55,8 @@ async def _do_api_lookup(
     """Shared API lookup implementation. source=None searches combined index."""
     if not state.is_ready:
         raise ToolError("Server not initialized. Please try again shortly.")
+
+    t0 = time.monotonic()
 
     entity_index = state.entity_indices.get(source) if source else state.entity_index
     if entity_index is None:
@@ -120,7 +123,11 @@ async def _do_api_lookup(
 
     result = "\n".join(lines)
     log_tool_call(
-        "api_lookup", query=api_name, framework=source, latency_ms=0, response_chars=len(result)
+        "api_lookup",
+        query=api_name,
+        framework=source,
+        latency_ms=max(1, round((time.monotonic() - t0) * 1000)),  # 0 would mean "not measured"
+        response_chars=len(result),
     )
     return result
 

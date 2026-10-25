@@ -1,5 +1,6 @@
 """Get-related tool — find related documentation for a topic, per-source or combined."""
 
+import time
 from typing import Annotated
 
 from fastmcp import Context
@@ -20,6 +21,8 @@ async def _do_get_related(
     """Shared get-related implementation. source=None uses combined matcher."""
     if not state.is_ready:
         raise ToolError("Server not initialized. Please try again shortly.")
+
+    t0 = time.monotonic()
 
     entity_matcher = state.entity_matchers.get(source) if source else state.entity_matcher
     entity_index = state.entity_indices.get(source) if source else state.entity_index
@@ -106,7 +109,11 @@ async def _do_get_related(
 
     result = "\n".join(lines)
     log_tool_call(
-        "get_related", query=topic, framework=source, latency_ms=0, response_chars=len(result)
+        "get_related",
+        query=topic,
+        framework=source,
+        latency_ms=max(1, round((time.monotonic() - t0) * 1000)),  # 0 would mean "not measured"
+        response_chars=len(result),
     )
     return result
 
