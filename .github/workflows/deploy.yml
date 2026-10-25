@@ -197,15 +197,18 @@ jobs:
         env:
           DEPLOY_DIR: ${{ vars.DEPLOY_DIR || '/opt/vue-mcp' }}
         run: |
-          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "DEPLOY_DIR=${DEPLOY_DIR} bash -s" <<'REMOTE'
+          set -o pipefail
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "DEPLOY_DIR=${DEPLOY_DIR} bash -s" <<'REMOTE' | tee provision.out
           set -euo pipefail
           cd "$DEPLOY_DIR"
           PW=$(grep '^DASHBOARD_DB_PASSWORD=' .env.production | cut -d= -f2-)
           if [ -z "$PW" ]; then echo "DASHBOARD_DB_PASSWORD not set, skipping dashboard role"; exit 0; fi
           COMPOSE="docker compose --env-file .env.production -f docker-compose.prod.yml"
-          # usage_events is created by the server on startup; wait for it
+          # usage_events is created by the server on startup; wait for it. Commands inside this
+          # script must not read stdin (</dev/null): bash -s reads the script itself from stdin, and
+          # a command that reads it too swallows the rest of the script without any error.
           for i in $(seq 1 30); do
-            $COMPOSE exec -T postgres psql -U vue_mcp vue_mcp -tAc "SELECT to_regclass('usage_events')" | grep -q usage_events && break
+            $COMPOSE exec -T postgres psql -U vue_mcp vue_mcp -tAc "SELECT to_regclass('usage_events')" </dev/null | grep -q usage_events && break
             sleep 2
           done
           # Password travels as an environment variable, never in a command line
@@ -221,3 +224,5 @@ jobs:
           SQL
           echo "dashboard_ro role ready"
           REMOTE
+          # A script that stopped early still exits 0, so require its final message
+          grep -q -E 'dashboard_ro role ready|skipping dashboard role' provision.out
