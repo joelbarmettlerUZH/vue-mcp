@@ -191,6 +191,8 @@ make serve              # Start the MCP server
 
 See the **[Self-Hosting guide](https://vue-mcp.org/guide/self-hosting)** for Docker Compose deployment and configuration details.
 
+When served over HTTP, `GET /health` returns a JSON status for monitoring (200 healthy, 503 degraded). See [How It Works](https://vue-mcp.org/reference/how-it-works#health-endpoint).
+
 ## Development
 
 ### Local development

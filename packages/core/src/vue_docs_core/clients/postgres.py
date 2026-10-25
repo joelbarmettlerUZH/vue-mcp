@@ -243,6 +243,11 @@ class PostgresClient:
             ).scalar_one_or_none()
         return row
 
+    def ping(self) -> None:
+        """Raise if the database is unreachable (used by the health endpoint)."""
+        with self._session_factory() as session:
+            session.execute(select(1))
+
     def get_max_updated_at(self) -> datetime:
         """Get the most recent updated_at / last_indexed across all tracked tables."""
         with self._session_factory() as session:

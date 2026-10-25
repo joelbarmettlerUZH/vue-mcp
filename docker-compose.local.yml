@@ -35,6 +35,12 @@ services:
       - "traefik.http.routers.mcp.entrypoints=websecure"
       - "traefik.http.routers.mcp.tls=true"
       - "traefik.http.services.mcp.loadbalancer.server.port=8000"
+      # Status page endpoint: more specific than the MCP router, so it wins, and it
+      # skips the MCP rate limiter.
+      - "traefik.http.routers.health.rule=Host(`${DOMAIN:-localhost}`) && Path(`/health`)"
+      - "traefik.http.routers.health.entrypoints=websecure"
+      - "traefik.http.routers.health.tls=true"
+      - "traefik.http.routers.health.service=mcp"
     mem_limit: 2g
     cpus: 1.0
     logging: *default-logging

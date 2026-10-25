@@ -301,6 +301,14 @@ The server supports two transport modes via `SERVER_TRANSPORT` env var:
 - `streamable-http`: for production, serves on `SERVER_HOST:SERVER_PORT/mcp`, stateless (no `Mcp-Session-Id`; requests are independent, so restarts and
   multiple replicas never invalidate clients). Serves both the 2026-07-28 spec and older handshake clients.
 
+### Health Endpoint
+
+`GET /health` (`packages/server/src/vue_docs_server/health.py`, registered with `mcp.custom_route`) feeds the status
+page: 200 when loaded data, PostgreSQL and Qdrant are healthy, 503 otherwise, with per-check results and
+`sources`/`pages`/`points`/`data_updated`. It never calls Jina or Gemini (paid APIs) and reports failing checks by
+exception class only. Traefik routes it through a dedicated `health` router that skips the MCP rate limiter. Do not point
+the container `HEALTHCHECK` at it: a Qdrant outage would then make Traefik drop the whole MCP route.
+
 ### Hot Reload
 
 The server polls PostgreSQL every 60 seconds for data changes. When ingestion writes new entities, pages, or BM25

@@ -11,6 +11,7 @@ from fastmcp.server.middleware.timing import DetailedTimingMiddleware
 
 from vue_docs_core.config import settings
 from vue_docs_core.data.sources import get_enabled_sources
+from vue_docs_server.health import health_check
 from vue_docs_server.prompts import make_compare_prompt, make_debug_prompt, make_migrate_prompt
 from vue_docs_server.resources.api_index import make_api_entity_resource, make_api_index_resource
 from vue_docs_server.resources.pages import make_page_resource
@@ -117,6 +118,9 @@ mcp.add_middleware(DetailedTimingMiddleware())
 mcp.add_middleware(ResponseLimitingMiddleware(max_size=500_000))
 
 _sources = get_enabled_sources(settings.enabled_sources)
+
+# Plain HTTP route for status pages and load balancers (not part of the MCP protocol).
+mcp.custom_route("/health", methods=["GET"])(health_check)
 
 # ---------------------------------------------------------------------------
 # Tools and prompts: one framework-parameterised set, always visible
