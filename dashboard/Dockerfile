@@ -1,12 +1,12 @@
 # Usage dashboard: Bun API + prebuilt Vue page. Build context is this directory.
-FROM oven/bun:1.3.10 AS build
+FROM oven/bun:1.4.3 AS build
 WORKDIR /app
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 COPY web ./web
 RUN bun run build
 
-FROM oven/bun:1.3.10-slim AS runtime
+FROM oven/bun:1.4.3-slim AS runtime
 # Pick up Debian security fixes published since the base image was built.
 RUN apt-get update && apt-get -y upgrade && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
