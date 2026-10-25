@@ -44,6 +44,15 @@ def _resolve_docs_path(source_def: SourceDefinition, base_data_path: Path) -> Pa
     return base_data_path / f"{source_def.name}-docs" / source_def.docs_subpath
 
 
+def _git_head(repo_dir: Path) -> str:
+    return subprocess.run(
+        ["git", "-C", str(repo_dir), "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+
 def _clone_or_pull(source_def: SourceDefinition, base_data_path: Path) -> Path:
     """Clone or pull the docs repo for a source. Returns the docs path."""
     repo_dir = base_data_path / f"{source_def.name}-docs"
@@ -51,15 +60,27 @@ def _clone_or_pull(source_def: SourceDefinition, base_data_path: Path) -> Path:
 
     if (repo_dir / ".git").exists():
         console.print(f"[bold]Pulling latest {source_def.display_name} docs...[/bold]")
-        result = subprocess.run(
-            ["git", "-C", str(repo_dir), "pull"],
+        # These are depth-1 clones that nobody edits, so mirror upstream instead of merging:
+        # `git pull` refuses ("divergent branches") once upstream rewrites history, and the
+        # stale checkout would then be indexed without any error. Untracked files (generated
+        # API pages) are left alone. A failure raises, so the source is retried next cycle.
+        before = _git_head(repo_dir)
+        subprocess.run(
+            ["git", "-C", str(repo_dir), "fetch", "--depth", "1", "origin", "HEAD"],
+            check=True,
             capture_output=True,
             text=True,
         )
-        if result.returncode == 0:
-            console.print(f"  {result.stdout.strip()}")
-        else:
-            console.print(f"  [yellow]git pull warning: {result.stderr.strip()}[/yellow]")
+        subprocess.run(
+            ["git", "-C", str(repo_dir), "reset", "--hard", "FETCH_HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        after = _git_head(repo_dir)
+        console.print(
+            "  Already up to date." if before == after else f"  Updated {before[:7]}..{after[:7]}"
+        )
     else:
         console.print(f"[bold]Cloning {source_def.display_name} docs...[/bold]")
         repo_dir.parent.mkdir(parents=True, exist_ok=True)
