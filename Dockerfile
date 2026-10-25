@@ -7,6 +7,10 @@ FROM python:3.13-slim AS base
 
 ENV PYTHONUNBUFFERED=1
 
+# The app runs from /app/.venv (uv). System pip is unused, and its vendored msgpack, urllib3 and
+# pkg_resources copies are flagged by Trivy.
+RUN python -m pip uninstall -y pip && rm -rf /usr/local/lib/python3.13/site-packages/pip*
+
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 
 RUN groupadd --gid 1000 app && useradd --uid 1000 --gid app --create-home app

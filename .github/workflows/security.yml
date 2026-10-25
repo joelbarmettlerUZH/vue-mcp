@@ -18,14 +18,19 @@ jobs:
         include:
           - name: server
             build_target: server
+            exit_code: "1"
           - name: ingestion
             build_target: ingestion
+            exit_code: "1"
           - name: postgres
             image: postgres:17-alpine
+            exit_code: "0"
           - name: qdrant
-            image: qdrant/qdrant:v1.17.0
+            image: qdrant/qdrant:v1.17.1
+            exit_code: "0"
           - name: traefik
             image: traefik:v3.6
+            exit_code: "0"
     steps:
       - uses: actions/checkout@v7
 
@@ -37,10 +42,11 @@ jobs:
         id: ref
         run: echo "ref=${{ matrix.image || format('scan-target:{0}', matrix.name) }}" >> "$GITHUB_OUTPUT"
 
+      # Our own images must stay clean; third-party images are report-only (we cannot patch them).
       - name: Trivy scan (fixable HIGH/CRITICAL only)
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ steps.ref.outputs.ref }}
           severity: HIGH,CRITICAL
           ignore-unfixed: true
-          exit-code: "0"
+          exit-code: ${{ matrix.exit_code }}
