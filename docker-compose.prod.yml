@@ -45,6 +45,13 @@ services:
       # with HTTP 429 even when there are no real in-flight requests.
       - "traefik.http.routers.mcp.middlewares=ratelimit"
       - "traefik.http.services.mcp.loadbalancer.server.port=8000"
+      # Status page endpoint: more specific than the MCP router, so it wins, and it
+      # skips the MCP rate limiter.
+      - "traefik.http.routers.health.rule=Host(`${DOMAIN}`) && Path(`/health`)"
+      - "traefik.http.routers.health.entrypoints=websecure"
+      - "traefik.http.routers.health.tls=true"
+      - "traefik.http.routers.health.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.health.service=mcp"
       - "traefik.http.middlewares.ratelimit.ratelimit.average=60"
       - "traefik.http.middlewares.ratelimit.ratelimit.burst=20"
       - "traefik.http.middlewares.ratelimit.ratelimit.period=1m"

@@ -190,6 +190,11 @@ def shutdown():
     logger.info("Server shutdown complete")
 
 
+def data_updated_at() -> datetime:
+    """Timestamp of the newest data currently loaded from PostgreSQL."""
+    return _last_reload_ts
+
+
 async def hot_reload_loop():
     """Background task: reload data from PG whenever ingestion has written new data."""
     global _last_reload_ts

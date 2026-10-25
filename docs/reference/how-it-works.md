@@ -89,6 +89,25 @@ All candidates are reranked by Jina's reranker model (`jina-reranker-v3`) for fi
 
 Final results are sorted by their position in the documentation (by reading order, not by score) and reassembled into readable markdown fragments. Adjacent chunks from the same page are merged. The result reads like a coherent mini-document rather than a list of search snippets.
 
+## Health Endpoint
+
+`GET /health` on the same host as the MCP endpoint reports whether the server can answer queries. It is meant for status pages and uptime monitors and is not rate limited.
+
+```json
+{
+  "status": "ok",
+  "version": "0.1.0",
+  "uptime_seconds": 86400,
+  "checks": { "data": "ok", "database": "ok", "qdrant": "ok" },
+  "sources": 14,
+  "pages": 2100,
+  "points": 41000,
+  "data_updated": "2026-10-25T12:00:00+00:00"
+}
+```
+
+The response is `200` when every check is `ok` and `503` with `"status": "degraded"` otherwise. A failing check names only the error type, never its message. The checks cover the loaded documentation data, PostgreSQL, and the Qdrant collection (a `red` collection counts as failing; `yellow`, meaning background optimisation, does not). Jina and Gemini are deliberately not called, so polling costs nothing.
+
 ## Cost
 
 The hosted server is free. For self-hosted instances, per-query cost is approximately **$0.0005**, dominated by the Jina embedding and reranking calls. No LLM calls happen at query time.
