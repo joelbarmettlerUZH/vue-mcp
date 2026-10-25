@@ -90,7 +90,7 @@ services:
     restart: unless-stopped
 
   qdrant:
-    image: qdrant/qdrant:v1.17.1
+    image: qdrant/qdrant:v1.18.3
     volumes:
       - qdrant-data:/qdrant/storage
     healthcheck:
