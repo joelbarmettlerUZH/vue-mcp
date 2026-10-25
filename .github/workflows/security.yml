@@ -26,7 +26,7 @@ jobs:
             image: postgres:17-alpine
             exit_code: "0"
           - name: qdrant
-            image: qdrant/qdrant:v1.17.1
+            image: qdrant/qdrant:v1.18.3
             exit_code: "0"
           - name: traefik
             image: traefik:v3.6
