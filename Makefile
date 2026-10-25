@@ -1,4 +1,4 @@
-.PHONY: help install bootstrap lint lint-fix format-check format check test test-all test-integration ingest ingest-full ingest-status serve inspect all pr-ready eval eval-compare eval-generate docker-build docker-dev-up docker-dev-down docker-local-up docker-local-down docker-prod-up docker-prod-down deploy deploy-manual docs docs-build
+.PHONY: help install bootstrap lint lint-fix format-check format check test test-all test-integration smoke ingest ingest-full ingest-status serve inspect all pr-ready eval eval-compare eval-generate docker-build docker-dev-up docker-dev-down docker-local-up docker-local-down docker-prod-up docker-prod-down deploy deploy-manual docs docs-build
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -37,6 +37,9 @@ test-all: ## Run all tests including integration tests (requires API keys)
 
 test-integration: docker-dev-up ## Run integration tests against local infra
 	uv run pytest -m integration -v
+
+smoke: ## Smoke test a running server (URL=https://mcp.vue-mcp.org by default)
+	uv run python scripts/smoke_test.py $(URL)
 
 # ── Ingestion ──────────────────────────────────────────────────────
 

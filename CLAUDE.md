@@ -49,6 +49,7 @@ All commands are available via `make`. Run `make help` to see the full list.
 | `make docker-prod-up` | Start production stack |
 | `make docker-prod-down` | Stop production stack |
 | `make test-integration` | Start dev infra + run integration tests |
+| `make smoke [URL=...]` | End-to-end smoke test of a running server (default: production). Run after deploys |
 | `make eval` | Run eval against our server |
 | `make eval-compare` | Run eval comparing ours vs Context7 |
 | `make eval-generate FRAMEWORK=vue DOCS=path` | Generate evaluation questions |
