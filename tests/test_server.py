@@ -2167,3 +2167,116 @@ class TestFrameworkParameterisedTools:
             main_module.main()
 
         run.assert_called_once_with(transport="stdio")
+
+
+# ---------------------------------------------------------------------------
+# Tests: usage logging (what the dashboard charts)
+# ---------------------------------------------------------------------------
+
+
+def _prepare_lookup_state():
+    from vue_docs_server.startup import state as server_state
+
+    entity_index = _make_entity_index()
+    server_state.entity_index = entity_index
+    server_state.entity_indices = {"vue": entity_index}
+    server_state.synonym_table = _make_synonym_table()
+    matcher = EntityMatcher(entity_index=entity_index, synonym_table=server_state.synonym_table)
+    server_state.entity_matcher = matcher
+    server_state.entity_matchers = {"vue": matcher}
+    server_state.qdrant = MagicMock()
+    server_state.bm25 = MagicMock()
+
+
+def _fake_clock(*readings: float):
+    """time.monotonic replacement returning the given readings in order."""
+    values = iter(readings)
+    return lambda: next(values)
+
+
+class TestUsageLogging:
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        ("target", "call", "name"),
+        [
+            (
+                "api_lookup",
+                lambda: _do_api_lookup("ref", source="vue", ctx=_mock_ctx()),
+                "api_lookup",
+            ),
+            (
+                "related",
+                lambda: _do_get_related("ref", source="vue", ctx=_mock_ctx()),
+                "get_related",
+            ),
+        ],
+    )
+    async def test_lookups_log_their_measured_latency(self, target, call, name):
+        """They used to log a hard-coded 0, which made the median latency read 0 ms."""
+        _prepare_lookup_state()
+        module = f"vue_docs_server.tools.{target}"
+        with (
+            patch(f"{module}.log_tool_call") as log,
+            patch(f"{module}.time.monotonic", _fake_clock(10.0, 10.250)),
+        ):
+            await call()
+        log.assert_called_once()
+        assert log.call_args.args[0] == name
+        assert log.call_args.kwargs["latency_ms"] == 250
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        ("target", "call"),
+        [
+            ("api_lookup", lambda: _do_api_lookup("ref", source="vue", ctx=_mock_ctx())),
+            ("related", lambda: _do_get_related("ref", source="vue", ctx=_mock_ctx())),
+        ],
+    )
+    async def test_instant_lookups_never_log_zero(self, target, call):
+        """0 means 'not measured'; a sub-millisecond call is recorded as 1 ms."""
+        _prepare_lookup_state()
+        module = f"vue_docs_server.tools.{target}"
+        with (
+            patch(f"{module}.log_tool_call") as log,
+            patch(f"{module}.time.monotonic", _fake_clock(10.0, 10.0001)),
+        ):
+            await call()
+        assert log.call_args.kwargs["latency_ms"] == 1
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        ("source", "expected"), [("vue", "docs_search"), (None, "ecosystem_search")]
+    )
+    async def test_search_logs_under_the_tool_that_was_called(self, source, expected):
+        """ecosystem_search (no source) used to be logged as docs_search."""
+        from vue_docs_server.startup import state as server_state
+
+        mock_qdrant = MagicMock()
+        mock_qdrant.hybrid_search.return_value = [
+            _make_hit(content="Computed properties are cached.")
+        ]
+        server_state.qdrant = mock_qdrant
+        mock_bm25 = MagicMock()
+        mock_bm25.get_query_sparse_vector.return_value = SparseVector(indices=[1], values=[1.0])
+        server_state.bm25 = mock_bm25
+        entity_index = EntityIndex(entities={"computed": ApiEntity(name="computed")})
+        server_state.entity_index = entity_index
+        server_state.synonym_table = {}
+        server_state.entity_matcher = EntityMatcher(entity_index=entity_index, synonym_table={})
+
+        embed_result = MagicMock()
+        embed_result.embeddings = [[0.1] * 1024]
+        with (
+            patch("vue_docs_server.tools.search.JinaClient") as MockJina,
+            patch("vue_docs_server.tools.search.log_tool_call") as log,
+        ):
+            jina = AsyncMock()
+            jina.embed.return_value = embed_result
+            jina.rerank.return_value = RerankResult(indices=[0], scores=[0.9], total_tokens=10)
+            jina.close = AsyncMock()
+            MockJina.return_value = jina
+            await _do_search("computed caching", source=source, ctx=_mock_ctx())
+
+        log.assert_called_once()
+        assert log.call_args.args[0] == expected
+        assert log.call_args.kwargs["framework"] == source
