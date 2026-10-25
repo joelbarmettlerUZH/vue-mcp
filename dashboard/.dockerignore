@@ -1,0 +1,4 @@
+node_modules
+web/dist
+seed.sql
+README.md

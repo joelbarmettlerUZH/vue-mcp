@@ -1,6 +1,8 @@
 # Production stack with Let's Encrypt TLS.
 # Usage: docker compose -f docker-compose.prod.yml up -d
 # Required env vars: DOMAIN, ACME_EMAIL, POSTGRES_PASSWORD, JINA_API_KEY, GEMINI_API_KEY
+# Optional (usage dashboard): DASHBOARD_DOMAIN, DASHBOARD_PASSWORD, DASHBOARD_DB_PASSWORD. Without the
+# passwords the dashboard refuses to start and nothing else is affected.
 
 x-logging: &default-logging
   driver: json-file
@@ -57,6 +59,46 @@ services:
       - "traefik.http.middlewares.ratelimit.ratelimit.period=1m"
     mem_limit: 2g
     cpus: 1.0
+    logging: *default-logging
+    restart: unless-stopped
+
+  # Usage dashboard: read-only view of usage_events. Authenticated (HTTP Basic), because it shows raw
+  # search queries. Connects as the dashboard_ro role (SELECT on usage_events only), created by the
+  # deploy workflow.
+  dashboard:
+    image: ghcr.io/${GITHUB_REPOSITORY:-joelbarmettleruzh/vue-mcp}/vue-mcp-dashboard:${IMAGE_TAG:-latest}
+    build:
+      context: ./dashboard
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "3100"
+      DATABASE_URL: postgres://dashboard_ro:${DASHBOARD_DB_PASSWORD:-}@postgres:5432/vue_mcp
+      DASHBOARD_USER: ${DASHBOARD_USER:-admin}
+      DASHBOARD_PASSWORD: ${DASHBOARD_PASSWORD:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - proxy
+      - internal
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`${DASHBOARD_DOMAIN:-stats.vue-mcp.org}`)"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.tls=true"
+      - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.dashboard.middlewares=dashboard-ratelimit"
+      - "traefik.http.services.dashboard.loadbalancer.server.port=3100"
+      - "traefik.http.middlewares.dashboard-ratelimit.ratelimit.average=60"
+      - "traefik.http.middlewares.dashboard-ratelimit.ratelimit.burst=20"
+      - "traefik.http.middlewares.dashboard-ratelimit.ratelimit.period=1m"
+    mem_limit: 256m
+    cpus: 0.25
     logging: *default-logging
     restart: unless-stopped
 
