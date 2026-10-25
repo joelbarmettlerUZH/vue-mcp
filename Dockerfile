@@ -42,7 +42,10 @@ CMD ["vue-docs-server"]
 # ---------------------------------------------------------------------------
 FROM base AS ingestion
 
+# git links libcurl, which links libbrotli. `upgrade` pulls in security fixes (e.g. libbrotli1
+# 1.1.0-2+deb13u1 for CVE-2026-111497) and changing this line invalidates the cached layer.
 RUN apt-get update && apt-get install -y --no-install-recommends git && \
+    apt-get -y upgrade && \
     rm -rf /var/lib/apt/lists/*
 
 RUN uv sync --frozen --no-dev --package vue-docs-ingestion
