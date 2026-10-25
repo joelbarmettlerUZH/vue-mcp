@@ -11,12 +11,15 @@ Handles Pinia-specific concerns:
 
 import logging
 import re
-import shutil
-import subprocess
 from pathlib import Path
 
 from vue_docs_core.models.entity import ApiEntity
 from vue_docs_core.parsing.extractors.pinia import PiniaEntityExtractor
+from vue_docs_core.parsing.typedoc import (
+    generate_api_docs,
+    install_prebuilt_api,
+    strip_typedoc_boilerplate,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -55,51 +58,15 @@ class PiniaAdapter:
     """Source adapter for Pinia documentation."""
 
     def post_clone(self, repo_root: Path) -> None:
-        """Generate TypeDoc API docs if not already present.
+        """Make the TypeDoc API reference pages available.
 
-        Requires npm and node. Gracefully skips if unavailable.
+        Docker images carry them prebuilt (generated in a build stage without secrets);
+        developer machines with Node generate them locally. Without either, the entity
+        dictionary falls back to the seed list.
         """
-        docs_dir = repo_root / "packages" / "docs"
-        api_dir = docs_dir / "api"
-
-        if api_dir.exists() and any(api_dir.rglob("*.md")):
-            logger.info("TypeDoc API docs already exist, skipping generation")
+        if install_prebuilt_api("pinia", repo_root / "packages" / "docs" / "api"):
             return
-
-        if not shutil.which("npm") or not shutil.which("node"):
-            logger.info("npm/node not available, skipping TypeDoc generation")
-            return
-
-        root_pkg = repo_root / "package.json"
-        if root_pkg.exists():
-            result = subprocess.run(
-                ["npm", "install", "--ignore-scripts"],
-                cwd=str(repo_root),
-                capture_output=True,
-                text=True,
-                timeout=120,
-            )
-            if result.returncode != 0:
-                logger.warning("npm install failed: %s", result.stderr[:500])
-
-        typedoc_config = docs_dir / "typedoc.tsconfig.json"
-        if not typedoc_config.exists():
-            logger.info("typedoc config not found, skipping TypeDoc generation")
-            return
-
-        logger.info("Generating TypeDoc API docs...")
-        result = subprocess.run(
-            ["npx", "typedoc", "--options", str(typedoc_config)],
-            cwd=str(docs_dir),
-            capture_output=True,
-            text=True,
-            timeout=120,
-        )
-        if result.returncode != 0:
-            logger.warning(
-                "TypeDoc generation failed (will use seed entities): %s",
-                result.stderr[:500],
-            )
+        generate_api_docs(repo_root)
 
     def discover_files(self, docs_path: Path) -> list[Path]:
         """Find all English markdown files, excluding zh/ translations."""
@@ -164,7 +131,7 @@ class PiniaAdapter:
 
     def clean_content(self, raw: str) -> str:
         """Strip Pinia-specific promotional components and script setup blocks."""
-        result = raw
+        result = strip_typedoc_boilerplate(raw)
 
         # Remove block-form components
         result = _VUE_COMPONENT_BLOCK_RE.sub("", result)

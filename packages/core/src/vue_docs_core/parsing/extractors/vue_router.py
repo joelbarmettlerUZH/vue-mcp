@@ -8,9 +8,8 @@ components (RouterLink, RouterView), and configuration options.
 import re
 from pathlib import Path
 
-from markdown_it import MarkdownIt
-
 from vue_docs_core.models.entity import ApiEntity, EntityType
+from vue_docs_core.parsing.typedoc import TYPE_FOLDERS, iter_symbol_pages
 
 # Known Vue Router APIs with their types (for bootstrapping when docs structure varies)
 _KNOWN_APIS: dict[str, EntityType] = {
@@ -72,11 +71,6 @@ _KNOWN_APIS: dict[str, EntityType] = {
     "scrollBehavior": EntityType.OPTION,
 }
 
-_SLUG_RE = re.compile(r"\{#[\w-]+\}\s*$")
-_BACKTICK_RE = re.compile(r"^`(.+)`$")
-_TRAILING_PARENS_RE = re.compile(r"\(\)$")
-_ANGLE_BRACKETS_RE = re.compile(r"^`?<(.+?)>`?$")
-
 
 class VueRouterEntityExtractor:
     """Entity extractor for Vue Router documentation."""
@@ -96,64 +90,28 @@ class VueRouterEntityExtractor:
                 entity_type=entity_type,
             )
 
-        # Scan API docs if they exist
+        # TypeDoc-generated API reference: one page per symbol, registered by file name
         api_dir = docs_path / "api"
         if api_dir.exists():
-            self._scan_api_headings(api_dir, dictionary)
+            self._register_api_pages(api_dir, docs_path, dictionary)
 
         return dictionary
 
-    def _scan_api_headings(self, api_dir: Path, dictionary: dict[str, ApiEntity]):
-        """Extract additional entities from API reference headings."""
-        md = MarkdownIt()
+    def _register_api_pages(self, api_dir: Path, docs_path: Path, dictionary: dict[str, ApiEntity]):
+        """Register one entity per TypeDoc symbol page and link seeded APIs to their page.
 
-        for md_file in sorted(api_dir.rglob("*.md")):
-            if md_file.name == "index.md":
-                continue
-
-            raw = md_file.read_text(encoding="utf-8")
-            tokens = md.parse(raw)
-            rel_path = str(md_file.relative_to(api_dir.parent))
-
-            i = 0
-            while i < len(tokens):
-                tok = tokens[i]
-                if tok.type == "heading_open" and tok.tag in ("h2", "h3") and i + 1 < len(tokens):
-                    inline = tokens[i + 1]
-                    heading_text = inline.content if inline.type == "inline" else ""
-                    name = self._clean_heading(heading_text)
-                    if name and name not in dictionary:
-                        entity_type = self._classify(name)
-                        dictionary[name] = ApiEntity(
-                            name=name,
-                            source="vue-router",
-                            entity_type=entity_type,
-                            page_path=rel_path,
-                            section=heading_text.strip(),
-                        )
-                i += 1
-
-    def _clean_heading(self, heading_text: str) -> str | None:
-        """Clean an API heading into an entity name."""
-        text = _SLUG_RE.sub("", heading_text).strip()
-        if not text:
-            return None
-        # Strip backticks
-        m = _BACKTICK_RE.match(text)
-        if m:
-            text = m.group(1)
-        # Strip angle brackets
-        m = _ANGLE_BRACKETS_RE.match(text)
-        if m:
-            text = m.group(1)
-        # Strip trailing ()
-        text = _TRAILING_PARENS_RE.sub("", text)
-        # Skip prose headings (multiple words without dots)
-        if " " in text and "." not in text:
-            return None
-        if not text:
-            return None
-        return text
+        Headings are deliberately not scanned: generated pages use section headings such as
+        "Parameters" and "Returns" and list members, none of which are API names.
+        """
+        for symbol, page_path, kind in iter_symbol_pages(api_dir, docs_path):
+            existing = dictionary.get(symbol)
+            if existing is None:
+                entity_type = EntityType.OTHER if kind in TYPE_FOLDERS else self._classify(symbol)
+                dictionary[symbol] = ApiEntity(
+                    name=symbol, source="vue-router", entity_type=entity_type, page_path=page_path
+                )
+            elif not existing.page_path:
+                existing.page_path = page_path
 
     def _classify(self, name: str) -> EntityType:
         """Classify an entity by name pattern."""
