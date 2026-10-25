@@ -1,63 +1,53 @@
 # Claude Desktop
 
-Connect Vue Docs MCP to [Claude Desktop](https://claude.ai/download).
+Connect Vue Docs MCP to [Claude Desktop](https://claude.com/download).
 
 ## Setup
 
-### Option A: Via Settings UI
+Claude Desktop connects to remote servers through **custom connectors**. Remote connectors are reached from Anthropic's cloud, which works here because the hosted server is public.
 
-1. Open Claude Desktop
-2. Go to **Settings** > **Connectors** > **Add Custom Connector**
+### Pro and Max plans
+
+1. Open Claude Desktop and go to **Customize** > **Connectors** (in older versions: **Settings** > **Connectors**)
+2. Click **Add**, then **Add custom connector**
 3. Enter name: `Vue Docs`
 4. Enter URL: `https://mcp.vue-mcp.org/mcp`
-5. Click **Save**
+5. Click **Add**. No sign-in is needed.
 
-### Option B: Via Config File
+### Team and Enterprise plans
 
-Edit the Claude Desktop configuration file for your platform:
+An organization Owner adds the connector under **Organization settings** > **Connectors**. Members then connect to it from their own Connectors settings.
 
-::: code-group
-
-```json [macOS]
-// ~/Library/Application Support/Claude/claude_desktop_config.json
-{
-  "mcpServers": {
-    "vue-docs": {
-      "url": "https://mcp.vue-mcp.org/mcp"
-    }
-  }
-}
-```
-
-```json [Windows]
-// %APPDATA%\Claude\claude_desktop_config.json
-{
-  "mcpServers": {
-    "vue-docs": {
-      "url": "https://mcp.vue-mcp.org/mcp"
-    }
-  }
-}
-```
-
-```json [Linux]
-// ~/.config/Claude/claude_desktop_config.json
-{
-  "mcpServers": {
-    "vue-docs": {
-      "url": "https://mcp.vue-mcp.org/mcp"
-    }
-  }
-}
-```
-
+::: tip Plans
+Custom connectors are available on Free (limited to one connector), Pro, Max, Team, and Enterprise.
 :::
+
+### Alternative: config file with a bridge
+
+Claude Desktop's config file is documented for local (stdio) programs, while remote servers are added as connectors. If you prefer the config file, or cannot use connectors, bridge to the hosted server with the community [`mcp-remote`](https://www.npmjs.com/package/mcp-remote) package (requires Node.js):
+
+```json
+{
+  "mcpServers": {
+    "vue-docs": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.vue-mcp.org/mcp"]
+    }
+  }
+}
+```
+
+| Platform | Config file |
+|---|---|
+| macOS | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Windows | `%APPDATA%\Claude\claude_desktop_config.json` |
+| Linux | `~/.config/Claude/claude_desktop_config.json` |
 
 Restart Claude Desktop after saving.
 
 ## Verify
 
-After restarting, you should see a tools icon in the chat input area. Click it to confirm `vue-docs` tools are listed.
+Open a new chat and click the **+** (or tools) menu in the message box. `Vue Docs` should appear under Connectors with its tools listed. If you used the config file, restart Claude Desktop first.
 
 ## Usage
 

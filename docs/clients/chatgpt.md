@@ -2,7 +2,7 @@
 
 Connect Vue Docs MCP to [ChatGPT](https://chatgpt.com/) (Web and Desktop).
 
-ChatGPT supports MCP servers through remote connectors via [Developer Mode](https://platform.openai.com/docs/guides/developer-mode) (beta). Available for Pro, Plus, Team, Enterprise, and Edu plans.
+ChatGPT supports MCP servers through remote connectors via [Developer Mode](https://developers.openai.com/api/docs/mcp) (beta). Available for Plus, Pro, Business, Enterprise, and Edu plans. OpenAI renamed connectors to **Apps**, so menus may read **Apps & Connectors** depending on your version.
 
 ## Setup
 
@@ -40,4 +40,4 @@ Ask ChatGPT about Vue:
 - "What's the difference between ref and reactive?"
 - "Help me migrate from Options API to Composition API"
 
-See the [OpenAI MCP docs](https://platform.openai.com/docs/mcp) for more info.
+See the [OpenAI MCP docs](https://developers.openai.com/api/docs/mcp) for more info.

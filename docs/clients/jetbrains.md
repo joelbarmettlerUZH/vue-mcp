@@ -4,7 +4,7 @@ Connect Vue Docs MCP to any [JetBrains IDE](https://www.jetbrains.com/) (WebStor
 
 ## Setup
 
-See the [JetBrains AI Assistant MCP docs](https://www.jetbrains.com/help/ai-assistant/configure-an-mcp-server.html) for full details.
+See the [JetBrains AI Assistant MCP docs](https://www.jetbrains.com/help/ai-assistant/mcp.html) for full details.
 
 ### Via Settings UI
 
@@ -24,6 +24,10 @@ See the [JetBrains AI Assistant MCP docs](https://www.jetbrains.com/help/ai-assi
 ```
 
 5. Click **Apply**
+
+::: tip
+Use the base endpoint `https://mcp.vue-mcp.org/mcp` (streamable HTTP). JetBrains also supports legacy SSE servers, whose URLs end in `/sse`; this server does not offer that endpoint.
+:::
 
 ### Via Config File
 

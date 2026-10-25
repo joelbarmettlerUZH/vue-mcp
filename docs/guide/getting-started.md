@@ -9,14 +9,14 @@ The fastest way to start using Vue Docs MCP is to connect to the free hosted ser
 One command:
 
 ```bash
-claude mcp add --scope user vue-docs --transport streamable-http https://mcp.vue-mcp.org/mcp
+claude mcp add --scope user vue-docs --transport http https://mcp.vue-mcp.org/mcp
 ```
 
 ### Cursor
 
 One-click install:
 
-[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=vue-docs&config=eyJ1cmwiOiJodHRwczovL21jcC52dWUtbWNwLm9yZy9tY3AifQ%3D%3D)
+[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/install-mcp?name=vue-docs&config=eyJ1cmwiOiJodHRwczovL21jcC52dWUtbWNwLm9yZy9tY3AifQ%3D%3D)
 
 Or add to `.cursor/mcp.json`:
 
@@ -34,7 +34,7 @@ Or add to `.cursor/mcp.json`:
 
 See the [MCP Clients](/clients/) section for detailed setup instructions for Claude Desktop, Windsurf, VS Code, JetBrains, Zed, ChatGPT, and more.
 
-For any client not listed, use the streamable HTTP transport with this URL:
+For any client not listed, use the **streamable HTTP** transport with this URL (the older SSE transport is deprecated and not offered):
 
 ```
 https://mcp.vue-mcp.org/mcp

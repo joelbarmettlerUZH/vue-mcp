@@ -1,13 +1,13 @@
 # Claude Code
 
-Connect Vue Docs MCP to [Claude Code](https://docs.anthropic.com/en/docs/claude-code) with a single command.
+Connect Vue Docs MCP to [Claude Code](https://code.claude.com/docs) with a single command.
 
 ## Setup
 
 Run this in your terminal:
 
 ```bash
-claude mcp add --scope user vue-docs --transport streamable-http https://mcp.vue-mcp.org/mcp
+claude mcp add --scope user vue-docs --transport http https://mcp.vue-mcp.org/mcp
 ```
 
 That's it. Claude Code will now use Vue documentation tools automatically when you ask Vue-related questions.
@@ -21,6 +21,25 @@ claude mcp list
 ```
 
 You should see `vue-docs` in the list.
+
+### Share with your team
+
+To check the server into a repository, add it to `.mcp.json` at the project root, or use `--scope project`:
+
+```json
+{
+  "mcpServers": {
+    "vue-docs": {
+      "type": "http",
+      "url": "https://mcp.vue-mcp.org/mcp"
+    }
+  }
+}
+```
+
+::: warning Note
+Keep the `"type": "http"` field. Claude Code treats an entry with a `url` but no `type` as a misconfigured local server and skips it. The `sse` transport is deprecated, and this server does not offer it.
+:::
 
 ### Remove
 
