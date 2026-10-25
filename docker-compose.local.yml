@@ -72,7 +72,7 @@ services:
     restart: unless-stopped
 
   postgres:
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     environment:
       POSTGRES_USER: vue_mcp
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vue_mcp}
