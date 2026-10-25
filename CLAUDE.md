@@ -239,7 +239,7 @@ Internet -> Traefik (:80/:443, TLS via Let's Encrypt) -> MCP Server (:8000, stre
 | `mcp-server` | `ghcr.io/.../vue-mcp-server` | FastMCP server (streamable-http transport) |
 | `ingestion` | `ghcr.io/.../vue-mcp-ingestion` | Self-scheduling pipeline (`watch` command, runs every 24h) |
 | `postgres` | `postgres:17-alpine` | Shared data: entities, synonyms, pages, BM25 model, index state |
-| `qdrant` | `qdrant/qdrant:v1.18.3` | Vector database (dense + sparse hybrid search), collection: `vue_ecosystem` |
+| `qdrant` | `qdrant/qdrant:v1.19.2` | Vector database (dense + sparse hybrid search), collection: `vue_ecosystem` |
 | `traefik` | `traefik:v3.6` | Reverse proxy, TLS, rate limiting (60 req/min, 10 concurrent). No response buffering (required for SSE notifications). |
 
 ### Docker Images
