@@ -22,6 +22,11 @@ jobs:
           - name: ingestion
             build_target: ingestion
             exit_code: "1"
+          - name: dashboard
+            dockerfile: dashboard/Dockerfile
+            context: dashboard
+            build_target: runtime
+            exit_code: "1"
           - name: postgres
             image: postgres:17-alpine
             exit_code: "0"
@@ -36,7 +41,7 @@ jobs:
 
       - name: Build image
         if: matrix.build_target
-        run: docker build --target ${{ matrix.build_target }} -t scan-target:${{ matrix.name }} .
+        run: docker build -f ${{ matrix.dockerfile || 'Dockerfile' }} --target ${{ matrix.build_target }} -t scan-target:${{ matrix.name }} ${{ matrix.context || '.' }}
 
       - name: Resolve image ref
         id: ref

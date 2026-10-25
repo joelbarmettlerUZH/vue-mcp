@@ -240,6 +240,7 @@ Internet -> Traefik (:80/:443, TLS via Let's Encrypt) -> MCP Server (:8000, stre
 |---|---|---|
 | `mcp-server` | `ghcr.io/.../vue-mcp-server` | FastMCP server (streamable-http transport) |
 | `ingestion` | `ghcr.io/.../vue-mcp-ingestion` | Self-scheduling pipeline (`watch` command, runs every 24h) |
+| `dashboard` | `ghcr.io/.../vue-mcp-dashboard` | Usage dashboard (Bun API + Vue page, `dashboard/`). Read-only view of `usage_events` via the `dashboard_ro` role, HTTP Basic auth, served at `DASHBOARD_DOMAIN` (default `stats.vue-mcp.org`) |
 | `postgres` | `postgres:17-alpine` | Shared data: entities, synonyms, pages, BM25 model, index state |
 | `qdrant` | `qdrant/qdrant:v1.19.2` | Vector database (dense + sparse hybrid search), collection: `vue_ecosystem` |
 | `traefik` | `traefik:v3.6` | Reverse proxy, TLS, rate limiting (60 req/min, 10 concurrent). No response buffering (required for SSE notifications). |
@@ -313,6 +314,19 @@ page: 200 when loaded data, PostgreSQL and Qdrant are healthy, 503 otherwise, wi
 `sources`/`pages`/`points`/`data_updated`. It never calls Jina or Gemini (paid APIs) and reports failing checks by
 exception class only. Traefik routes it through a dedicated `health` router that skips the MCP rate limiter. Do not point
 the container `HEALTHCHECK` at it: a Qdrant outage would then make Traefik drop the whole MCP route.
+
+### Usage Dashboard
+
+`dashboard/` is a separate Bun + Vue app (not part of the Python workspace) that charts the `usage_events` table the
+server writes (tool calls and resource reads; protocol traffic such as `initialize` is not logged). It has its own
+`dashboard/Dockerfile`, CI job and Dependabot entries. Local development: `make docker-dev-up`, then in `dashboard/`
+`bun install && bun run seed && bun run dev` (the seed is synthetic and truncates `usage_events`, local only).
+
+In production it needs two GitHub secrets, `DASHBOARD_PASSWORD` and `DASHBOARD_DB_PASSWORD` (use hex; `$` is
+interpolated by compose), and optionally the variables `DASHBOARD_DOMAIN` and `DASHBOARD_USER`. Without the passwords
+the container refuses to start and nothing else is affected. The deploy workflow creates the `dashboard_ro` role
+(SELECT on `usage_events` only, read-only transactions) and a `timestamp` index idempotently after each restart. The
+API refuses to bind beyond loopback without a password because it shows raw search queries.
 
 ### Hot Reload
 

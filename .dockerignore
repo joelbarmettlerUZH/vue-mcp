@@ -13,3 +13,4 @@ build/
 .env.production
 .idea/
 *.jsonl
+dashboard/

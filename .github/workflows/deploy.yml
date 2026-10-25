@@ -25,6 +25,7 @@ jobs:
           REPO_LOWER="${REPO,,}"
           echo "server=${{ env.REGISTRY }}/${REPO_LOWER}/vue-mcp-server" >> "$GITHUB_OUTPUT"
           echo "ingestion=${{ env.REGISTRY }}/${REPO_LOWER}/vue-mcp-ingestion" >> "$GITHUB_OUTPUT"
+          echo "dashboard=${{ env.REGISTRY }}/${REPO_LOWER}/vue-mcp-dashboard" >> "$GITHUB_OUTPUT"
 
       - uses: docker/setup-buildx-action@v4
 
@@ -67,6 +68,18 @@ jobs:
             ${{ steps.meta.outputs.ingestion }}:sha-${{ github.sha }}
           cache-from: type=gha,scope=ingestion
           cache-to: type=gha,mode=max,scope=ingestion
+
+      - name: Build & push dashboard image
+        uses: docker/build-push-action@v7
+        with:
+          context: ./dashboard
+          target: runtime
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.dashboard }}:latest
+            ${{ steps.meta.outputs.dashboard }}:sha-${{ github.sha }}
+          cache-from: type=gha,scope=dashboard
+          cache-to: type=gha,mode=max,scope=dashboard
 
   backup:
     needs: build
@@ -160,6 +173,11 @@ jobs:
           DOMAIN=${{ vars.DOMAIN || 'mcp.vue-mcp.org' }}
           ACME_EMAIL=${{ secrets.ACME_EMAIL }}
           TLS_CERTRESOLVER=letsencrypt
+          # Usage dashboard (optional: empty passwords keep it from starting)
+          DASHBOARD_DOMAIN=${{ vars.DASHBOARD_DOMAIN || 'stats.vue-mcp.org' }}
+          DASHBOARD_USER=${{ vars.DASHBOARD_USER || 'admin' }}
+          DASHBOARD_PASSWORD=${{ secrets.DASHBOARD_PASSWORD }}
+          DASHBOARD_DB_PASSWORD=${{ secrets.DASHBOARD_DB_PASSWORD }}
           ENVEOF"
 
       - name: Pull and restart services
@@ -175,3 +193,31 @@ jobs:
             echo 'Deploy complete. Services:'
             docker compose --env-file .env.production -f docker-compose.prod.yml ps --format 'table {{.Name}}\t{{.Status}}'
           "
+      - name: Provision read-only dashboard database role
+        env:
+          DEPLOY_DIR: ${{ vars.DEPLOY_DIR || '/opt/vue-mcp' }}
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "DEPLOY_DIR=${DEPLOY_DIR} bash -s" <<'REMOTE'
+          set -euo pipefail
+          cd "$DEPLOY_DIR"
+          PW=$(grep '^DASHBOARD_DB_PASSWORD=' .env.production | cut -d= -f2-)
+          if [ -z "$PW" ]; then echo "DASHBOARD_DB_PASSWORD not set, skipping dashboard role"; exit 0; fi
+          COMPOSE="docker compose --env-file .env.production -f docker-compose.prod.yml"
+          # usage_events is created by the server on startup; wait for it
+          for i in $(seq 1 30); do
+            $COMPOSE exec -T postgres psql -U vue_mcp vue_mcp -tAc "SELECT to_regclass('usage_events')" | grep -q usage_events && break
+            sleep 2
+          done
+          # Password travels as an environment variable, never in a command line
+          PW="$PW" $COMPOSE exec -T -e PW postgres sh -c 'psql -v ON_ERROR_STOP=1 -v pw="$PW" -U vue_mcp vue_mcp' <<'SQL'
+          SELECT format('CREATE ROLE dashboard_ro LOGIN PASSWORD %L', :'pw')
+            WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'dashboard_ro') \gexec
+          SELECT format('ALTER ROLE dashboard_ro PASSWORD %L', :'pw') \gexec
+          GRANT CONNECT ON DATABASE vue_mcp TO dashboard_ro;
+          GRANT USAGE ON SCHEMA public TO dashboard_ro;
+          GRANT SELECT ON usage_events TO dashboard_ro;
+          ALTER ROLE dashboard_ro SET default_transaction_read_only = on;
+          CREATE INDEX IF NOT EXISTS ix_usage_events_timestamp ON usage_events (timestamp);
+          SQL
+          echo "dashboard_ro role ready"
+          REMOTE

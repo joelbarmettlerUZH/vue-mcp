@@ -43,3 +43,16 @@ updates:
     groups:
       docs-minor-patch:
         update-types: [minor, patch]
+
+  - package-ecosystem: bun
+    directory: /dashboard
+    schedule:
+      interval: weekly
+    groups:
+      dashboard-minor-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: docker
+    directory: /dashboard
+    schedule:
+      interval: weekly
