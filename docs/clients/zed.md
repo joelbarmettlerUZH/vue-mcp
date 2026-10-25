@@ -4,20 +4,19 @@ Connect Vue Docs MCP to [Zed](https://zed.dev/).
 
 ## Setup
 
-Add to your Zed `settings.json`. See the [Zed Context Server docs](https://zed.dev/docs/assistant/context-servers) for more info.
+Add to your Zed `settings.json`. See the [Zed MCP docs](https://zed.dev/docs/ai/mcp) for more info.
 
 ```json
 {
   "context_servers": {
     "vue-docs": {
-      "source": "custom",
-      "settings": {
-        "url": "https://mcp.vue-mcp.org/mcp"
-      }
+      "url": "https://mcp.vue-mcp.org/mcp"
     }
   }
 }
 ```
+
+Or use the UI: **Settings** > **AI** > **MCP Servers** > **Add Server** > **Add Remote Server**.
 
 ::: tip
 Zed uses `context_servers` instead of `mcpServers`.

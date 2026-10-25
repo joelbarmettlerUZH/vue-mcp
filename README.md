@@ -69,12 +69,12 @@ Every framework is always available through the same tools and prompts. Pass the
 ### Claude Code
 
 ```bash
-claude mcp add --scope user vue-docs --transport streamable-http https://mcp.vue-mcp.org/mcp
+claude mcp add --scope user vue-docs --transport http https://mcp.vue-mcp.org/mcp
 ```
 
 ### Cursor
 
-[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=vue-docs&config=eyJ1cmwiOiJodHRwczovL21jcC52dWUtbWNwLm9yZy9tY3AifQ%3D%3D)
+[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/install-mcp?name=vue-docs&config=eyJ1cmwiOiJodHRwczovL21jcC52dWUtbWNwLm9yZy9tY3AifQ%3D%3D)
 
 Or add to `.cursor/mcp.json`:
 
@@ -92,7 +92,7 @@ Or add to `.cursor/mcp.json`:
 
 For Claude Desktop, Windsurf, VS Code, JetBrains, Zed, ChatGPT, and more, see the **[full client list](https://vue-mcp.org/clients/)**.
 
-Any MCP client that supports streamable HTTP works with:
+Any MCP client that supports **streamable HTTP** works with this URL (the older SSE transport is deprecated and not offered):
 
 ```
 https://mcp.vue-mcp.org/mcp

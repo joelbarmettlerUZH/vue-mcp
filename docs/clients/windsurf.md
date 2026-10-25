@@ -1,10 +1,10 @@
 # Windsurf
 
-Connect Vue Docs MCP to [Windsurf](https://windsurf.com/).
+Connect Vue Docs MCP to [Windsurf](https://devin.ai/desktop).
 
 ## Setup
 
-Add to your Windsurf MCP configuration file. See [Windsurf MCP docs](https://docs.windsurf.com/windsurf/cascade/mcp) for more info.
+Add to your Windsurf MCP configuration file. Open the config file from the Cascade panel (**...** menu > **Open MCP config file** in the MCPs section). See the [Windsurf MCP docs](https://docs.devin.ai/desktop/cascade/mcp) for more info.
 
 ```json
 {
@@ -17,7 +17,7 @@ Add to your Windsurf MCP configuration file. See [Windsurf MCP docs](https://doc
 ```
 
 ::: warning Note
-Windsurf uses `serverUrl` instead of `url`. This differs from most other clients.
+Windsurf accepts `serverUrl` or `url` for remote servers; `serverUrl` is what its docs use. Windsurf's website and docs now live under Devin Desktop (devin.ai), so older links may redirect there.
 :::
 
 ## Verify

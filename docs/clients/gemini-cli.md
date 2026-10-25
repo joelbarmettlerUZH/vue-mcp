@@ -4,6 +4,14 @@ Connect Vue Docs MCP to [Gemini CLI](https://google-gemini.github.io/gemini-cli/
 
 ## Setup
 
+### Option A: One command
+
+```bash
+gemini mcp add --transport http --scope user vue-docs https://mcp.vue-mcp.org/mcp
+```
+
+### Option B: Settings file
+
 Open the Gemini CLI settings file at `~/.gemini/settings.json` and add:
 
 ```json
@@ -20,7 +28,7 @@ Open the Gemini CLI settings file at `~/.gemini/settings.json` and add:
 ```
 
 ::: warning Note
-Gemini CLI uses `httpUrl` instead of `url`, and requires the `Accept` header for streamable HTTP connections.
+Gemini CLI uses `httpUrl` for streamable HTTP; `url` selects the older SSE transport, which this server does not offer. The `Accept` header is kept for older Gemini CLI versions; current documentation does not require it.
 :::
 
 ## Verify

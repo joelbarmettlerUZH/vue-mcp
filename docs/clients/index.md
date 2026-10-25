@@ -16,7 +16,7 @@ Detailed setup instructions for popular clients:
 | Client | Type | Guide |
 |---|---|---|
 | [Claude Code](/clients/claude-code) | CLI | One command setup |
-| [Claude Desktop](/clients/claude-desktop) | Desktop app | JSON config |
+| [Claude Desktop](/clients/claude-desktop) | Desktop app | Custom connector |
 | [Cursor](/clients/cursor) | IDE | One-click or JSON config |
 | [Windsurf](/clients/windsurf) | IDE | JSON config |
 | [VS Code (Copilot)](/clients/vscode) | IDE | JSON config |
@@ -35,6 +35,10 @@ https://mcp.vue-mcp.org/mcp
 ```
 
 No authentication headers are needed. Consult your client's MCP documentation for configuration details.
+
+::: warning SSE is not supported
+The older HTTP+SSE transport (endpoints ending in `/sse`) is deprecated, and the current MCP specification only defines stdio and streamable HTTP. This server only offers streamable HTTP at `/mcp`. If a client can only speak SSE or stdio, bridge to the hosted URL with the community [`mcp-remote`](https://www.npmjs.com/package/mcp-remote) package.
+:::
 
 ## Self-Hosting
 
