@@ -75,7 +75,7 @@ Each adapter (in `packages/core/src/vue_docs_core/parsing/adapters/`) implements
 
 | Hook | Purpose |
 |---|---|
-| `post_clone(repo_root)` | Run after git clone (e.g. TypeDoc generation for Vue Router) |
+| `post_clone(repo_root)` | Run after git clone/pull (e.g. install the TypeDoc API pages for Pinia and Vue Router) |
 | `discover_files(docs_path)` | File discovery with filtering (e.g. exclude `zh/` translations) |
 | `parse_sort_keys(repo_root)` | Parse sidebar/navigation config into sort key map |
 | `clean_content(raw)` | Source-specific content cleaning (e.g. strip `<VueSchoolLink>`, API-style divs) |
@@ -88,12 +88,12 @@ Each adapter (in `packages/core/src/vue_docs_core/parsing/adapters/`) implements
 | Source | Adapter | Key Behaviors |
 |---|---|---|
 | `vue` | `VueAdapter` | Strips `<div class="options-api">` wrappers, Playground links. Single `config.ts` sidebar. |
-| `vue-router` | `VueRouterAdapter` | Strips `<VueSchoolLink>`, `<RuleKitLink>`, `<script setup>` blocks. Excludes `zh/`. Split sidebar config (`config/en.ts`). Optional TypeDoc API generation (graceful skip if no npm). |
+| `vue-router` | `VueRouterAdapter` | Strips `<VueSchoolLink>`, `<RuleKitLink>`, `<script setup>` blocks. Excludes `zh/`. Split sidebar config (`config/en.ts`). TypeDoc API reference pages (`api/`): prebuilt in the Docker `typedoc` stage and installed from `TYPEDOC_DIR`, or generated locally with the upstream `run-typedoc.mjs` when Node exists. The extractor registers one entity per symbol page (named after the file) and links seeded APIs to it; it does not scan generated headings. |
 | `vueuse` | `VueUseAdapter` | Strips `<CourseLink>`, `<script setup>` blocks, TwoSlash cut markers. Frontmatter-based category sorting (no static sidebar config). Directory-name entity extraction. |
 | `vite` | `ViteAdapter` | Strips `<ScrimbaLink>`, `<audio>` elements, `<!-- prettier-ignore -->`, `<script setup>` blocks. Excludes `blog/` and meta pages. Standard `.vitepress/config.ts` sidebar. |
 | `vitest` | `VitestAdapter` | Strips Vitest-specific banners and educational components, fence-aware `<script setup>` removal. Standard VitePress sidebar. |
 | `vue-devtools` | `VueDevToolsAdapter` | Strips devtools-specific custom components and asset shortcodes. Standard VitePress sidebar. |
-| `pinia` | `PiniaAdapter` | Strips `<RuleKitLink>`, `<MasteringPiniaLink>`, `<VueSchoolLink>`, `<script setup>` blocks. Excludes `zh/`. Split VitePress config with catch-all `'/'` sidebar key. Optional TypeDoc API generation. |
+| `pinia` | `PiniaAdapter` | Strips `<RuleKitLink>`, `<MasteringPiniaLink>`, `<VueSchoolLink>`, `<script setup>` blocks. Excludes `zh/`. Split VitePress config with catch-all `'/'` sidebar key. TypeDoc API reference pages (`api/`): prebuilt in the Docker `typedoc` stage and installed from `TYPEDOC_DIR`, or generated locally with the upstream `run-typedoc.mjs` when Node exists. The extractor registers one entity per symbol page (named after the file) and links seeded APIs to it; it does not scan generated headings. |
 | `nuxt` | `NuxtAdapter` | Nuxt Content sidebar (frontmatter-based ordering). Strips Nuxt-specific custom components. Numeric-prefix file ordering. |
 | `vitepress` | `VitePressAdapter` | Multi-locale repo: `docs_subpath="docs/en"` excludes other languages. Custom sidebar parser for `defineAdditionalConfig` shape with per-section `base` re-applied to bare `link` values. Strips `<Badge>`, `<script setup>`, `<script client>`, `<VPTeam*>` blocks. |
 | `pinia-colada` | `PiniaColadaAdapter` | Standard VitePress sidebar at `.vitepress/config/index.ts`. Comprehensive TwoSlash cleanup inside code fences (`---cut-start/end/before/after`, `// @errors`/`@filename`/`@moduleResolution` directives, `// ^?` hover queries, `twoslash` fence tag). Strips `<HomeSponsors>`, `<FeaturePluginOptions>`, `<PiniaColada(Prod)?Devtools>`. Skips auto-generated `api/` folder; entity coverage seeded from `src/index.ts` exports. |
@@ -122,8 +122,9 @@ Clone the repo and study its structure before writing any code:
 
 Create `packages/core/src/vue_docs_core/parsing/adapters/{name}.py` implementing:
 
-- `post_clone()`: any post-clone setup (npm build for TypeDoc, etc.). Must gracefully skip if tools are unavailable
-  (e.g. no npm in Docker). Use `shutil.which()` to check.
+- `post_clone()`: any post-clone setup. Third-party build tooling (npm/pnpm, TypeDoc) must not run in the ingestion
+  container, which holds the API keys and database password: generate in a secret-free Docker build stage (see the
+  `typedoc` stage and `scripts/build_typedoc.sh`) and install the finished files. Skip gracefully when nothing is available.
 - `discover_files()`: return sorted list of `.md` files, excluding translations, generated dirs, etc.
 - `parse_sort_keys()`: parse the sidebar config into `{page_path: sort_key}` map. Different doc frameworks need
   different parsers (VitePress `config.ts`, Nuxt Content `.navigation.yml`, etc.).
@@ -247,7 +248,10 @@ Internet -> Traefik (:80/:443, TLS via Let's Encrypt) -> MCP Server (:8000, stre
 
 One multi-target `Dockerfile` produces two images:
 - **server**: `vue-docs-core` + `fastmcp` + `psycopg` + `sqlalchemy`. No git, no npm.
-- **ingestion**: `vue-docs-core` + `typer` + `rich` + `psycopg` + `sqlalchemy` + `git`. No npm (TypeDoc generation skipped in Docker).
+- **ingestion**: `vue-docs-core` + `typer` + `rich` + `psycopg` + `sqlalchemy` + `git`. No Node: a separate `typedoc` build stage (no secrets)
+  generates the Pinia and Vue Router API pages from the current upstream commits (passed as `PINIA_REF` / `ROUTER_REF` by CI so the
+  layer cache refreshes) and only the markdown is copied in, at `TYPEDOC_DIR=/app/typedoc`. The stage warns instead of failing, so a
+  broken upstream build cannot block a deploy; the image then falls back to seed entities.
 
 Build locally: `make docker-build`
 

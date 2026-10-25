@@ -42,6 +42,26 @@ HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
 CMD ["vue-docs-server"]
 
 # ---------------------------------------------------------------------------
+# TypeDoc API pages for Pinia and Vue Router
+# ---------------------------------------------------------------------------
+# Upstream generates these with `node run-typedoc.mjs` inside a pnpm workspace, which executes
+# third-party code. It runs here, in a stage that holds no secrets, and only the finished markdown
+# is copied into the ingestion image, which therefore still has no Node. CI passes the current
+# upstream commits so the layer cache refreshes when the API changes.
+FROM node:22-slim AS typedoc
+
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+ENV CI=true
+ARG PINIA_REF=HEAD
+ARG ROUTER_REF=HEAD
+
+COPY scripts/build_typedoc.sh /usr/local/bin/build_typedoc.sh
+RUN build_typedoc.sh pinia https://github.com/vuejs/pinia.git "$PINIA_REF"
+RUN build_typedoc.sh vue-router https://github.com/vuejs/router.git "$ROUTER_REF"
+
+# ---------------------------------------------------------------------------
 # Ingestion image
 # ---------------------------------------------------------------------------
 FROM base AS ingestion
@@ -56,6 +76,10 @@ RUN uv sync --frozen --no-dev --package vue-docs-ingestion
 
 # Ingestion needs write access to /app/data (mounted volume)
 RUN mkdir -p /app/data && chown app:app /app/data
+
+# Prebuilt API reference pages, installed into the Pinia and Vue Router clones by their adapters
+COPY --from=typedoc --chown=app:app /out /app/typedoc
+ENV TYPEDOC_DIR=/app/typedoc
 
 ENV PATH="/app/.venv/bin:$PATH"
 

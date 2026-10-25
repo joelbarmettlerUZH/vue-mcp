@@ -117,6 +117,10 @@ async def check_modern_client(mcp_url: str, delay: float) -> None:
 
         out = await call("api_lookup", {"framework": "vue", "api_name": "computed"})
         check("api_lookup vue computed", "computed" in out.lower())
+        for framework, api_name in (("pinia", "storeToRefs"), ("vue-router", "useRouter")):
+            # Pinia and Vue Router entities only link to a page when their TypeDoc pages are indexed
+            out = await call("api_lookup", {"framework": framework, "api_name": api_name})
+            check(f"api_lookup {framework} {api_name} has a docs link", "https://" in out)
         out = await call("get_related", {"framework": "vue-router", "topic": "useRouter"})
         check("get_related vue-router", not out.startswith("ERROR"))
         out = await call("ecosystem_search", {"query": "form validation"})

@@ -12,6 +12,7 @@ from pathlib import Path
 from markdown_it import MarkdownIt
 
 from vue_docs_core.models.entity import ApiEntity, EntityType
+from vue_docs_core.parsing.typedoc import TYPE_FOLDERS, iter_symbol_pages
 
 # Known Pinia APIs with their types
 _KNOWN_APIS: dict[str, EntityType] = {
@@ -80,18 +81,16 @@ class PiniaEntityExtractor:
                 entity_type=entity_type,
             )
 
-        # Scan API docs if they exist (TypeDoc-generated)
+        # TypeDoc-generated API reference: one page per symbol, registered by file name
         api_dir = docs_path / "api"
         if api_dir.exists():
-            for md_file in sorted(api_dir.rglob("*.md")):
-                if md_file.name == "index.md":
-                    continue
-                self._scan_headings(md_file, docs_path, dictionary)
+            self._register_api_pages(api_dir, docs_path, dictionary)
 
-        # Also scan core-concepts for additional entities
+        # Hand-written pages: scan headings (the generated api/ pages are handled above, and
+        # their section headings such as "Parameters" and "Returns" are not API names)
         for md_file in sorted(docs_path.rglob("*.md")):
             rel = md_file.relative_to(docs_path)
-            if str(rel).startswith("zh"):
+            if rel.parts[0] in ("zh", "api"):
                 continue
             self._scan_headings(md_file, docs_path, dictionary)
 
@@ -111,16 +110,32 @@ class PiniaEntityExtractor:
                 inline = tokens[i + 1]
                 heading_text = inline.content if inline.type == "inline" else ""
                 name = self._clean_heading(heading_text)
-                if name and name not in dictionary:
-                    entity_type = self._classify(name)
+                existing = dictionary.get(name) if name else None
+                if name and existing is None:
                     dictionary[name] = ApiEntity(
                         name=name,
                         source="pinia",
-                        entity_type=entity_type,
+                        entity_type=self._classify(name),
                         page_path=rel_path,
                         section=heading_text.strip(),
                     )
+                elif existing is not None and not existing.page_path:
+                    # A seeded API without a page yet: link it to the first page that covers it
+                    existing.page_path = rel_path
+                    existing.section = heading_text.strip()
             i += 1
+
+    def _register_api_pages(self, api_dir: Path, docs_path: Path, dictionary: dict[str, ApiEntity]):
+        """Register one entity per TypeDoc symbol page and link seeded APIs to their page."""
+        for symbol, page_path, kind in iter_symbol_pages(api_dir, docs_path):
+            existing = dictionary.get(symbol)
+            if existing is None:
+                entity_type = EntityType.OTHER if kind in TYPE_FOLDERS else self._classify(symbol)
+                dictionary[symbol] = ApiEntity(
+                    name=symbol, source="pinia", entity_type=entity_type, page_path=page_path
+                )
+            elif not existing.page_path:
+                existing.page_path = page_path
 
     def _clean_heading(self, heading_text: str) -> str | None:
         """Clean an API heading into an entity name."""

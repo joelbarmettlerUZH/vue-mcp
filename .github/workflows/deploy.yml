@@ -47,11 +47,20 @@ jobs:
           cache-from: type=gha,scope=server
           cache-to: type=gha,mode=max,scope=server
 
+      - name: Resolve upstream TypeDoc refs
+        id: typedoc
+        run: |
+          echo "pinia=$(git ls-remote https://github.com/vuejs/pinia.git HEAD | cut -f1)" >> "$GITHUB_OUTPUT"
+          echo "router=$(git ls-remote https://github.com/vuejs/router.git HEAD | cut -f1)" >> "$GITHUB_OUTPUT"
+
       - name: Build & push ingestion image
         uses: docker/build-push-action@v7
         with:
           context: .
           target: ingestion
+          build-args: |
+            PINIA_REF=${{ steps.typedoc.outputs.pinia }}
+            ROUTER_REF=${{ steps.typedoc.outputs.router }}
           push: true
           tags: |
             ${{ steps.meta.outputs.ingestion }}:latest

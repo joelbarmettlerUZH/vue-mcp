@@ -24,6 +24,8 @@ class Settings(BaseSettings):
 
     # Paths
     data_path: str = "./data"
+    # Prebuilt TypeDoc API pages (set in the ingestion image; empty = generate locally if Node exists)
+    typedoc_dir: str = ""
 
     # Sources (empty = all registered sources)
     enabled_sources: str = ""

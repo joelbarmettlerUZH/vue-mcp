@@ -11,12 +11,15 @@ Handles Vue Router-specific concerns:
 
 import logging
 import re
-import shutil
-import subprocess
 from pathlib import Path
 
 from vue_docs_core.models.entity import ApiEntity
 from vue_docs_core.parsing.extractors.vue_router import VueRouterEntityExtractor
+from vue_docs_core.parsing.typedoc import (
+    generate_api_docs,
+    install_prebuilt_api,
+    strip_typedoc_boilerplate,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -63,58 +66,15 @@ class VueRouterAdapter:
     """Source adapter for Vue Router documentation."""
 
     def post_clone(self, repo_root: Path) -> None:
-        """Generate TypeDoc API docs if not already present.
+        """Make the TypeDoc API reference pages available.
 
-        Requires ``npm`` and ``node`` to be available.  If they are not
-        (e.g. inside a Docker image without Node.js), this is a no-op and
-        the entity dictionary falls back to the seed list.
+        Docker images carry them prebuilt (generated in a build stage without secrets);
+        developer machines with Node generate them locally. Without either, the entity
+        dictionary falls back to the seed list.
         """
-        docs_dir = repo_root / "packages" / "docs"
-        api_dir = docs_dir / "api"
-
-        if api_dir.exists() and any(api_dir.rglob("*.md")):
-            logger.info("TypeDoc API docs already exist, skipping generation")
+        if install_prebuilt_api("vue-router", repo_root / "packages" / "docs" / "api"):
             return
-
-        typedoc_script = docs_dir / "run-typedoc.mjs"
-        if not typedoc_script.exists():
-            logger.warning("run-typedoc.mjs not found, cannot generate API docs")
-            return
-
-        # Check if npm/node are available before attempting
-        if not shutil.which("npm") or not shutil.which("node"):
-            logger.info("npm/node not available, skipping TypeDoc generation")
-            return
-
-        logger.info("Installing docs dependencies for TypeDoc generation...")
-        root_pkg = repo_root / "package.json"
-        if root_pkg.exists():
-            result = subprocess.run(
-                ["npm", "install", "--ignore-scripts"],
-                cwd=str(repo_root),
-                capture_output=True,
-                text=True,
-                timeout=120,
-            )
-            if result.returncode != 0:
-                logger.warning("npm install (root) failed: %s", result.stderr[:500])
-
-        logger.info("Generating TypeDoc API docs...")
-        result = subprocess.run(
-            ["node", "run-typedoc.mjs"],
-            cwd=str(docs_dir),
-            capture_output=True,
-            text=True,
-            timeout=120,
-        )
-        if result.returncode != 0:
-            logger.warning(
-                "TypeDoc generation failed (API docs will use seed entities only): %s",
-                result.stderr[:500],
-            )
-        elif api_dir.exists():
-            count = len(list(api_dir.rglob("*.md")))
-            logger.info("TypeDoc generated %d API doc files", count)
+        generate_api_docs(repo_root)
 
     def discover_files(self, docs_path: Path) -> list[Path]:
         """Find all English markdown files, excluding zh/ translations."""
@@ -219,7 +179,7 @@ class VueRouterAdapter:
                     item_idx += 1
 
     def clean_content(self, raw: str) -> str:
-        result = raw
+        result = strip_typedoc_boilerplate(raw)
 
         # Remove <VueSchoolLink ...>...</VueSchoolLink> block form
         result = _VUE_COMPONENT_BLOCK_RE.sub("", result)
