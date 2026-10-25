@@ -27,7 +27,13 @@ export function connect(url: string): SQL {
   return new SQL(url);
 }
 
-/** All figures for the last `days` days. Every statement runs in one READ ONLY transaction. */
+/**
+ * All figures for the last `days` days. Every statement runs in one READ ONLY transaction.
+ *
+ * Latency: a stored 0 means "not measured" (api_lookup and get_related used to log a hard-coded 0),
+ * so zeros are left out of every percentile. The headline figure covers the two search tools only;
+ * the lookups are in-memory and would drag the median to a meaningless value.
+ */
 export async function overview(sql: SQL, days: number): Promise<Overview> {
   return sql.begin("read only", async (tx) => {
     const [t] = await tx`
@@ -36,8 +42,8 @@ export async function overview(sql: SQL, days: number): Promise<Overview> {
         count(*) FILTER (WHERE event_type = 'tool_call')   AS tool_calls,
         count(*) FILTER (WHERE event_type = 'resource_read') AS resource_reads,
         count(*) FILTER (WHERE error IS NOT NULL)          AS errors,
-        percentile_cont(0.5)  WITHIN GROUP (ORDER BY latency_ms) AS p50,
-        percentile_cont(0.95) WITHIN GROUP (ORDER BY latency_ms) AS p95,
+        percentile_cont(0.5)  WITHIN GROUP (ORDER BY latency_ms) FILTER (WHERE latency_ms > 0 AND name IN ('docs_search', 'ecosystem_search')) AS p50,
+        percentile_cont(0.95) WITHIN GROUP (ORDER BY latency_ms) FILTER (WHERE latency_ms > 0 AND name IN ('docs_search', 'ecosystem_search')) AS p95,
         min(timestamp)                                     AS first_event,
         max(timestamp)                                     AS last_event
       FROM usage_events
@@ -55,15 +61,15 @@ export async function overview(sql: SQL, days: number): Promise<Overview> {
 
     const tools = await tx`
       SELECT name, count(*) AS count,
-             percentile_cont(0.5)  WITHIN GROUP (ORDER BY latency_ms) AS p50,
-             percentile_cont(0.95) WITHIN GROUP (ORDER BY latency_ms) AS p95,
+             percentile_cont(0.5)  WITHIN GROUP (ORDER BY latency_ms) FILTER (WHERE latency_ms > 0) AS p50,
+             percentile_cont(0.95) WITHIN GROUP (ORDER BY latency_ms) FILTER (WHERE latency_ms > 0) AS p95,
              count(*) FILTER (WHERE error IS NOT NULL) AS errors
       FROM usage_events
       WHERE event_type = 'tool_call' AND timestamp >= now() - make_interval(days => ${days})
       GROUP BY name ORDER BY count DESC`;
 
     const frameworks = await tx`
-      SELECT coalesce(framework, '(none)') AS framework, count(*) AS count
+      SELECT coalesce(framework, '(all frameworks)') AS framework, count(*) AS count
       FROM usage_events
       WHERE timestamp >= now() - make_interval(days => ${days})
       GROUP BY 1 ORDER BY count DESC LIMIT 20`;

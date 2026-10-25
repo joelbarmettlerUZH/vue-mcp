@@ -51,6 +51,11 @@ updates:
     groups:
       dashboard-minor-patch:
         update-types: [minor, patch]
+    ignore:
+      # TypeScript 7 is the native rewrite and drops the JS API that vue-tsc loads, so the
+      # dashboard typecheck fails with ERR_PACKAGE_PATH_NOT_EXPORTED. Revisit when vue-tsc supports it.
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
 
   - package-ecosystem: docker
     directory: /dashboard
