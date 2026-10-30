@@ -9,11 +9,11 @@ importers:
   .:
     dependencies:
       apexcharts:
-        specifier: ^8.4.1
-        version: 8.4.1
+        specifier: ^8.5.0
+        version: 8.5.0
       vue3-apexcharts:
         specifier: ^1.11.3
-        version: 1.11.3(apexcharts@8.4.1)(vue@3.5.30)
+        version: 1.11.3(apexcharts@8.5.0)(vue@3.5.30)
     devDependencies:
       vitepress:
         specifier: 2.0.0-alpha.17
@@ -515,8 +515,8 @@ packages:
   apex-commons@0.8.3:
     resolution: {integrity: sha512-WdU5lblyL1ByI/nkFOJkSgJYenCsHmay0P3UIcnSeUiCyF1b30SvPSZLbyxOCUOry8IlL7M0/3GvsGbZTMm8FA==}
 
-  apexcharts@8.4.1:
-    resolution: {integrity: sha512-29IbZ1rn3NRkDvete5EzZXy6yDSW7mjNXkytLpvaYHk0XbfsR+FvC7U78L3wMvJa699NBmix2z6r3Qm5YDvw0A==}
+  apexcharts@8.5.0:
+    resolution: {integrity: sha512-mH9QiOwIeRGg635OzAc2mznuwrK9XHr9S1RcC26GNNOU6fUPe64cMc7hXGcM9bXz92nO4Ax7P6uxSYaTA7gBDw==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
 
   argparse@2.0.1:
@@ -1391,7 +1391,7 @@ snapshots:
 
   apex-commons@0.8.3: {}
 
-  apexcharts@8.4.1:
+  apexcharts@8.5.0:
     dependencies:
       apex-commons: 0.8.3
 
@@ -2066,9 +2066,9 @@ snapshots:
       - universal-cookie
       - yaml
 
-  vue3-apexcharts@1.11.3(apexcharts@8.4.1)(vue@3.5.30):
+  vue3-apexcharts@1.11.3(apexcharts@8.5.0)(vue@3.5.30):
     dependencies:
-      apexcharts: 8.4.1
+      apexcharts: 8.5.0
       vue: 3.5.30
 
   vue@3.5.30:
