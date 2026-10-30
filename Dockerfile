@@ -48,7 +48,7 @@ CMD ["vue-docs-server"]
 # third-party code. It runs here, in a stage that holds no secrets, and only the finished markdown
 # is copied into the ingestion image, which therefore still has no Node. CI passes the current
 # upstream commits so the layer cache refreshes when the API changes.
-FROM node:22-slim AS typedoc
+FROM node:25-slim AS typedoc
 
 RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates && \
     rm -rf /var/lib/apt/lists/*
