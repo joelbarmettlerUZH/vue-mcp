@@ -4,19 +4,32 @@ Connect Vue Docs MCP to [Opencode](https://opencode.ai/).
 
 ## Setup
 
-Add to your Opencode configuration file. See the [Opencode MCP docs](https://opencode.ai/docs/mcp-servers) for more info.
+## Add Vue Docs MCP
+
+**Option 1: Command line**
+
+```bash
+opencode mcp add vue-docs --url https://mcp.vue-mcp.org/mcp --global
+```
+
+**Option 2: Configuration file**
+
+Add the following to your OpenCode configuration file:
 
 ```json
 {
   "mcp": {
-    "vue-docs": {
-      "type": "remote",
-      "url": "https://mcp.vue-mcp.org/mcp",
-      "enabled": true
+    "servers": {
+      "vue-docs": {
+        "type": "remote",
+        "url": "https://mcp.vue-mcp.org/mcp"
+      }
     }
   }
 }
 ```
+
+See the [OpenCode MCP documentation](https://opencode.ai/docs/mcp-servers) for details.
 
 ## Verify
 
