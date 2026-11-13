@@ -3,7 +3,7 @@
 # ---------------------------------------------------------------------------
 # Base: Python + uv + workspace source
 # ---------------------------------------------------------------------------
-FROM python:3.13-slim AS base
+FROM python:3.15-slim AS base
 
 ENV PYTHONUNBUFFERED=1
 
